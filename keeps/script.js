@@ -89,23 +89,30 @@ function getHexByColorId(colorVal) {
 }
 
 // Рендеринг кнопок палитры
-function renderColorPalette(containerId, onSelectCallback) {
+function renderColorPalette(containerId, onSelectCallback, activeId) {
     const container = document.getElementById(containerId);
     if (!container) return;
     
     container.innerHTML = '';
     const currentPalette = getCurrentPalette();
+    const active = activeId !== undefined ? activeId : (
+        containerId === 'create-color-palette' ? state.createBgColor : state.editBgColor
+    );
 
     currentPalette.forEach(c => {
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'color-swatch-btn';
+        btn.className = 'color-swatch-btn' + (c.id === active || (c.id === null && !active) ? ' active' : '');
         btn.title = c.name;
         btn.style.backgroundColor = c.value || 'var(--card-bg)';
+        if (!c.value) {
+            btn.style.backgroundImage = 'linear-gradient(45deg, transparent 46%, var(--border-color) 46%, var(--border-color) 54%, transparent 54%)';
+        }
         btn.onclick = (e) => {
             e.preventDefault();
             e.stopPropagation();
             onSelectCallback(c.id);
+            renderColorPalette(containerId, onSelectCallback, c.id);
         };
         container.appendChild(btn);
     });
@@ -115,6 +122,15 @@ document.addEventListener('DOMContentLoaded', () => {
     applySettings();
     renderNotes();
     renderColorPalette('create-color-palette', changeCreateCardColor);
+    if (typeof enhanceAllSelects === 'function') enhanceAllSelects();
+    try {
+        const params = new URLSearchParams(window.location.search);
+        const noteId = params.get('note');
+        if (noteId) {
+            const nid = parseInt(noteId, 10);
+            if (state.notes.some(n => n.id === nid)) setTimeout(() => openNoteModal(nid), 200);
+        }
+    } catch (err) {}
 
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.tools-dropdown')) {
@@ -122,8 +138,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (toolsMenu) toolsMenu.classList.add('hidden');
         }
         if (!e.target.closest('.note-menu-wrapper')) {
-            state.openMenuId = null;
-            renderNotes();
+            if (state.openMenuId !== null) {
+                state.openMenuId = null;
+                renderNotes();
+            }
+        }
+        if (!e.target.closest('.cselect')) {
+            document.querySelectorAll('.cselect-dropdown').forEach(d => d.classList.add('hidden'));
+            document.querySelectorAll('.cselect').forEach(c => c.classList.remove('open'));
         }
     });
 });
@@ -252,6 +274,9 @@ function renderNotes() {
                             <div class="tools-item" onclick="exportToTxt(event, ${note.id})">
                                 <span class="material-symbols-rounded">download</span> Скачать (.txt)
                             </div>
+                            <div class="tools-item" onclick="copyNoteLink(event, ${note.id})">
+                                <span class="material-symbols-rounded">link</span> Копировать ссылку
+                            </div>
                             <div style="border-top: 1px solid var(--border-color); margin: 2px 0;"></div>
                             <div class="tools-item delete" onclick="startDeleteNote(event, ${note.id})">
                                 <span class="material-symbols-rounded" style="color: #d32f2f;">delete</span> Удалить
@@ -264,6 +289,20 @@ function renderNotes() {
             </div>
         `;
         grid.appendChild(card);
+
+        const noteIdForCb = note.id;
+        card.querySelectorAll('.task-checkbox').forEach(cb => {
+            cb.addEventListener('click', (ev) => ev.stopPropagation());
+            cb.addEventListener('change', () => {
+                const n = state.notes.find(x => x.id === noteIdForCb);
+                if (!n) return;
+                const contentEl = card.querySelector('.note-content');
+                if (contentEl) {
+                    n.content = contentEl.innerHTML;
+                    saveNotes();
+                }
+            });
+        });
     });
 }
 
@@ -453,6 +492,7 @@ function createNote() {
     const createCard = document.getElementById('create-note-card');
     if (createCard) createCard.style.backgroundColor = 'var(--card-bg)';
     state.createBgColor = null;
+    renderColorPalette('create-color-palette', changeCreateCardColor, null);
 }
 
 function restoreDemoNotes() {
@@ -530,12 +570,7 @@ function closeTutorialModal() {
 
 function checkAI() {
     document.getElementById('tools-menu').classList.add('hidden');
-    if (!state.aiKey) {
-        showAlert('info', 'Ошибка: ИИ ключ не привязан! Перейдите в Настройки и введите свой ключ.');
-        openSettingsModal();
-    } else {
-        showAlert('smart_toy', 'ИИ успешно подключен и готов помогать!');
-    }
+    window.location.href = '../WorkGens/index.html';
 }
 
 function saveAiKey() {
@@ -554,7 +589,24 @@ function openSettingsModal() {
     document.getElementById('theme-select').value = state.theme;
     document.getElementById('radius-select').value = state.radius;
     document.getElementById('ai-key-input').value = state.aiKey;
+    if (typeof enhanceAllSelects === 'function') enhanceAllSelects(document.getElementById('settings-modal'));
+    if (typeof refreshEnhancedSelect === 'function') {
+        refreshEnhancedSelect(document.getElementById('theme-select'));
+        refreshEnhancedSelect(document.getElementById('radius-select'));
+    }
     document.getElementById('settings-modal').classList.add('active');
+}
+
+function copyNoteLink(e, id) {
+    if (e) e.stopPropagation();
+    const url = window.location.href.split('?')[0].split('#')[0] + '?note=' + id;
+    navigator.clipboard.writeText(url).then(() => {
+        showAlert('link', 'Ссылка на заметку скопирована');
+    }).catch(() => {
+        showAlert('link', url);
+    });
+    state.openMenuId = null;
+    renderNotes();
 }
 
 function closeSettingsModal() {
@@ -603,4 +655,88 @@ function closeAlert() {
 
 function escapeHtml(text) {
     return text ? text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : '';
+}
+
+/* ===== Custom select ===== */
+function toggleCSelect(uid) {
+    var el = document.getElementById(uid);
+    if (!el) return;
+    var dd = el.querySelector('.cselect-dropdown');
+    var open = dd && !dd.classList.contains('hidden');
+    document.querySelectorAll('.cselect-dropdown').forEach(function(d) { d.classList.add('hidden'); });
+    document.querySelectorAll('.cselect').forEach(function(c) { c.classList.remove('open'); });
+    if (!open && dd) { dd.classList.remove('hidden'); el.classList.add('open'); }
+}
+function pickCSelect(uid, value, label) {
+    var el = document.getElementById(uid);
+    if (!el) return;
+    el.dataset.value = value;
+    var lab = el.querySelector('.cselect-label');
+    if (lab) lab.textContent = label || value || '--';
+    el.querySelectorAll('.cselect-option').forEach(function(o) {
+        o.classList.toggle('active', o.getAttribute('data-value') === value);
+    });
+    var dd = el.querySelector('.cselect-dropdown');
+    if (dd) dd.classList.add('hidden');
+    el.classList.remove('open');
+    var nativeId = el.getAttribute('data-native-id');
+    if (nativeId) {
+        var sel = document.getElementById(nativeId);
+        if (sel) {
+            sel.value = value;
+            sel.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+    }
+}
+function enhanceNativeSelect(selectEl) {
+    if (!selectEl || selectEl.tagName !== 'SELECT') return;
+    if (selectEl.dataset.cselectEnhanced === '1') {
+        refreshEnhancedSelect(selectEl);
+        return;
+    }
+    selectEl.dataset.cselectEnhanced = '1';
+    selectEl.classList.add('cselect-native-hidden');
+    var wrapper = selectEl.closest('.custom-select-wrapper');
+    if (wrapper) {
+        var icon = wrapper.querySelector('.select-icon');
+        if (icon) icon.style.display = 'none';
+    }
+    var uid = 'cs-native-' + (selectEl.id || ('auto' + Math.random().toString(36).slice(2, 8)));
+    if (!selectEl.id) selectEl.id = uid + '-native';
+    var box = document.createElement('div');
+    box.className = 'cselect cselect-from-native';
+    box.id = uid;
+    box.setAttribute('data-native-id', selectEl.id);
+    function rebuild() {
+        var opts = Array.from(selectEl.options).map(function(o) {
+            return { value: o.value, label: o.textContent };
+        });
+        var sel = selectEl.value;
+        var selectedLabel = opts.length ? '--' : '—';
+        opts.forEach(function(o) { if (o.value === sel) selectedLabel = o.label; });
+        box.innerHTML =
+            '<button type="button" class="cselect-trigger" onclick="toggleCSelect(\'' + uid + '\')">' +
+            '<span class="cselect-label">' + escapeHtml(selectedLabel) + '</span>' +
+            '<span class="material-symbols-rounded cselect-arrow">expand_more</span></button>' +
+            '<div class="cselect-dropdown hidden">' +
+            opts.map(function(o) {
+                var act = o.value === sel ? ' active' : '';
+                return '<div class="cselect-option' + act + '" data-value="' + escapeHtml(o.value) +
+                    '" onclick="pickCSelect(\'' + uid + '\',\'' + String(o.value).replace(/'/g, "\\'") +
+                    '\',\'' + String(o.label).replace(/'/g, "\\'") + '\')">' + escapeHtml(o.label) + '</div>';
+            }).join('') + '</div>';
+        box.dataset.value = sel;
+    }
+    rebuild();
+    selectEl._cselectRebuild = rebuild;
+    if (wrapper) wrapper.appendChild(box);
+    else selectEl.parentNode.insertBefore(box, selectEl.nextSibling);
+}
+function refreshEnhancedSelect(selectEl) {
+    if (selectEl && typeof selectEl._cselectRebuild === 'function') selectEl._cselectRebuild();
+}
+function enhanceAllSelects(root) {
+    (root || document).querySelectorAll('select').forEach(function(sel) {
+        enhanceNativeSelect(sel);
+    });
 }
