@@ -1,182 +1,118 @@
 <!DOCTYPE html>
-<html lang="ru" data-theme="dark" data-radius="rounded">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Spreadsheets | Prestige HQ</title>
+    <title>Таблицы на обслуживании | Prestige HQ</title>
     <link rel="icon" type="image/png" href="spreadsheets.png">
-    <link rel="stylesheet" href="style.css">
+    <meta http-equiv="refresh" content="8;url=../index.html">
+    <style>
+        :root {
+            --bg: #050505;
+            --card: #121212;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --accent: #f59e0b;
+            --border: rgba(255,255,255,0.1);
+        }
+        @media (prefers-color-scheme: light) {
+            :root {
+                --bg: #f8fafc;
+                --card: #ffffff;
+                --text: #0f172a;
+                --muted: #64748b;
+                --border: rgba(0,0,0,0.08);
+            }
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg);
+            color: var(--text);
+            font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+            padding: 24px;
+        }
+        .card {
+            max-width: 440px;
+            width: 100%;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 28px 24px;
+            text-align: center;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+        }
+        .icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+        h1 {
+            font-size: 1.25rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        p {
+            color: var(--muted);
+            font-size: 0.95rem;
+            line-height: 1.55;
+            margin-bottom: 12px;
+        }
+        .hint {
+            font-size: 0.8rem;
+            color: var(--muted);
+            margin-top: 16px;
+        }
+        a.btn {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 10px 18px;
+            background: var(--accent);
+            color: #111;
+            font-weight: 600;
+            text-decoration: none;
+            border-radius: 10px;
+            font-size: 0.9rem;
+        }
+        a.btn:hover { filter: brightness(1.05); }
+    </style>
 </head>
 <body>
-    <div id="app">
-        <!-- Шапка и главное меню -->
-        <header class="app-header">
-            <div class="logo-area">
-                <img src="spreadsheets.png" alt="Prestige HQ" class="app-icon">
-                <span class="app-title">My Spreadsheets <span class="badge">Prestige HQ</span></span>
-            </div>
-            
-            <nav class="main-menu">
-                <button class="menu-btn" id="menu-file" data-i18n="menu.file">Файл</button>
-                <button class="menu-btn" id="menu-edit" data-i18n="menu.edit">Правка</button>
-                <button class="menu-btn" id="menu-view" data-i18n="menu.view">Вид</button>
-                <button class="menu-btn" id="menu-settings" data-i18n="menu.settings">Параметры и ИИ</button>
-            </nav>
-
-            <div class="header-actions">
-                <button class="btn btn-primary" id="btn-export" data-i18n="btn.export">Экспорт</button>
-                <button class="btn btn-secondary" id="btn-print" data-i18n="btn.print">Печать</button>
-            </div>
-        </header>
-
-        <!-- Панель инструментов (Formatting Toolbar) -->
-        <div class="toolbar">
-            <button class="tool-btn" id="btn-undo" title="Отменить (Ctrl+Z)">↶</button>
-            <button class="tool-btn" id="btn-redo" title="Повторить (Ctrl+Y)">↷</button>
-            <div class="separator"></div>
-            <button class="tool-btn" id="btn-bold" title="Жирный"><b>B</b></button>
-            <button class="tool-btn" id="btn-italic" title="Курсив"><i>I</i></button>
-            <div class="separator"></div>
-            <button class="tool-btn" id="btn-align-left" title="По левому краю">←</button>
-            <button class="tool-btn" id="btn-align-center" title="По центру">↔</button>
-            <button class="tool-btn" id="btn-align-right" title="По правому краю">→</button>
-            <div class="separator"></div>
-            <button class="tool-btn ai-sparkle-btn" id="btn-ai-prompt" title="Сгенерировать ИИ">✨ ИИ</button>
-        </div>
-
-        <!-- Строка формул (Formula Bar) -->
-        <div class="formula-bar">
-            <div class="cell-address-box" id="active-cell-address">A1</div>
-            <div class="formula-fx">fx</div>
-            <input type="text" id="formula-input" class="formula-input" placeholder="Введите значение, формулу (=SUM) или команду (/)" autocomplete="off">
-        </div>
-
-        <!-- Основная область таблицы -->
-        <main class="grid-container" id="grid-container">
-            <div class="grid-viewport" id="grid-viewport">
-                <!-- Таблица рендерится динамически из renderer.js -->
-            </div>
-        </main>
-
-        <!-- Нижняя панель компактных вкладок (Form Tabs) -->
-        <footer class="bottom-bar">
-            <button class="btn-add-tab" id="btn-add-tab" title="Добавить лист">+</button>
-            
-            <div class="tabs-scroll-container" id="tabs-container">
-                <!-- Компактные вкладки генерируются JS -->
-            </div>
-
-            <div class="mobile-tab-select-wrapper">
-                <select id="forms-tabs-select" class="compact-tab-select"></select>
-            </div>
-        </footer>
+    <div class="card">
+        <div class="icon">🔧</div>
+        <h1>Таблицы временно на обслуживании</h1>
+        <p>
+            Мы как можно быстрее пытаемся вернуть таблицы в строй.
+            <strong>Ваши данные не потеряются.</strong>
+        </p>
+        <p>Извиняемся за неудобства.</p>
+        <a class="btn" href="../index.html">На главную</a>
+        <p class="hint">Переход через несколько секунд…</p>
     </div>
+    <script>
+        (function () {
+            // Та же дата разблокировки, что на хабе (24.09.2026 18:00 CEST ≈ 16:00 UTC)
+            var UNLOCK_AT = Date.UTC(2026, 8, 24, 16, 0, 0);
+            if (Date.now() >= UNLOCK_AT) {
+                // Когда срок вышел — можно вернуть нормальное приложение.
+                // Сейчас просто не блокируем, если вы уже восстановили полный index.
+                // Для полной версии замените этот файл обратно.
+            }
 
-    <!-- Контекстное меню (ПКМ) -->
-    <div id="context-menu" class="context-menu hidden">
-        <div class="menu-item" id="ctx-insert-row-above" data-i18n="ctx.insert_row_above">Вставить строку выше</div>
-        <div class="menu-item" id="ctx-insert-row-below" data-i18n="ctx.insert_row_below">Вставить строку ниже</div>
-        <div class="menu-item" id="ctx-insert-col-left" data-i18n="ctx.insert_col_left">Вставить столбец слева</div>
-        <div class="menu-item" id="ctx-insert-col-right" data-i18n="ctx.insert_col_right">Вставить столбец справа</div>
-        <div class="divider"></div>
-        <div class="menu-item ctx-danger" id="ctx-delete-row" data-i18n="ctx.delete_row">Удалить строку</div>
-        <div class="menu-item ctx-danger" id="ctx-delete-col" data-i18n="ctx.delete_col">Удалить столбец</div>
-        <div class="divider"></div>
-        <div class="menu-item" id="ctx-clear-cells" data-i18n="ctx.clear">Очистить ячейки</div>
-    </div>
+            var msg =
+                'Таблицы пока временно на обслуживании.\n\n' +
+                'Мы как можно быстрее пытаемся вернуть таблицы в строй, ваши данные не потеряются.\n\n' +
+                'Извиняемся за неудобства.';
 
-    <!-- Модальное окно: Параметры и ИИ -->
-    <div id="modal-settings" class="modal-overlay hidden">
-        <div class="modal-card">
-            <div class="modal-header">
-                <h3 data-i18n="settings.title">Параметры и Настройки ИИ</h3>
-                <button class="btn-close-modal" id="btn-close-settings">&times;</button>
-            </div>
-            
-            <div class="modal-body">
-                <!-- Внешний вид -->
-                <section class="settings-section">
-                    <h4 data-i18n="settings.appearance">Внешний вид</h4>
-                    
-                    <div class="form-group">
-                        <label data-i18n="settings.theme">Тема оформления:</label>
-                        <select id="setting-theme" class="form-control">
-                            <option value="dark">Тёмная (OLED #050505)</option>
-                            <option value="light">Светлая</option>
-                            <option value="auto">Автоматически (устройство)</option>
-                        </select>
-                    </div>
+            try {
+                alert(msg);
+            } catch (e) {}
 
-                    <div class="form-group">
-                        <label data-i18n="settings.radius">Тип скруглений:</label>
-                        <select id="setting-radius" class="form-control">
-                            <option value="rounded">Rounded (Стандартные)</option>
-                            <option value="sharp">Sharp (Строгие / Острые)</option>
-                            <option value="full">Full (Капсульные / Округлые)</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label data-i18n="settings.language">Язык интерфейса:</label>
-                        <select id="setting-language" class="form-control">
-                            <option value="ru">Русский</option>
-                            <option value="en">English</option>
-                        </select>
-                    </div>
-                </section>
-
-                <hr class="section-divider">
-
-                <!-- Конфигурация ИИ -->
-                <section class="settings-section">
-                    <h4 data-i18n="settings.ai_config">Интеграция с ИИ</h4>
-                    
-                    <div class="form-group">
-                        <label data-i18n="settings.ai_provider">Провайдер ИИ:</label>
-                        <select id="setting-ai-provider" class="form-control">
-                            <option value="openai">OpenAI (ChatGPT)</option>
-                            <option value="anthropic">Anthropic (Claude)</option>
-                            <option value="gemini">Google Gemini</option>
-                            <option value="custom">Custom / Local LLM (Ollama, OpenRouter)</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label data-i18n="settings.ai_key">API Ключ:</label>
-                        <input type="password" id="setting-ai-key" class="form-control" placeholder="sk-...">
-                    </div>
-
-                    <div class="form-group">
-                        <label data-i18n="settings.ai_url">Base URL (для Custom/Local):</label>
-                        <input type="text" id="setting-ai-url" class="form-control" placeholder="http://localhost:11434/v1">
-                    </div>
-
-                    <div class="form-group">
-                        <label data-i18n="settings.ai_model">Модель:</label>
-                        <input type="text" id="setting-ai-model" class="form-control" placeholder="gpt-4o / claude-3-5-sonnet / llama3">
-                    </div>
-                </section>
-            </div>
-
-            <div class="modal-footer">
-                <button class="btn btn-secondary" id="btn-cancel-settings" data-i18n="btn.cancel">Отмена</button>
-                <button class="btn btn-primary" id="btn-save-settings" data-i18n="btn.save">Сохранить</button>
-            </div>
-        </div>
-    </div>
-<div id="context-menu" class="context-menu" style="display: none;">
-    <div class="menu-item" id="ctx-cut">✂️ Вырезать</div>
-    <div class="menu-item" id="ctx-copy">📋 Копировать</div>
-    <div class="menu-item" id="ctx-paste">📥 Вставить</div>
-    <div class="menu-separator"></div>
-    <div class="menu-item" id="ctx-add-row">➕ Вставить строку</div>
-    <div class="menu-item" id="ctx-add-col">➕ Вставить столбец</div>
-    <div class="menu-item" id="ctx-del-row">➖ Удалить строку</div>
-    <div class="menu-item" id="ctx-del-col">➖ Удалить столбец</div>
-    <div class="menu-separator"></div>
-    <div class="menu-item" id="ctx-clear">🧹 Очистить ячейку</div>
-</div>
-    <!-- Основной модуль приложения -->
-    <script type="module" src="src/app.js"></script>
+            // Редирект на хаб
+            window.location.replace('../index.html');
+        })();
+    </script>
 </body>
 </html>
