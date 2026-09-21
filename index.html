@@ -5,13 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prestige HQ | Выбор сервиса</title>
     <link rel="icon" type="image/png" href="MY Work.png">
-    
-    <!-- Google Fonts & Material Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
-
     <style>
         :root {
             --bg-color: #000000;
@@ -26,28 +23,56 @@
             --code-bg: #0f172a;
             --card-radius: 16px;
             --transition-speed: 0.25s;
+            /* icon wrappers dark */
+            --iw-doc-bg: #0f2447;
+            --iw-doc-fg: #3b82f6;
+            --iw-slides-bg: #3a2205;
+            --iw-slides-fg: #f59e0b;
+            --iw-forms-bg: #2a153c;
+            --iw-forms-fg: #a855f7;
+            --iw-sheets-bg: #072d20;
+            --iw-sheets-fg: #10b981;
+            --iw-keeps-bg: #391124;
+            --iw-keeps-fg: #ec4899;
+            --iw-wg-bg: #182232;
+            --iw-wg-fg: #6366f1;
+            --maint-bg: rgba(245, 158, 11, 0.12);
+            --maint-border: rgba(245, 158, 11, 0.45);
+            --maint-text: #fbbf24;
         }
-
-        /* Светлая тема */
         body.light-theme {
-            --bg-color: #ffffff;
-            --card-bg: #f3f3f3;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
             --card-hover-bg: #f1f5f9;
             --text-color: #0f172a;
             --text-muted: #64748b;
             --border-color: rgba(0, 0, 0, 0.08);
-            --accent-glow: rgba(99, 102, 241, 0.15);
-            --modal-bg: #f3f3f3;
+            --accent-glow: rgba(26, 115, 232, 0.12);
+            --modal-bg: #ffffff;
             --code-bg: #f1f5f9;
+            /* icon wrappers light — soft tinted, not dark blobs */
+            --iw-doc-bg: #dbeafe;
+            --iw-doc-fg: #2563eb;
+            --iw-slides-bg: #ffedd5;
+            --iw-slides-fg: #d97706;
+            --iw-forms-bg: #f3e8ff;
+            --iw-forms-fg: #9333ea;
+            --iw-sheets-bg: #d1fae5;
+            --iw-sheets-fg: #059669;
+            --iw-keeps-bg: #fce7f3;
+            --iw-keeps-fg: #db2777;
+            --iw-wg-bg: #e0e7ff;
+            --iw-wg-fg: #4f46e5;
+            --maint-bg: rgba(245, 158, 11, 0.1);
+            --maint-border: rgba(217, 119, 6, 0.4);
+            --maint-text: #b45309;
         }
-
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
         }
-
         body {
             background-color: var(--bg-color);
             color: var(--text-color);
@@ -59,22 +84,18 @@
             padding: 24px;
             transition: background-color var(--transition-speed) ease, color var(--transition-speed) ease;
         }
-
         .container {
             width: 100%;
             max-width: 1100px;
             text-align: center;
             position: relative;
         }
-
-        /* Верхняя панель управления */
         .top-nav {
             display: flex;
             justify-content: flex-end;
             width: 100%;
             margin-bottom: 10px;
         }
-
         .icon-btn {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
@@ -89,14 +110,11 @@
             font-weight: 500;
             transition: all var(--transition-speed) ease;
         }
-
         .icon-btn:hover {
             background: var(--card-hover-bg);
             border-color: var(--accent-color);
             transform: translateY(-2px);
         }
-
-        /* Баннер одноразового уведомления */
         .notice-banner {
             display: flex;
             align-items: center;
@@ -106,27 +124,26 @@
             border: 1px solid var(--accent-color);
             border-radius: 12px;
             padding: 12px 18px;
-            margin-bottom: 24px;
+            margin-bottom: 16px;
             text-align: left;
             font-size: 0.9rem;
             line-height: 1.4;
             animation: fadeIn 0.3s ease;
         }
-
+        body.light-theme .notice-banner {
+            background: rgba(26, 115, 232, 0.08);
+        }
         .notice-banner.hidden { display: none; }
-
         .notice-content {
             display: flex;
             align-items: center;
             gap: 10px;
         }
-
         .notice-content .material-symbols-rounded {
             color: var(--accent-color);
             font-size: 22px;
             flex-shrink: 0;
         }
-
         .notice-close-btn {
             background: transparent;
             border: none;
@@ -137,12 +154,38 @@
             padding: 4px;
             border-radius: 6px;
         }
-
         .notice-close-btn:hover { color: var(--text-color); }
 
-        /* Шапка */
-        .header { margin-bottom: 40px; }
+        /* Maintenance banner for Tables */
+        .maint-banner {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            background: var(--maint-bg);
+            border: 1px solid var(--maint-border);
+            border-radius: 12px;
+            padding: 12px 18px;
+            margin-bottom: 24px;
+            text-align: left;
+            font-size: 0.9rem;
+            line-height: 1.45;
+            animation: fadeIn 0.3s ease;
+        }
+        .maint-banner.hidden { display: none; }
+        .maint-banner .material-symbols-rounded {
+            color: var(--maint-text);
+            font-size: 22px;
+            flex-shrink: 0;
+        }
+        .maint-banner strong { color: var(--maint-text); }
+        .maint-countdown {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
 
+        .header { margin-bottom: 40px; }
         .badge {
             display: inline-flex;
             align-items: center;
@@ -155,27 +198,22 @@
             font-weight: 600;
             margin-bottom: 16px;
         }
-
         .header h1 {
             font-size: 2.2rem;
             font-weight: 700;
             letter-spacing: -0.5px;
             margin-bottom: 8px;
         }
-
         .header p {
             color: var(--text-muted);
             font-size: 1rem;
         }
-
-        /* Сетка карточек */
         .services-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
             gap: 20px;
             width: 100%;
         }
-
         .service-card {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
@@ -192,15 +230,49 @@
             overflow: hidden;
             cursor: pointer;
         }
-
-        .service-card:hover {
+        .service-card:not(.disabled):hover {
             transform: translateY(-6px);
             background: var(--card-hover-bg);
             box-shadow: 0 12px 24px -10px var(--accent-glow);
             border-color: var(--accent-color);
         }
+        .service-card.disabled {
+            cursor: not-allowed;
+            opacity: 0.72;
+            filter: grayscale(0.35);
+        }
+        .service-card.disabled:hover {
+            transform: none;
+            box-shadow: none;
+            border-color: var(--border-color);
+        }
+        .service-card.disabled .card-action {
+            opacity: 1 !important;
+            transform: none !important;
+            color: var(--maint-text);
+        }
 
-        /* Обертка для иконок */
+        .lock-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            padding: 4px 8px;
+            border-radius: 8px;
+            background: var(--maint-bg);
+            color: var(--maint-text);
+            border: 1px solid var(--maint-border);
+        }
+        .lock-badge .material-symbols-rounded {
+            font-size: 14px;
+        }
+
         .icon-wrapper {
             padding: 10px 16px;
             border-radius: 14px;
@@ -209,56 +281,33 @@
             justify-content: center;
             gap: 10px;
             margin-bottom: 16px;
-            transition: transform var(--transition-speed) ease;
+            transition: transform var(--transition-speed) ease, background 0.25s ease, color 0.25s ease;
         }
-
-        /* Стили для личных иконок */
         .custom-card-icon {
             width: 30px;
             height: 30px;
             object-fit: contain;
         }
-
-        .service-card:hover .icon-wrapper { transform: scale(1.08); }
+        .service-card:not(.disabled):hover .icon-wrapper { transform: scale(1.08); }
         .icon-wrapper .material-symbols-rounded { font-size: 30px; }
 
-        .card-doc .icon-wrapper { 
-            background: #0f2447; 
-            color: #3b82f6; 
-        }
-        .card-slides .icon-wrapper { 
-            background: #3a2205; 
-            color: #f59e0b; 
-        }
-        .card-forms .icon-wrapper { 
-            background: #2a153c; 
-            color: #a855f7; 
-        }
-        .card-sheets .icon-wrapper { 
-            background: #072d20; 
-            color: #10b981; 
-        }
-        .card-keeps .icon-wrapper { 
-            background: #391124; 
-            color: #ec4899; 
-        }
-        .card-workgens .icon-wrapper { 
-            background: #182232; 
-            color: #6366f1; 
-        }
+        .card-doc .icon-wrapper { background: var(--iw-doc-bg); color: var(--iw-doc-fg); }
+        .card-slides .icon-wrapper { background: var(--iw-slides-bg); color: var(--iw-slides-fg); }
+        .card-forms .icon-wrapper { background: var(--iw-forms-bg); color: var(--iw-forms-fg); }
+        .card-sheets .icon-wrapper { background: var(--iw-sheets-bg); color: var(--iw-sheets-fg); }
+        .card-keeps .icon-wrapper { background: var(--iw-keeps-bg); color: var(--iw-keeps-fg); }
+        .card-workgens .icon-wrapper { background: var(--iw-wg-bg); color: var(--iw-wg-fg); }
 
         .service-card h2 {
             font-size: 1.15rem;
             font-weight: 600;
             margin-bottom: 8px;
         }
-
         .service-card p {
             font-size: 0.85rem;
             color: var(--text-muted);
             line-height: 1.4;
         }
-
         .card-action {
             margin-top: 20px;
             display: flex;
@@ -271,19 +320,15 @@
             transform: translateY(6px);
             transition: all var(--transition-speed) ease;
         }
-
-        .service-card:hover .card-action {
+        .service-card:not(.disabled):hover .card-action {
             opacity: 1;
             transform: translateY(0);
         }
 
-        /* ОВЕРЛЕЙ ПЕРЕХОДА */
         .transition-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
             background: var(--bg-color);
             display: flex;
             flex-direction: column;
@@ -294,12 +339,10 @@
             pointer-events: none;
             transition: opacity 0.25s ease;
         }
-
         .transition-overlay.active {
             opacity: 1;
             pointer-events: auto;
         }
-
         .loader-card-preview {
             width: 140px;
             height: 160px;
@@ -311,47 +354,37 @@
             align-items: center;
             justify-content: center;
             gap: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
             animation: pulseCard 1s infinite alternate ease-in-out;
             margin-bottom: 20px;
         }
-
-        .loader-card-preview .material-symbols-rounded {
-            font-size: 48px;
+        body.light-theme .loader-card-preview {
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
         }
-
+        .loader-card-preview .material-symbols-rounded { font-size: 48px; }
         .loader-spinner {
-            width: 28px;
-            height: 28px;
+            width: 28px; height: 28px;
             border: 3px solid var(--border-color);
             border-top-color: var(--accent-color);
             border-radius: 50%;
             animation: spin 0.6s linear infinite;
         }
-
         .loader-text {
             font-size: 1.1rem;
             font-weight: 600;
             color: var(--text-color);
         }
-
         @keyframes pulseCard {
             0% { transform: scale(0.95); }
             100% { transform: scale(1.05); }
         }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* Модальные окна */
         .modal-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(0, 0, 0, 0.6);
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.55);
             backdrop-filter: blur(4px);
             display: flex;
             align-items: center;
@@ -362,12 +395,13 @@
             transition: opacity 0.25s ease;
             padding: 20px;
         }
-
+        body.light-theme .modal-overlay {
+            background: rgba(15, 23, 42, 0.35);
+        }
         .modal-overlay.active {
             opacity: 1;
             pointer-events: auto;
         }
-
         .modal-card {
             background: var(--modal-bg);
             border: 1px solid var(--border-color);
@@ -376,30 +410,31 @@
             max-width: 540px;
             padding: 28px;
             text-align: left;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
             transform: scale(0.95);
             transition: transform 0.25s ease;
             max-height: 85vh;
             overflow-y: auto;
+            color: var(--text-color);
         }
-
+        body.light-theme .modal-card {
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
         .modal-overlay.active .modal-card { transform: scale(1); }
-
         .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
         }
-
         .modal-header h3 {
             font-size: 1.25rem;
             font-weight: 700;
             display: flex;
             align-items: center;
             gap: 10px;
+            color: var(--text-color);
         }
-
         .modal-close {
             background: transparent;
             border: none;
@@ -410,11 +445,8 @@
             padding: 4px;
             border-radius: 6px;
         }
-
         .modal-close:hover { color: var(--text-color); }
-
         .setting-group { margin-bottom: 20px; }
-
         .setting-label {
             font-size: 0.85rem;
             font-weight: 600;
@@ -424,13 +456,11 @@
             margin-bottom: 10px;
             display: block;
         }
-
         .theme-buttons {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 10px;
         }
-
         .theme-btn {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
@@ -446,13 +476,14 @@
             font-weight: 500;
             transition: all 0.2s ease;
         }
-
+        body.light-theme .theme-btn {
+            background: var(--code-bg);
+        }
         .theme-btn:hover, .theme-btn.active {
             border-color: var(--accent-color);
             background: var(--card-hover-bg);
             color: var(--accent-color);
         }
-
         .info-link-btn {
             width: 100%;
             background: var(--accent-glow);
@@ -469,20 +500,16 @@
             margin-top: 10px;
             transition: all 0.2s ease;
         }
-
         .info-link-btn:hover {
             opacity: 0.9;
             transform: translateY(-1px);
         }
-
         .api-explain-box {
             font-size: 0.92rem;
             line-height: 1.6;
             color: var(--text-color);
         }
-
         .api-explain-box p { margin-bottom: 14px; }
-
         .api-card-section {
             background: var(--code-bg);
             border: 1px solid var(--border-color);
@@ -491,7 +518,6 @@
             margin-top: 12px;
             margin-bottom: 14px;
         }
-
         .api-card-section h4 {
             font-size: 0.95rem;
             margin-bottom: 6px;
@@ -500,7 +526,6 @@
             gap: 6px;
             color: var(--accent-color);
         }
-
         .code-inline {
             background: var(--border-color);
             padding: 2px 6px;
@@ -508,41 +533,50 @@
             font-family: monospace;
             font-size: 0.85rem;
         }
-
         .footer {
             margin-top: 50px;
             font-size: 0.8rem;
             color: var(--text-muted);
         }
-
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-8px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        @media (max-width: 600px) {
+            .header h1 { font-size: 1.6rem; }
+            .theme-buttons { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
-
     <div class="container">
-        <!-- Верхняя кнопка вызова Опций -->
         <div class="top-nav">
-            <button class="icon-btn" onclick="openModal('settings-modal')">
+            <button class="icon-btn" type="button" onclick="openModal('settings-modal')">
                 <span class="material-symbols-rounded">settings</span>
             </button>
         </div>
 
-        <!-- Уведомление -->
         <div id="repo-notice" class="notice-banner hidden">
             <div class="notice-content">
                 <span class="material-symbols-rounded">info</span>
                 <span>Мы сменили название репозитория с <strong>my-form</strong> на <strong>my-work</strong>, чтобы показать вам гораздо больше, чем кажется на первый взгляд!</span>
             </div>
-            <button class="notice-close-btn" onclick="dismissNotice()" title="Закрыть">
+            <button class="notice-close-btn" type="button" onclick="dismissNotice()" title="Закрыть">
                 <span class="material-symbols-rounded">close</span>
             </button>
         </div>
 
-        <!-- Заголовок -->
+        <!-- Баннер обслуживания Таблиц -->
+        <div id="sheets-maint-banner" class="maint-banner">
+            <div class="notice-content" style="align-items:flex-start;">
+                <span class="material-symbols-rounded">construction</span>
+                <div>
+                    <strong>Таблицы временно недоступны</strong> — идут критические исправления.
+                    <div class="maint-countdown" id="sheets-maint-countdown">Доступ откроется через ~3 дня</div>
+                </div>
+            </div>
+        </div>
+
         <header class="header">
             <div class="badge">
                 <span class="material-symbols-rounded" style="font-size: 16px;">dashboard</span>
@@ -552,13 +586,10 @@
             <p>Единый рабочий центр для ваших документов, презентаций и данных</p>
         </header>
 
-        <!-- Сетка карточек -->
         <div class="services-grid">
-            
-            <!-- Документы -->
             <a href="./document/" class="service-card card-doc" onclick="navigateWithAnimation(event, './document/', 'Документы', 'article', '#3b82f6')">
                 <div class="icon-wrapper">
-                    <img src="Document.png" alt="Icon" class="custom-card-icon">
+                    <img src="Document.png" alt="" class="custom-card-icon" onerror="this.style.display='none'">
                     <span class="material-symbols-rounded">article</span>
                 </div>
                 <h2>Документы</h2>
@@ -568,10 +599,9 @@
                 </div>
             </a>
 
-            <!-- Презентации -->
             <a href="./slides/" class="service-card card-slides" onclick="navigateWithAnimation(event, './slides/', 'Презентации', 'slideshow', '#f59e0b')">
                 <div class="icon-wrapper">
-                    <img src="Slides.png" alt="Icon" class="custom-card-icon">
+                    <img src="Slides.png" alt="" class="custom-card-icon" onerror="this.style.display='none'">
                     <span class="material-symbols-rounded">slideshow</span>
                 </div>
                 <h2>Презентации</h2>
@@ -581,10 +611,9 @@
                 </div>
             </a>
 
-            <!-- Формы -->
-            <a href="./forms/" class="service-card card-forms" onclick="navigateWithAnimation(event, './forms/', 'Формы', 'assignment', '#10b981')">
+            <a href="./forms/" class="service-card card-forms" onclick="navigateWithAnimation(event, './forms/', 'Формы', 'assignment', '#a855f7')">
                 <div class="icon-wrapper">
-                    <img src="forms.png" alt="Icon" class="custom-card-icon">
+                    <img src="forms.png" alt="" class="custom-card-icon" onerror="this.style.display='none'">
                     <span class="material-symbols-rounded">assignment</span>
                 </div>
                 <h2>Формы</h2>
@@ -594,23 +623,29 @@
                 </div>
             </a>
 
-            <!-- Таблицы -->
-            <a href="./spreadsheets/" class="service-card card-sheets" onclick="navigateWithAnimation(event, './spreadsheets/', 'Таблицы', 'table_chart', '#a855f7')">
+            <!-- ТАБЛИЦЫ — ЗАБЛОКИРОВАНЫ -->
+            <a href="./spreadsheets/" class="service-card card-sheets disabled" id="sheets-card"
+               onclick="return blockSheets(event)"
+               aria-disabled="true">
+                <span class="lock-badge">
+                    <span class="material-symbols-rounded">lock</span>
+                    Скоро
+                </span>
                 <div class="icon-wrapper">
-                    <img src="spreadsheets.png" alt="Icon" class="custom-card-icon">
+                    <img src="spreadsheets.png" alt="" class="custom-card-icon" onerror="this.style.display='none'">
                     <span class="material-symbols-rounded">table_chart</span>
                 </div>
                 <h2>Таблицы</h2>
                 <p>Работа с данными, расчетами и структурированием.</p>
                 <div class="card-action">
-                    Открыть <span class="material-symbols-rounded" style="font-size:16px;">arrow_forward</span>
+                    <span class="material-symbols-rounded" style="font-size:16px;">construction</span>
+                    На обслуживании
                 </div>
             </a>
 
-            <!-- Keeps -->
             <a href="./keeps/" class="service-card card-keeps" onclick="navigateWithAnimation(event, './keeps/', 'Keeps', 'keep', '#ec4899')">
                 <div class="icon-wrapper">
-                    <img src="keeps.png" alt="Icon" class="custom-card-icon">
+                    <img src="keeps.png" alt="" class="custom-card-icon" onerror="this.style.display='none'">
                     <span class="material-symbols-rounded">keep</span>
                 </div>
                 <h2>Keeps</h2>
@@ -620,10 +655,9 @@
                 </div>
             </a>
 
-            <!-- WorkGens AI -->
             <a href="./WorkGens/index.html" class="service-card card-workgens" onclick="navigateWithAnimation(event, './WorkGens/index.html', 'WorkGens AI', 'smart_toy', '#6366f1')">
                 <div class="icon-wrapper">
-                    <img src="WorkGens/icon.png" alt="Icon" class="custom-card-icon">
+                    <img src="WorkGens/icon.png" alt="" class="custom-card-icon" onerror="this.style.display='none'">
                     <span class="material-symbols-rounded">smart_toy</span>
                 </div>
                 <h2>WorkGens AI</h2>
@@ -632,7 +666,6 @@
                     Открыть <span class="material-symbols-rounded" style="font-size:16px;">arrow_forward</span>
                 </div>
             </a>
-
         </div>
 
         <footer class="footer">
@@ -640,7 +673,6 @@
         </footer>
     </div>
 
-    <!-- АНИМИРОВАННЫЙ ОВЕРЛЕЙ ПЕРЕХОДА -->
     <div id="transition-overlay" class="transition-overlay">
         <div id="loader-preview" class="loader-card-preview">
             <span id="loader-icon" class="material-symbols-rounded">article</span>
@@ -649,7 +681,6 @@
         <div id="loader-text" class="loader-text">Открываем сервис...</div>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО: ОПЦИИ -->
     <div id="settings-modal" class="modal-overlay">
         <div class="modal-card">
             <div class="modal-header">
@@ -657,29 +688,27 @@
                     <span class="material-symbols-rounded" style="color:var(--accent-color);">tune</span>
                     Опции и Настройки
                 </h3>
-                <button class="modal-close" onclick="closeModal('settings-modal')">
+                <button class="modal-close" type="button" onclick="closeModal('settings-modal')">
                     <span class="material-symbols-rounded">close</span>
                 </button>
             </div>
-
             <div class="setting-group">
                 <label class="setting-label">Тема оформления</label>
                 <div class="theme-buttons">
-                    <button class="theme-btn" id="theme-dark" onclick="setTheme('dark')">
+                    <button class="theme-btn" id="theme-dark" type="button" onclick="setTheme('dark')">
                         <span class="material-symbols-rounded">dark_mode</span> Тёмная
                     </button>
-                    <button class="theme-btn" id="theme-light" onclick="setTheme('light')">
+                    <button class="theme-btn" id="theme-light" type="button" onclick="setTheme('light')">
                         <span class="material-symbols-rounded">light_mode</span> Светлая
                     </button>
-                    <button class="theme-btn" id="theme-system" onclick="setTheme('system')">
+                    <button class="theme-btn" id="theme-system" type="button" onclick="setTheme('system')">
                         <span class="material-symbols-rounded">desktop_windows</span> Авто
                     </button>
                 </div>
             </div>
-
             <div class="setting-group" style="margin-top: 24px;">
                 <label class="setting-label">Интеграции и ИИ</label>
-                <button class="info-link-btn" onclick="openApiInfo()">
+                <button class="info-link-btn" type="button" onclick="openApiInfo()">
                     <span class="material-symbols-rounded">help_center</span>
                     Что такое API для ИИ?
                 </button>
@@ -687,7 +716,6 @@
         </div>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО: ЧТО ТАКОЕ API ДЛЯ ИИ -->
     <div id="api-info-modal" class="modal-overlay">
         <div class="modal-card" style="max-width: 600px;">
             <div class="modal-header">
@@ -695,52 +723,129 @@
                     <span class="material-symbols-rounded" style="color:var(--accent-color);">auto_awesome</span>
                     Что такое API для ИИ?
                 </h3>
-                <button class="modal-close" onclick="closeModal('api-info-modal')">
+                <button class="modal-close" type="button" onclick="closeModal('api-info-modal')">
                     <span class="material-symbols-rounded">close</span>
                 </button>
             </div>
-
             <div class="api-explain-box">
                 <p>
-                    <strong>API (Application Programming Interface)</strong> — это «цифровой мост» или официант в ресторане. 
-                    Наш сайт не содержит внутри себя гигантскую нейросеть, а отправляет ваш запрос к мощным серверам ИИ и получает готовый ответ за секунды.
+                    <strong>API (Application Programming Interface)</strong> — это «цифровой мост».
+                    Наш сайт не содержит внутри себя гигантскую нейросеть, а отправляет ваш запрос к серверам ИИ и получает готовый ответ.
                 </p>
-
                 <div class="api-card-section">
                     <h4>
                         <span class="material-symbols-rounded" style="font-size:18px;">smart_toy</span>
                         OpenAI API (ChatGPT)
                     </h4>
                     <p style="margin:0; font-size:0.88rem; color:var(--text-muted);">
-                        Использует секретные ключи формата <span class="code-inline">sk-proj-...</span>. Ключ связывает ваше приложение напрямую с моделями GPT-4o или GPT-3.5, позволяя генерировать тексты и слайды без посещения веб-сайта ChatGPT.
+                        Ключи формата <span class="code-inline">sk-proj-...</span>. Связывают приложение с моделями GPT без сайта ChatGPT.
                     </p>
                 </div>
-
                 <div class="api-card-section">
                     <h4>
                         <span class="material-symbols-rounded" style="font-size:18px;">cloud_sync</span>
-                        Google API & Google Apps Script (GAS)
+                        Google Gemini API
                     </h4>
                     <p style="margin:0; font-size:0.88rem; color:var(--text-muted);">
-                        Google позволяет подключаться к <strong>Gemini API</strong> через ключ Google AI Studio или использовать бесплатный шлюз <strong>Google Apps Script (Webhooks)</strong>. Это даёт возможность автоматически связывать презентации, формы и таблицы с вашим Google Диском.
+                        Ключ из <strong>Google AI Studio</strong> подключает WorkGens к Gemini. Ключи хранятся только в вашем браузере.
                     </p>
                 </div>
-
                 <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom:0;">
-                    💡 <em>API-ключи хранятся исключительно в памяти вашего браузера и никогда не передаются посторонним лицам.</em>
+                    💡 <em>API-ключи не передаются на наши серверы.</em>
                 </p>
             </div>
         </div>
     </div>
 
+    <!-- Модалка «Таблицы на обслуживании» -->
+    <div id="sheets-block-modal" class="modal-overlay">
+        <div class="modal-card" style="max-width: 420px; text-align: center;">
+            <div class="modal-header" style="justify-content:center;">
+                <h3 style="justify-content:center;">
+                    <span class="material-symbols-rounded" style="color:var(--maint-text);">construction</span>
+                    Таблицы на обслуживании
+                </h3>
+            </div>
+            <p style="color:var(--text-muted); font-size:0.95rem; line-height:1.5; margin-bottom:8px;">
+                Сейчас идут критические исправления. Доступ временно закрыт примерно на <strong>2–3 дня</strong>.
+            </p>
+            <p id="sheets-modal-countdown" class="maint-countdown" style="margin-bottom:20px;"></p>
+            <button type="button" class="info-link-btn" onclick="closeModal('sheets-block-modal')" style="margin-top:0;">
+                Понятно
+            </button>
+        </div>
+    </div>
+
     <script>
+        /* ===== Обслуживание Таблиц: ~3 дня с 21.09.2026 ===== */
+        // Конец блокировки: 24 сентября 2026, 18:00 CEST (UTC+2 ≈ 16:00 UTC)
+        const SHEETS_UNLOCK_AT = Date.UTC(2026, 8, 24, 16, 0, 0); // month 0-based: 8 = September
+
+        function isSheetsLocked() {
+            return Date.now() < SHEETS_UNLOCK_AT;
+        }
+
+        function formatRemaining(ms) {
+            if (ms <= 0) return 'доступ открыт';
+            const s = Math.floor(ms / 1000);
+            const d = Math.floor(s / 86400);
+            const h = Math.floor((s % 86400) / 3600);
+            const m = Math.floor((s % 3600) / 60);
+            if (d > 0) return d + ' дн. ' + h + ' ч.';
+            if (h > 0) return h + ' ч. ' + m + ' мин.';
+            return m + ' мин.';
+        }
+
+        function updateSheetsUI() {
+            const locked = isSheetsLocked();
+            const card = document.getElementById('sheets-card');
+            const banner = document.getElementById('sheets-maint-banner');
+            const cd = document.getElementById('sheets-maint-countdown');
+            const modalCd = document.getElementById('sheets-modal-countdown');
+            const rem = SHEETS_UNLOCK_AT - Date.now();
+
+            if (!locked) {
+                if (card) {
+                    card.classList.remove('disabled');
+                    card.removeAttribute('aria-disabled');
+                    card.onclick = function (e) {
+                        navigateWithAnimation(e, './spreadsheets/', 'Таблицы', 'table_chart', '#10b981');
+                    };
+                    const badge = card.querySelector('.lock-badge');
+                    if (badge) badge.remove();
+                    const action = card.querySelector('.card-action');
+                    if (action) {
+                        action.innerHTML = 'Открыть <span class="material-symbols-rounded" style="font-size:16px;">arrow_forward</span>';
+                    }
+                }
+                if (banner) banner.classList.add('hidden');
+                return;
+            }
+
+            if (cd) cd.textContent = 'Осталось примерно: ' + formatRemaining(rem);
+            if (modalCd) modalCd.textContent = 'Осталось: ' + formatRemaining(rem);
+            if (banner) banner.classList.remove('hidden');
+        }
+
+        function blockSheets(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            if (!isSheetsLocked()) {
+                navigateWithAnimation(event, './spreadsheets/', 'Таблицы', 'table_chart', '#10b981');
+                return false;
+            }
+            openModal('sheets-block-modal');
+            return false;
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const isNoticeDismissed = localStorage.getItem('repo_rename_notice_dismissed');
             if (!isNoticeDismissed) {
                 document.getElementById('repo-notice').classList.remove('hidden');
             }
-
             initTheme();
+            updateSheetsUI();
+            setInterval(updateSheetsUI, 60000);
         });
 
         function dismissNotice() {
@@ -751,11 +856,9 @@
         function openModal(id) {
             document.getElementById(id).classList.add('active');
         }
-
         function closeModal(id) {
             document.getElementById(id).classList.remove('active');
         }
-
         function openApiInfo() {
             closeModal('settings-modal');
             openModal('api-info-modal');
@@ -763,22 +866,16 @@
 
         function navigateWithAnimation(event, url, title, iconName, color) {
             event.preventDefault();
-
             const overlay = document.getElementById('transition-overlay');
             const iconEl = document.getElementById('loader-icon');
             const textEl = document.getElementById('loader-text');
             const previewCard = document.getElementById('loader-preview');
-
             iconEl.innerText = iconName;
             iconEl.style.color = color;
             previewCard.style.borderColor = color;
-            textEl.innerText = `Загрузка «${title}»...`;
-
+            textEl.innerText = 'Загрузка «' + title + '»...';
             overlay.classList.add('active');
-
-            setTimeout(() => {
-                window.location.href = url;
-            }, 300);
+            setTimeout(() => { window.location.href = url; }, 300);
         }
 
         document.querySelectorAll('.modal-overlay').forEach(overlay => {
@@ -795,7 +892,6 @@
         function applyTheme(theme) {
             const body = document.body;
             document.querySelectorAll('.theme-btn').forEach(btn => btn.classList.remove('active'));
-
             if (theme === 'light') {
                 body.classList.add('light-theme');
                 document.getElementById('theme-light').classList.add('active');
@@ -815,6 +911,14 @@
         function initTheme() {
             const savedTheme = localStorage.getItem('app_theme') || 'system';
             applyTheme(savedTheme);
+        }
+
+        if (window.matchMedia) {
+            window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
+                if ((localStorage.getItem('app_theme') || 'system') === 'system') {
+                    applyTheme('system');
+                }
+            });
         }
     </script>
 </body>
