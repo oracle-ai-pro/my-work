@@ -52,6 +52,24 @@
 </head>
 <body>
 
+    
+    <!-- Бургер для тем (мобилка) -->
+    <button id="theme-burger-btn" class="theme-burger-btn hidden" onclick="toggleThemeSidebar()" title="Темы">
+        <span class="material-symbols-rounded">menu</span>
+    </button>
+
+    <!-- Боковое меню тем (ученик + превью админа) -->
+    <aside id="theme-sidebar" class="theme-sidebar hidden">
+        <div class="theme-sidebar-header">
+            <h3>Темы</h3>
+            <button class="tools-icon-btn" onclick="toggleThemeSidebar(false)" title="Закрыть">
+                <span class="material-symbols-rounded">close</span>
+            </button>
+        </div>
+        <div id="theme-sidebar-list" class="theme-sidebar-list"></div>
+    </aside>
+    <div id="theme-sidebar-overlay" class="theme-sidebar-overlay hidden" onclick="toggleThemeSidebar(false)"></div>
+
     <div class="container">
         <!-- ВЕРХНЯЯ ПАНЕЛЬ С ВКЛАДКАМИ И МЕНЮ -->
         <div class="forms-toolbar-container">
@@ -61,6 +79,7 @@
                 <span class="material-symbols-rounded select-icon">unfold_more</span>
             </div>
 
+            
             <!-- 2. Классические вкладки -->
             <div class="forms-tabs-list" id="forms-tabs-list"></div>
 
@@ -68,12 +87,10 @@
                 <span class="material-symbols-rounded">add</span>
             </button>
 
-            <!-- КНОПКА ПЕРЕХОДА В WORKGENS AI -->
             <button class="tools-btn" onclick="window.location.href='../WorkGens/index.html'" title="ИИ Помощник WorkGens">
                 <img src="ai.png" alt="AI" style="width:20px; height:20px; object-fit:contain;">
             </button>
             
-            <!-- Выпадающее меню опций -->
             <div class="tools-dropdown">
                 <button class="tools-btn" onclick="toggleToolsMenu()" title="Меню">
                     <span class="material-symbols-rounded">more_vert</span>
@@ -95,8 +112,6 @@
                     <div class="tools-item" onclick="window.location.href='index_old.html'; toggleToolsMenu();">
                         <span class="material-symbols-rounded">history</span> Загрузить Legacy
                     </div>
-                    
-                    <!-- НАШИ СЕРВИСЫ -->
                     <div style="padding: 6px 15px 2px 15px; font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
                         Наши Сервисы
                     </div>
@@ -126,7 +141,7 @@
             <span id="hint-text"></span>
         </div>
 
-        <!-- 1. ЭКРАН ТЕСТИРОВАНИЯ (QUIZ SCREEN) -->
+        <!-- 1. ЭКРАН ТЕСТИРОВАНИЯ -->
         <div id="quiz-screen" class="quiz-container">
             <div id="quiz-box" class="gcard">
                 <div class="quiz-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
@@ -141,18 +156,13 @@
                         <span id="timer-seconds">0</span>s
                     </div>
                 </div>
-
                 <div class="progress-bar">
                     <div id="progress" class="progress-fill"></div>
                 </div>
-
-                <!-- ТЕЛО ВОПРОСА -->
                 <div id="question-body" style="margin-top:20px;"></div>
-
                 <button id="next-btn" class="btn" onclick="nextStep()" style="margin-top:20px; width:100%;">Далее</button>
             </div>
 
-            <!-- РЕЗУЛЬТАТЫ -->
             <div id="result-box" class="result-card gcard hidden">
                 <h2 style="display:flex; align-items:center; justify-content:center; gap:8px;">
                     <span class="material-symbols-rounded" style="color:var(--accent-color); font-size:32px;">emoji_events</span> 
@@ -160,29 +170,36 @@
                 </h2>
                 <p style="color:var(--text-muted); margin:10px 0 5px 0; text-align:center;">Ваш результат:</p>
                 <div id="final-score" class="score" style="font-size:2rem; font-weight:700; margin-bottom:20px; text-align:center;">0 / 0</div>
-                
                 <div id="review-box" class="review-container"></div>
-
                 <button class="btn" onclick="restartQuiz()" style="margin-top:20px; width:100%;">Пройти заново</button>
+            </div>
+
+            <div id="theme-complete-box" class="result-card gcard hidden">
+                <h2 style="display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <span class="material-symbols-rounded" style="color:var(--accent-color); font-size:32px;">check_circle</span>
+                    Вы прошли тему
+                </h2>
+                <p id="theme-complete-title" style="text-align:center; font-size:1.2rem; font-weight:600; margin:12px 0;"></p>
+                <p id="theme-complete-desc" style="color:var(--text-muted); text-align:center; margin-bottom:20px;"></p>
+                <button class="btn" id="theme-next-btn" onclick="goToNextTheme()" style="width:100%; margin-bottom:10px;">Следующая тема</button>
+                <button class="btn" onclick="showThemeResults()" style="width:100%; background:transparent; color:var(--text-color); border:1px solid var(--border-color);">К результатам</button>
             </div>
         </div>
 
-        <!-- 2. ЭКРАН ВХОДА В АДМИНКУ (LOGIN SCREEN) -->
-        <div id="login-screen" class="quiz-container gcard hidden">
-            <h2 style="text-align:center; margin-bottom:20px; display:flex; align-items:center; justify-content:center; gap:8px;">
-                <span class="material-symbols-rounded">lock</span> Вход для администратора
-            </h2>
-            <input type="text" id="login-user" class="admin-input" placeholder="Логин (admin)">
-            <input type="password" id="login-pass" class="admin-input" placeholder="Пароль (1234)">
-            <button class="btn" onclick="tryLogin()" style="width:100%;">Войти</button>
-            <button class="btn" onclick="logout()" style="margin-top:10px; width:100%; background:transparent; color:var(--text-color); border:1px solid var(--border-color);">Назад к тесту</button>
-        </div>
-
-        <!-- 3. ПАНЕЛЬ АДМИНИСТРАТОРА (ADMIN SCREEN) -->
+<!-- 3. ПАНЕЛЬ АДМИНИСТРАТОРА (ADMIN SCREEN) -->
         <div id="admin-screen" class="admin-box hidden">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                 <h2 style="margin:0;">Редактор вопросов</h2>
                 <button onclick="logout()" class="btn" style="width:auto; padding:8px 16px; margin:0; background:transparent; color:var(--text-color); border:1px solid var(--border-color);">Выйти</button>
+            </div>
+
+
+            <!-- Вкладки тем (админка) -->
+            <div id="admin-themes-bar" class="admin-themes-bar hidden">
+                <div id="admin-themes-list" class="admin-themes-list"></div>
+                <button class="btn btn-ghost" onclick="openCreateThemeModal()" style="width:auto; padding:8px 12px; font-size:13px;">
+                    <span class="material-symbols-rounded" style="font-size:18px;">add</span> Тема
+                </button>
             </div>
 
             <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
@@ -273,6 +290,14 @@
                         </span>
                         <span class="switch-text">Разрешить пользователю форматирование (B, I, U)</span>
                     </label>
+
+                    <label class="switch-label" style="margin-top: 10px;">
+                        <span class="switch">
+                            <input type="checkbox" id="new-side-notes">
+                            <span class="slider liquid-slider"></span>
+                        </span>
+                        <span class="switch-text">Side Notes (боковые заметки рядом с ответом)</span>
+                    </label>
                 </div>
 
                 <!-- Ответ для карточек -->
@@ -328,6 +353,28 @@
 
                             <label style="font-size:13px; color:var(--text-muted); display:block; margin-top: 10px; margin-bottom:4px;">Удерживать кнопку 'Продолжить' (таймер в сек, 0 — без удержания):</label>
                             <input type="number" id="questionHoldTimer" class="admin-input" value="0" min="0">
+                        </div>
+                    </div>
+
+                    <!-- Объяснения под верным / неверным ответом -->
+                    <div class="admin-answer-explanations">
+                        <label class="switch-label">
+                            <span class="switch">
+                                <input type="checkbox" id="questionHasAnswerExplanations" onchange="toggleAnswerExplanationsFields(this)">
+                                <span class="slider"></span>
+                            </span>
+                            <span class="switch-text">Объяснение под верным и неверным ответом</span>
+                        </label>
+
+                        <div id="answerExplanationsContainer" style="display: none; margin-top: 15px; margin-left: 50px; background: var(--bg-color); padding: 12px; border-radius: 8px;">
+                            <p style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">Укажите объяснение для правильного варианта и (опционально) для каждого неправильного по индексу.</p>
+                            
+                            <label style="font-size:13px; color:var(--text-muted); display:block; margin-bottom:4px;">Объяснение при <strong style="color:#2e7d32;">верном</strong> ответе:</label>
+                            <textarea id="answerExpCorrect" class="admin-input" placeholder="Верно! Потому что..." style="min-height:60px;"></textarea>
+
+                            <label style="font-size:13px; color:var(--text-muted); display:block; margin-top:10px; margin-bottom:4px;">Объяснения для <strong style="color:#d32f2f;">неверных</strong> (по индексу):</label>
+                            <textarea id="answerExpIncorrect" class="admin-input" placeholder="0: Неверно, потому что... | 1: Этот вариант ошибочен..." style="min-height:80px;"></textarea>
+                            <p style="font-size:11px; color:var(--text-muted); margin-top:4px;">Формат: индекс: текст | индекс: текст</p>
                         </div>
                     </div>
 
@@ -509,6 +556,13 @@
                 <input type="number" id="fs-default-points" class="admin-input" value="10">
             </div>
 
+
+            <h4 style="margin: 15px 0 10px;">Темы</h4>
+            <label class="switch-label" style="margin-bottom: 12px;">
+                <span class="switch"><input type="checkbox" id="fs-lock-themes"><span class="slider liquid-slider"></span></span>
+                <span class="switch-text">Не пускать в следующую тему, пока не пройдёшь текущую</span>
+            </label>
+
             <h4 style="margin-bottom: 10px;">Обычные вопросы</h4>
             <label class="switch-label">
                 <span class="switch"><input type="checkbox" id="fs-default-required"><span class="slider liquid-slider"></span></span>
@@ -546,6 +600,160 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    
+    <!-- МОДАЛКА СОЗДАНИЯ / РЕДАКТИРОВАНИЯ ТЕМЫ -->
+    <div id="theme-modal" class="custom-alert-overlay">
+        <div class="custom-alert-card" style="max-width:440px; text-align:left;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <h3 id="theme-modal-title" style="margin:0;">Новая тема</h3>
+                <button onclick="closeThemeModal()" style="background:transparent; border:none; cursor:pointer; color:var(--text-color); display:flex;">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+            <label style="font-size:13px; color:var(--text-muted);">Название</label>
+            <input type="text" id="theme-title-input" class="admin-input" placeholder="Например: Алгебра">
+            <label style="font-size:13px; color:var(--text-muted);">Краткое описание</label>
+            <input type="text" id="theme-desc-input" class="admin-input" placeholder="О чём эта тема...">
+            <label style="font-size:13px; color:var(--text-muted);">Иконка</label>
+            <div style="display:flex; gap:8px; align-items:center; margin-bottom:12px;">
+                <button type="button" class="btn btn-ghost" onclick="openIconPicker()" style="padding:8px 12px;">
+                    <span class="material-symbols-rounded" id="theme-icon-preview">school</span>
+                    <span style="font-size:13px;">Icon</span>
+                </button>
+                <span id="theme-icon-name" style="font-size:12px; color:var(--text-muted);">school</span>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn" onclick="saveThemeModal()" style="flex:1;">Сохранить</button>
+                <button class="btn btn-ghost" onclick="closeThemeModal()" style="flex:1;">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ВЫБОР ИКОНКИ -->
+    <div id="icon-picker-modal" class="custom-alert-overlay">
+        <div class="custom-alert-card" style="max-width:480px; text-align:left;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <h3 style="margin:0;">Выбор иконки</h3>
+                <button onclick="closeIconPicker()" style="background:transparent; border:none; cursor:pointer; color:var(--text-color); display:flex;">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+            <div id="icon-picker-grid" class="icon-picker-grid"></div>
+        </div>
+    </div>
+
+    <!-- 2. МОДАЛКА ВХОДА В АДМИНКУ -->
+        <div id="login-screen" class="custom-alert-overlay hidden">
+            <div class="custom-alert-card" style="max-width:400px; text-align:left;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                    <h3 style="margin:0; display:flex; align-items:center; gap:8px;">
+                        <span class="material-symbols-rounded" style="color:var(--accent-color);">lock</span>
+                        Вход для администратора
+                    </h3>
+                    <button onclick="closeLoginModal()" style="background:transparent; border:none; cursor:pointer; color:var(--text-color); display:flex;">
+                        <span class="material-symbols-rounded">close</span>
+                    </button>
+                </div>
+                <input type="text" id="login-user" class="admin-input" placeholder="Логин (admin)" autocomplete="username">
+                <input type="password" id="login-pass" class="admin-input" placeholder="Пароль (1234)" autocomplete="current-password">
+                <button class="btn" onclick="tryLogin()" style="width:100%;">Войти</button>
+                <button class="btn" onclick="closeLoginModal()" style="margin-top:10px; width:100%; background:transparent; color:var(--text-color); border:1px solid var(--border-color);">Отмена</button>
+            </div>
+        </div>
+
+        
+
+    <!-- МОДАЛКА: ПОДЕЛИТЬСЯ -->
+    <div id="share-modal" class="custom-alert-overlay">
+        <div class="custom-alert-card share-modal-card" style="max-width:480px; text-align:left;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <h3 style="margin:0; display:flex; align-items:center; gap:8px;">
+                    <span class="material-symbols-rounded" style="color:var(--accent-color);">share</span>
+                    Поделиться формой
+                </h3>
+                <button onclick="closeShareModal()" style="background:transparent; border:none; cursor:pointer; color:var(--text-color); display:flex;">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+
+            <label class="share-section-label">Режим при открытии ссылки</label>
+            <div class="share-mode-grid" id="share-mode-grid">
+                <button type="button" class="share-mode-btn active" data-mode="test" onclick="setShareMode('test')">
+                    <span class="material-symbols-rounded">quiz</span>
+                    <span>Test</span>
+                </button>
+                <button type="button" class="share-mode-btn" data-mode="learn" onclick="setShareMode('learn')">
+                    <span class="material-symbols-rounded">school</span>
+                    <span>Learn</span>
+                </button>
+                <button type="button" class="share-mode-btn" data-mode="flashcards" onclick="setShareMode('flashcards')">
+                    <span class="material-symbols-rounded">style</span>
+                    <span>FlashCards</span>
+                </button>
+                <button type="button" class="share-mode-btn disabled" data-mode="live" disabled title="В разработке">
+                    <span class="material-symbols-rounded">groups</span>
+                    <span>Live</span>
+                    <small>скоро</small>
+                </button>
+            </div>
+
+            <label class="share-section-label" style="margin-top:16px;">Доступ</label>
+            <div class="share-access-list">
+                <label class="share-radio">
+                    <input type="radio" name="share-access" value="link" checked onchange="setShareAccess('link')">
+                    <div>
+                        <strong>По ссылке</strong>
+                        <small>Только у кого есть ссылка</small>
+                    </div>
+                </label>
+                <label class="share-radio">
+                    <input type="radio" name="share-access" value="open" onchange="setShareAccess('open')">
+                    <div>
+                        <strong>Открытый доступ</strong>
+                        <small>В каталоге (нужен сервер — позже)</small>
+                    </div>
+                </label>
+                <label class="share-radio">
+                    <input type="radio" name="share-access" value="restrict" onchange="setShareAccess('restrict')">
+                    <div>
+                        <strong>Ограничить доступ</strong>
+                        <small>Ссылка перестанет работать</small>
+                    </div>
+                </label>
+            </div>
+
+            <label class="share-section-label" style="margin-top:16px;">Срок действия ссылки</label>
+            <div class="custom-select-wrapper" style="margin-bottom:4px;">
+                <select id="share-expiry-select" class="admin-input" onchange="updateShareLinkPreview()">
+                    <option value="7">7 дней</option>
+                    <option value="14">14 дней</option>
+                    <option value="21">21 день</option>
+                    <option value="30">1 месяц</option>
+                    <option value="60">2 месяца</option>
+                    <option value="150">5 месяцев</option>
+                    <option value="365">1 год</option>
+                    <option value="730">2 года</option>
+                    <option value="0">Бессрочно</option>
+                </select>
+                <span class="material-symbols-rounded select-icon">expand_more</span>
+            </div>
+
+            <label class="share-section-label" style="margin-top:16px;">Ссылка</label>
+            <div class="share-link-box">
+                <input type="text" id="share-link-input" class="admin-input" readonly style="margin:0; font-size:12px;">
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:18px;">
+                <button class="btn" onclick="copyShareLink()" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px;">
+                    <span class="material-symbols-rounded" style="font-size:18px;">content_copy</span>
+                    Копировать ссылку
+                </button>
+                <button class="btn btn-ghost" onclick="closeShareModal()" style="flex:0.55;">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+
+<script src="script.js"></script>
 </body>
 </html>
