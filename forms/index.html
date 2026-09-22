@@ -61,7 +61,7 @@
     <!-- Боковое меню тем (ученик + превью админа) -->
     <aside id="theme-sidebar" class="theme-sidebar hidden">
         <div class="theme-sidebar-header">
-            <h3>Темы</h3>
+            <h3>Темы <span class="novelty-badge">НОВИНКА</span></h3>
             <button class="tools-icon-btn" onclick="toggleThemeSidebar(false)" title="Закрыть">
                 <span class="material-symbols-rounded">close</span>
             </button>
@@ -197,8 +197,9 @@
             <!-- Вкладки тем (админка) -->
             <div id="admin-themes-bar" class="admin-themes-bar hidden">
                 <div id="admin-themes-list" class="admin-themes-list"></div>
-                <button class="btn btn-ghost" onclick="openCreateThemeModal()" style="width:auto; padding:8px 12px; font-size:13px;">
+                <button class="btn btn-ghost" onclick="openCreateThemeModal()" style="width:auto; padding:8px 12px; font-size:13px; position:relative;">
                     <span class="material-symbols-rounded" style="font-size:18px;">add</span> Тема
+                    <span class="novelty-badge" style="margin-left:4px;">НОВИНКА</span>
                 </button>
             </div>
 
@@ -206,6 +207,10 @@
                 <button onclick="toggleAddQuestionForm()" class="btn" style="width:auto; flex-grow:1;"><span class="material-symbols-rounded" style="font-size:32px;">add</span></button>
                 <button onclick="exportFormToJSON()" class="btn" style="width:auto; background:transparent; color:var(--text-color); border:1px solid var(--border-color);" title="Экспорт формы"><span class="material-symbols-rounded" style="color:var(--accent-color); font-size:32px;">upload</span></button>
                 <button onclick="document.getElementById('import-file').click()" class="btn" style="width:auto; background:transparent; color:var(--text-color); border:1px solid var(--border-color);" title="Импорт формы"><span class="material-symbols-rounded" style="color:var(--accent-color); font-size:32px;">download</span></button>
+                <button onclick="openFormPreview()" class="btn preview-form-btn" style="width:auto; background:transparent; color:var(--text-color); border:1px solid var(--border-color); position:relative;" title="Протестировать всю форму">
+                    <span class="material-symbols-rounded" style="color:var(--accent-color); font-size:32px;">play_circle</span>
+                    <span class="novelty-badge novelty-badge-abs">NEW</span>
+                </button>
                 <!-- Добавленная кнопка "Настройка Форм" -->
                 <button onclick="openFormSettings()" class="btn" style="width:auto; background:transparent; color:var(--text-color); border:1px solid var(--border-color);" title="Настройки формы"><span class="material-symbols-rounded" style="color:var(--accent-color); font-size:32px;">tune</span></button>
                 <input type="file" id="import-file" style="display:none;" onchange="importFormFromJSON(this)" accept=".json">
@@ -516,9 +521,14 @@
     </div>
 
     <!-- МОДАЛЬНОЕ ОКНО: НАСТРОЕК ФОРМЫ -->
-    <div id="form-settings-modal" class="custom-alert-overlay">
+    <div id="form-settings-modal" class="custom-alert-overlay" onclick="if(event.target===this)closeFormSettings()">
         <div class="custom-alert-card" style="max-width: 500px; text-align: left;">
-            <h3 style="margin-bottom: 15px; color: var(--accent-color);">Настройки Формы</h3>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3 style="margin:0; color: var(--accent-color);">Настройки Формы</h3>
+                <button type="button" onclick="closeFormSettings()" style="background:transparent; border:none; cursor:pointer; color:var(--text-color); display:flex;">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
             
             <label class="switch-label" style="margin-bottom: 15px;">
                 <span class="switch">
@@ -554,6 +564,9 @@
                 
                 <label style="font-size:13px; color:var(--text-muted);">Макс. балл за вопрос по умолчанию:</label>
                 <input type="number" id="fs-default-points" class="admin-input" value="10">
+
+                <label style="font-size:13px; color:var(--text-muted); margin-top:8px; display:block;">Email преподавателя (для связи):</label>
+                <input type="email" id="fs-teacher-email" class="admin-input" placeholder="teacher@example.com">
             </div>
 
 
@@ -585,6 +598,18 @@
                 </button>
             </div>
             
+            <p id="auth-form-hint" style="font-size:13px; color:var(--text-muted); margin:0 0 12px;"></p>
+
+            <div class="auth-security-warning">
+                <span class="material-symbols-rounded">warning</span>
+                <div>
+                    <strong>Важно</strong>
+                    <p>Если вы меняете логин и/или пароль, они сохраняются <b>внутри JSON этой формы</b> при скачивании. Не отправляйте файл формы незнакомцам — иначе они смогут войти в админку.</p>
+                    <p>Логин и пароль действуют <b>только для текущей формы</b>, не для всех сразу.</p>
+                    <p style="margin-bottom:0;">Режим открытого доступа может быть ограничен, пока не вернёте прежние данные: логин <code>admin</code>, пароль <code>1234</code> (значения по умолчанию).</p>
+                </div>
+            </div>
+
             <form onsubmit="saveAuthChange(event)">
                 <label style="font-size:13px; color:var(--text-muted); display:block; margin-bottom:4px;">Новый логин:</label>
                 <input type="text" id="newAdminLogin" class="admin-input" placeholder="Введите логин..." required>
