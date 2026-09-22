@@ -14,6 +14,9 @@ let editingQuestionIndex = null;
 let isExplanationShowing = false;
 let userEmail = '';
 let flashcardStats = { know: 0, dontKnow: 0 };
+let previewMode = null; // null | { type: 'form'|'question', formIndex, questionIndex?, token }
+const PREVIEW_TOKEN_KEY = 'my_forms_preview_tokens';
+
 let currentThemeId = null;
 let currentRealQuestionIndex = 0;
 let editingThemeId = null;
@@ -66,10 +69,14 @@ const defaultForm = {
 document.addEventListener('DOMContentLoaded', () => {
     loadFormsFromStorage();
     applyShareParamsFromUrl();
+    var enteredPreview = applyPreviewFromUrl();
     initSettings();
-    renderAllFormsUI();
-    loadCurrentForm();
-    checkOldDataMigration();
+    if (!enteredPreview) {
+        renderAllFormsUI();
+        loadCurrentForm();
+        checkOldDataMigration();
+    }
+    try { enhanceAllSelects(document); } catch (e) { console.warn('enhanceAllSelects', e); }
 
     // Предзагрузка голосов TTS
     if (window.speechSynthesis) {
@@ -183,7 +190,10 @@ function setRadius(radiusName, save = true) {
 
 function openSettingsModal() {
     const modal = document.getElementById('settings-modal');
-    if (modal) modal.classList.add('active');
+    if (modal) {
+        try { enhanceAllSelects(modal); } catch (e) {}
+        modal.classList.add('active');
+    }
 }
 
 function closeSettingsModal() {
@@ -235,7 +245,12 @@ function showAlert(message, icon = 'info') {
     
     if (alertMsg) alertMsg.textContent = message;
     if (alertIcon) alertIcon.textContent = icon;
-    if (alertModal) alertModal.classList.add('active');
+    if (alertModal) {
+        // поверх всех модалок и сайдбаров
+        alertModal.style.zIndex = '40000';
+        alertModal.classList.add('active');
+        try { document.body.appendChild(alertModal); } catch (e) {}
+    }
 }
 
 function closeAlert() {
@@ -261,6 +276,8 @@ function showConfirm(title, text, onConfirm) {
         </div>
     `;
 
+    alertModal.style.zIndex = '40000';
+    try { document.body.appendChild(alertModal); } catch (e) {}
     alertModal.classList.add('active');
 
     const restoreAndClose = () => {
@@ -353,6 +370,7 @@ function switchFormFromSelect(index) { switchForm(index); }
    4. РЕНДЕР ВКЛАДОК И ВЫБОР ФОРМ
    ========================================== */
 function getFormMode(form) {
+    if (previewMode) return 'learn';
     return (form && form.mode) ? form.mode : 'test';
 }
 
@@ -452,6 +470,23 @@ function renderAllFormsUI() {
             listEl.appendChild(tab);
         }
     });
+
+    // обновить кастомный select после пересборки option
+    try {
+        var fs = document.getElementById('forms-tabs-select');
+        if (fs) {
+            if (fs.dataset.cselectDone === '1') {
+                // пересоздать UI
+                var old = fs.nextElementSibling;
+                if (old && old.classList.contains('cselect')) old.remove();
+                fs.dataset.cselectDone = '0';
+                fs.classList.remove('cselect-native-hidden');
+                fs.removeAttribute('aria-hidden');
+                fs.tabIndex = 0;
+            }
+            enhanceNativeSelect(fs);
+        }
+    } catch (e) { console.warn(e); }
 }
 
 function renameForm(index, event) {
@@ -587,79 +622,128 @@ function getFlashcardAnswerText(q) {
 
 function renderFlashcardMode() {
     const form = allForms[currentFormIndex];
-    const q = form.questions[currentQuestionIndex];
+    var _active = resolveActiveQuestion();
+    const q = _active.q;
+    const total = _active.activeCount || ((form && form.questions) ? form.questions.length : 0);
+    currentRealQuestionIndex = _active.realIdx;
+
     const nextBtn = document.getElementById('next-btn');
     if (nextBtn) nextBtn.classList.add('hidden');
 
+    if (!q) {
+        document.getElementById('question-body').innerHTML = '<p style="text-align:center;color:var(--text-muted);">Нет вопросов для карточек.</p>';
+        return;
+    }
+
     document.getElementById('current-number').textContent = currentQuestionIndex + 1;
-    document.getElementById('total-number').textContent = form.questions.length;
-    document.getElementById('progress').style.width = `${((currentQuestionIndex + 1) / form.questions.length) * 100}%`;
+    document.getElementById('total-number').textContent = total;
+    document.getElementById('progress').style.width = (total ? ((currentQuestionIndex + 1) / total) * 100 : 0) + '%';
     document.getElementById('timer-display').classList.add('hidden');
     document.getElementById('hint-btn').classList.add('hidden');
     document.getElementById('hint-box').classList.add('hidden');
 
     const answerText = getFlashcardAnswerText(q);
     const body = document.getElementById('question-body');
+    const optsHtml = q.options
+        ? '<div style="margin-top:12px; text-align:left; font-size:14px;">' + q.options.map(function(o) { return '<div>• ' + escapeHtml(String(o)) + '</div>'; }).join('') + '</div>'
+        : '';
 
-    body.innerHTML = `
-        <div style="text-align:center; margin-bottom:8px; font-size:13px; color:var(--text-muted);">
-            FlashCards • ${q.type} &nbsp;|&nbsp; ✓ ${flashcardStats.know} &nbsp; ✗ ${flashcardStats.dontKnow}
-        </div>
-        <div class="flashcard-container" id="fc-card" onclick="this.classList.toggle('flipped')" style="min-height:240px;">
-            <div class="flashcard-inner">
-                <div class="flashcard-side flashcard-front">
-                    <span class="material-symbols-rounded" style="font-size:28px; color:var(--accent-color); margin-bottom:8px;">style</span>
-                    <p style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">Нажмите, чтобы перевернуть</p>
-                    <p style="font-size:17px; font-weight:600; margin:0; line-height:1.4;">${q.title}</p>
-                    ${q.description ? `<p style="font-size:13px; color:var(--text-muted); margin-top:10px;">${q.description}</p>` : ''}
-                    ${q.options ? `<div style="margin-top:12px; text-align:left; font-size:14px;">${q.options.map(o => `<div>• ${o}</div>`).join('')}</div>` : ''}
-                </div>
-                <div class="flashcard-side flashcard-back">
-                    <span class="material-symbols-rounded" style="font-size:28px; color:var(--accent-color); margin-bottom:8px;">lightbulb</span>
-                    <p style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">Ответ</p>
-                    <p style="font-size:16px; font-weight:500; margin:0; line-height:1.45;">${answerText}</p>
-                </div>
-            </div>
-        </div>
-        <div style="display:flex; gap:12px; margin-top:20px;">
-            <button class="btn" onclick="flashcardDontKnow()" style="flex:1; background:transparent; color:var(--text-color); border:1px solid var(--border-color); display:flex; align-items:center; justify-content:center; gap:6px;">
-                <span class="material-symbols-rounded">arrow_back</span> Не знаю
-            </button>
-            <button class="btn" onclick="flashcardKnow()" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px;">
-                Знаю <span class="material-symbols-rounded">arrow_forward</span>
-            </button>
-        </div>
-    `;
+    body.innerHTML =
+        '<div style="text-align:center; margin-bottom:8px; font-size:13px; color:var(--text-muted);">' +
+            'FlashCards • ' + escapeHtml(q.type || '') + ' &nbsp;|&nbsp; ✓ ' + flashcardStats.know + ' &nbsp; ✗ ' + flashcardStats.dontKnow +
+        '</div>' +
+        '<div class="flashcard-container" id="fc-card" onclick="this.classList.toggle(\'flipped\')" style="min-height:240px;">' +
+            '<div class="flashcard-inner">' +
+                '<div class="flashcard-side flashcard-front">' +
+                    '<span class="material-symbols-rounded" style="font-size:28px; color:var(--accent-color); margin-bottom:8px;">style</span>' +
+                    '<p style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">Пробел или касание — перевернуть</p>' +
+                    '<p style="font-size:17px; font-weight:600; margin:0; line-height:1.4;">' + escapeHtml(q.title || '') + '</p>' +
+                    (q.description ? '<p style="font-size:13px; color:var(--text-muted); margin-top:10px;">' + escapeHtml(q.description) + '</p>' : '') +
+                    optsHtml +
+                '</div>' +
+                '<div class="flashcard-side flashcard-back">' +
+                    '<span class="material-symbols-rounded" style="font-size:28px; color:var(--accent-color); margin-bottom:8px;">lightbulb</span>' +
+                    '<p style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">Ответ</p>' +
+                    '<p style="font-size:16px; font-weight:500; margin:0; line-height:1.45;">' + escapeHtml(answerText) + '</p>' +
+                '</div>' +
+            '</div>' +
+        '</div>' +
+        '<div style="display:flex; gap:12px; margin-top:20px;">' +
+            '<button type="button" class="btn" id="fc-btn-dontknow" onclick="flashcardDontKnow()" style="flex:1; background:transparent; color:var(--text-color); border:1px solid var(--border-color); display:flex; align-items:center; justify-content:center; gap:6px;">' +
+                '<span class="material-symbols-rounded">arrow_back</span> Не знаю <kbd class="fc-kbd">←</kbd>' +
+            '</button>' +
+            '<button type="button" class="btn" id="fc-btn-know" onclick="flashcardKnow()" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px;">' +
+                'Знаю <kbd class="fc-kbd">→</kbd> <span class="material-symbols-rounded">arrow_forward</span>' +
+            '</button>' +
+        '</div>' +
+        '<p style="text-align:center; font-size:12px; color:var(--text-muted); margin-top:12px;">' +
+            '<kbd class="fc-kbd">Space</kbd> перевернуть · <kbd class="fc-kbd">←</kbd> не знаю · <kbd class="fc-kbd">→</kbd> знаю' +
+        '</p>';
 }
 
 function flashcardKnow() {
     flashcardStats.know++;
     userAnswers[currentRealQuestionIndex] = 'know';
-    const form = allForms[currentFormIndex];
     var _al = getActiveQuestionList();
     if (currentQuestionIndex < _al.length - 1) {
         currentQuestionIndex++;
         renderQuestion();
     } else {
-        if (themesEnabled(form)) showThemeCompleteScreen();
-        else calculateResults();
+        calculateResults();
     }
 }
 
 function flashcardDontKnow() {
-    // Как в Quizlet: «Не знаю» = крестик и дальше, переворот только касанием карточки
     flashcardStats.dontKnow++;
     userAnswers[currentRealQuestionIndex] = 'dontknow';
-    const form = allForms[currentFormIndex];
     var _al = getActiveQuestionList();
     if (currentQuestionIndex < _al.length - 1) {
         currentQuestionIndex++;
         renderQuestion();
     } else {
-        if (themesEnabled(form)) showThemeCompleteScreen();
-        else calculateResults();
+        calculateResults();
     }
 }
+
+function flipFlashcard() {
+    var card = document.getElementById('fc-card');
+    if (card) card.classList.toggle('flipped');
+}
+
+function isFlashcardsModeActive() {
+    var form = allForms[currentFormIndex];
+    if (!form || getFormMode(form) !== 'flashcards') return false;
+    var quiz = document.getElementById('quiz-box');
+    if (!quiz || quiz.classList.contains('hidden')) return false;
+    var result = document.getElementById('result-box');
+    if (result && !result.classList.contains('hidden')) return false;
+    return !!document.getElementById('fc-card');
+}
+
+document.addEventListener('keydown', function(e) {
+    if (!isFlashcardsModeActive()) return;
+    var tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+    if (tag === 'input' || tag === 'textarea' || (e.target && e.target.isContentEditable)) return;
+
+    // Space = flip
+    if (e.code === 'Space' || e.key === ' ' || e.key === 'Spacebar') {
+        e.preventDefault();
+        flipFlashcard();
+        return;
+    }
+    // ← = Не знаю (dontKnow)
+    if (e.key === 'ArrowLeft' || e.code === 'ArrowLeft') {
+        e.preventDefault();
+        flashcardDontKnow();
+        return;
+    }
+    // → = Знаю (know)
+    if (e.key === 'ArrowRight' || e.code === 'ArrowRight') {
+        e.preventDefault();
+        flashcardKnow();
+        return;
+    }
+});
 
 
 function resolveActiveQuestion() {
@@ -964,22 +1048,23 @@ function nextStep(force = false) {
         return;
     }
 
-    if (!isExplanationShowing && q.hasExplanation && q.explanationText) {
+    if (!isExplanationShowing && q.hasExplanation && (q.explanationText || q.explanationTitle)) {
         isExplanationShowing = true;
         stopTimer();
         
-        const inputs = document.querySelectorAll('#question-body input, #question-body select, #question-body button');
-        inputs.forEach(el => el.disabled = true);
+        const inputs = document.querySelectorAll('#question-body input, #question-body select, #question-body button, #question-body textarea, #question-body .cselect-trigger');
+        inputs.forEach(el => { try { el.disabled = true; } catch(e) {} });
 
         const body = document.getElementById('question-body');
         const expTitle = q.explanationTitle ? q.explanationTitle : 'Разбор ответа';
+        const expBody = q.explanationText || '';
         
         body.innerHTML += `
             <div class="explanation-card">
                 <div class="explanation-title">
-                    <span class="material-symbols-rounded">lightbulb</span> ${expTitle}
+                    <span class="material-symbols-rounded">lightbulb</span> ${escapeHtml(expTitle)}
                 </div>
-                <div class="explanation-body">${q.explanationText}</div>
+                <div class="explanation-body">${escapeHtml(expBody)}</div>
             </div>
         `;
 
@@ -1043,41 +1128,147 @@ function getCorrectAnswerDisplay(q) {
 }
 
 function getAnswerExplanationHtml(q, isCorrect, userAns) {
-    if (!q || !q.hasAnswerExplanations) return '';
-    var text = '';
-    if (isCorrect) {
-        text = q.answerExpCorrect || '';
-    } else {
-        var map = q.answerExpIncorrect || {};
-        if (q.type === 'radio' || q.type === 'select') {
-            var n = parseInt(userAns, 10);
-            if (!isNaN(n) && (map[n] != null || map[String(n)] != null)) {
-                text = map[n] != null ? map[n] : map[String(n)];
+    if (!q) return '';
+    var parts = [];
+
+    // 1) Объяснение под верным / неверным (тумблер hasAnswerExplanations)
+    if (q.hasAnswerExplanations) {
+        var text = '';
+        if (isCorrect) {
+            text = q.answerExpCorrect || '';
+        } else {
+            var map = q.answerExpIncorrect || {};
+            if (q.type === 'radio' || q.type === 'select') {
+                var n = parseInt(userAns, 10);
+                if (!isNaN(n) && (map[n] != null || map[String(n)] != null)) {
+                    text = map[n] != null ? map[n] : map[String(n)];
+                } else {
+                    text = map.default || map['*'] || '';
+                }
+            } else if (q.type === 'checkbox' && Array.isArray(userAns)) {
+                // берём первое совпадение по выбранным индексам
+                for (var i = 0; i < userAns.length; i++) {
+                    var k = userAns[i];
+                    if (map[k] != null || map[String(k)] != null) {
+                        text = map[k] != null ? map[k] : map[String(k)];
+                        break;
+                    }
+                }
+                if (!text) text = map.default || map['*'] || '';
             } else {
                 text = map.default || map['*'] || '';
             }
-        } else {
-            text = map.default || map['*'] || '';
+            // если для неверного нет текста — мягкий fallback
+            if (!text) text = 'Ответ неверный.';
         }
-        // fallback: show correct explanation tip if no per-wrong text
-        if (!text && q.answerExpCorrect) {
-            text = ''; // only show wrong-specific if set
+        if (text) {
+            parts.push('<div class="result-explanation ' + (isCorrect ? 'exp-ok' : 'exp-bad') + '">' +
+                '<span class="material-symbols-rounded" style="font-size:16px;vertical-align:middle;">' +
+                (isCorrect ? 'lightbulb' : 'info') + '</span> ' + escapeHtml(text) + '</div>');
         }
     }
-    // Also show general post-answer explanation if hasExplanation
-    var parts = [];
-    if (text) {
-        parts.push('<div class="result-explanation ' + (isCorrect ? 'exp-ok' : 'exp-bad') + '">' +
-            '<span class="material-symbols-rounded" style="font-size:16px;vertical-align:middle;">' +
-            (isCorrect ? 'lightbulb' : 'info') + '</span> ' + escapeHtml(text) + '</div>');
-    }
-    if (q.hasExplanation && q.explanationText) {
+
+    // 2) Общий блок объяснения (тумблер hasExplanation) — всегда в результатах, если включён
+    if (q.hasExplanation && (q.explanationText || q.explanationTitle)) {
         parts.push('<div class="result-explanation exp-info">' +
             '<span class="material-symbols-rounded" style="font-size:16px;vertical-align:middle;">menu_book</span> ' +
             (q.explanationTitle ? '<b>' + escapeHtml(q.explanationTitle) + ':</b> ' : '') +
-            escapeHtml(q.explanationText) + '</div>');
+            escapeHtml(q.explanationText || '') + '</div>');
     }
     return parts.join('');
+}
+
+
+function renderFlashcardResults(form) {
+    var list = getActiveQuestionList();
+    var total = list.length || (form.questions || []).length;
+    var know = flashcardStats.know || 0;
+    var dont = flashcardStats.dontKnow || 0;
+    if (know + dont === 0 && total) {
+        // fallback count from userAnswers
+        list.forEach(function(item) {
+            var a = userAnswers[item.idx];
+            if (a === 'know') know++;
+            else if (a === 'dontknow') dont++;
+        });
+        flashcardStats.know = know;
+        flashcardStats.dontKnow = dont;
+    }
+
+    document.getElementById('final-score').textContent = know + ' / ' + total;
+
+    var titleEl = document.querySelector('#result-box h2');
+    if (titleEl) {
+        titleEl.innerHTML =
+            '<span class="material-symbols-rounded" style="color:var(--accent-color); font-size:32px;">style</span> FlashCards завершены';
+    }
+    var sub = document.querySelector('#result-box > p');
+    if (sub) sub.textContent = 'Карточки: знаю / всего';
+
+    var pct = total ? Math.round((know / total) * 100) : 0;
+    var html = '';
+    html +=
+        '<div class="fc-results-summary">' +
+            '<div class="fc-stat fc-stat-know">' +
+                '<span class="material-symbols-rounded">thumb_up</span>' +
+                '<div><b>' + know + '</b><small>Знаю</small></div>' +
+            '</div>' +
+            '<div class="fc-stat fc-stat-dont">' +
+                '<span class="material-symbols-rounded">thumb_down</span>' +
+                '<div><b>' + dont + '</b><small>Не знаю</small></div>' +
+            '</div>' +
+            '<div class="fc-stat fc-stat-pct">' +
+                '<span class="material-symbols-rounded">percent</span>' +
+                '<div><b>' + pct + '%</b><small>усвоено</small></div>' +
+            '</div>' +
+        '</div>';
+
+    html += '<p class="fc-results-hint">Ниже — разбор колоды. Это не оценка теста, а ваша отметка «знаю / не знаю».</p>';
+
+    // Сначала «Не знаю» — полезнее повторить
+    var sections = [
+        { key: 'dontknow', title: 'Стоит повторить', cls: 'fc-review-dont', icon: 'replay' },
+        { key: 'know', title: 'Уже знаю', cls: 'fc-review-know', icon: 'check_circle' }
+    ];
+
+    sections.forEach(function(sec) {
+        var items = list.filter(function(item) {
+            return userAnswers[item.idx] === sec.key;
+        });
+        if (!items.length) return;
+        html += '<h4 class="fc-section-title"><span class="material-symbols-rounded">' + sec.icon + '</span> ' + sec.title + ' (' + items.length + ')</h4>';
+        items.forEach(function(item) {
+            var q = item.q;
+            var answer = getFlashcardAnswerText(q);
+            html +=
+                '<div class="review-item ' + sec.cls + '">' +
+                    '<strong>' + escapeHtml(q.title || '') + '</strong>' +
+                    (q.type ? '<span class="fc-type-badge">' + escapeHtml(q.type) + '</span>' : '') +
+                    '<p class="fc-answer-line"><span class="material-symbols-rounded" style="font-size:16px;vertical-align:middle;">lightbulb</span> ' +
+                        escapeHtml(answer) +
+                    '</p>' +
+                '</div>';
+        });
+    });
+
+    // Не отмеченные (если вдруг)
+    var skipped = list.filter(function(item) {
+        var a = userAnswers[item.idx];
+        return a !== 'know' && a !== 'dontknow';
+    });
+    if (skipped.length) {
+        html += '<h4 class="fc-section-title"><span class="material-symbols-rounded">help</span> Без отметки (' + skipped.length + ')</h4>';
+        skipped.forEach(function(item) {
+            var q = item.q;
+            html +=
+                '<div class="review-item grey-item">' +
+                    '<strong>' + escapeHtml(q.title || '') + '</strong>' +
+                    '<p class="fc-answer-line">' + escapeHtml(getFlashcardAnswerText(q)) + '</p>' +
+                '</div>';
+        });
+    }
+
+    document.getElementById('review-box').innerHTML = html;
 }
 
 function calculateResults() {
@@ -1090,6 +1281,13 @@ function calculateResults() {
 
     const form = allForms[currentFormIndex];
     const settings = (form && form.settings) ? form.settings : {};
+
+    // ===== FlashCards: отдельный понятный итог (не «верно/неверно теста») =====
+    if (getFormMode(form) === 'flashcards') {
+        renderFlashcardResults(form);
+        return;
+    }
+
     // по умолчанию включено
     const showWrong = settings.showWrong !== false;
     const showCorrect = settings.showCorrect !== false;
@@ -1131,9 +1329,11 @@ function calculateResults() {
             var ansNum = (userAns === '' || userAns === undefined || userAns === null) ? null : parseInt(userAns, 10);
             if (q.correctChoices && ansNum !== null && !isNaN(ansNum) && q.correctChoices.map(Number).includes(ansNum)) isCorrect = true;
         } else if (q.type === 'checkbox') {
-            if (Array.isArray(userAns) && q.correctChoices &&
-                userAns.length === q.correctChoices.length &&
-                userAns.every(v => q.correctChoices.includes(v))) isCorrect = true;
+            if (Array.isArray(userAns) && q.correctChoices) {
+                var cc = q.correctChoices.map(Number).slice().sort();
+                var ua = userAns.map(Number).slice().sort();
+                if (cc.length === ua.length && cc.every(function(v, i) { return v === ua[i]; })) isCorrect = true;
+            }
         } else if (q.type === 'text') {
             if (q.correctText && q.correctText.some(t => t.toLowerCase().trim() === String(userAns || '').toLowerCase().trim())) isCorrect = true;
         } else if (q.type === 'puzzle-drag') {
@@ -1148,11 +1348,16 @@ function calculateResults() {
 
         if (isCorrect) {
             score++;
+            var correctExtra = '';
+            if (showCorrect) {
+                correctExtra = '<p class="text-success" style="font-size:13px; margin-top:2px;">✓ Правильный ответ: ' +
+                    escapeHtml(getCorrectAnswerDisplay(q)) + '</p>';
+            }
             reviewHTML += `
                 <div class="review-item correct-item">
                     <strong>${displayTitle}</strong>
                     <p class="text-success" style="font-size:13px; margin-top:4px;">✓ Верно</p>
-                    ${showCorrect && q.type !== 'text' ? '' : ''}
+                    ${correctExtra}
                     ${expHtml}
                 </div>
             `;
@@ -1187,20 +1392,7 @@ function calculateResults() {
         }
     });
 
-    const mode = getFormMode(form);
-    if (mode === 'flashcards') {
-        reviewHTML = `
-            <div class="review-item grey-item" style="text-align:center;">
-                <strong>Статистика FlashCards</strong>
-                <p style="margin-top:8px; font-size:15px;">
-                    ✓ Знаю: <b>${flashcardStats.know}</b> &nbsp;&nbsp; ✗ Не знаю: <b>${flashcardStats.dontKnow}</b>
-                </p>
-            </div>
-        ` + reviewHTML;
-        document.getElementById('final-score').textContent = flashcardStats.know + ' / ' + form.questions.length;
-    } else {
-        document.getElementById('final-score').textContent = score + ' / ' + maxPossibleScore;
-    }
+    document.getElementById('final-score').textContent = score + ' / ' + maxPossibleScore;
 
     let emailBlock = '';
     if (userEmail) {
@@ -1222,10 +1414,20 @@ function calculateResults() {
     }
 
     document.getElementById('review-box').innerHTML = emailBlock + reviewHTML;
+
+    if (previewMode) {
+        injectPreviewFinishUI();
+    }
 }
 
 function restartQuiz() { 
     userEmail = '';
+    var titleEl = document.querySelector('#result-box h2');
+    if (titleEl) {
+        titleEl.innerHTML = '<span class="material-symbols-rounded" style="color:var(--accent-color); font-size:32px;">emoji_events</span> Тест завершён!';
+    }
+    var sub = document.querySelector('#result-box > p');
+    if (sub) sub.textContent = 'Ваш результат:';
     loadCurrentForm(); 
 }
 
@@ -1317,6 +1519,7 @@ function switchScreen(screen) {
             initCurrentTheme();
             renderThemeUI();
             renderAdminQuestionsList();
+            enhanceAllSelects(document.getElementById('admin-screen'));
         } catch (e) { console.warn(e); }
     }
 }
@@ -1329,15 +1532,27 @@ function closeLoginModal() {
     }
 }
 
+function getFormAdminAuth(form) {
+    if (!form) form = allForms[currentFormIndex];
+    if (!form) return { u: 'admin', p: '1234' };
+    // приоритет: form.adminAuth → settings.adminAuth → дефолт
+    var auth = form.adminAuth || (form.settings && form.settings.adminAuth) || null;
+    if (auth && auth.u != null && auth.p != null) {
+        return { u: String(auth.u), p: String(auth.p) };
+    }
+    return { u: 'admin', p: '1234' };
+}
+
 function tryLogin() {
     const u = document.getElementById('login-user').value;
     const p = document.getElementById('login-pass').value;
-    const storedAuth = JSON.parse(localStorage.getItem('admin_auth') || '{"u":"admin","p":"1234"}');
+    const form = allForms[currentFormIndex];
+    const storedAuth = getFormAdminAuth(form);
 
     if (u === storedAuth.u && p === storedAuth.p) {
         switchScreen('admin');
     } else {
-        showAlert('Неверный логин или пароль!', 'lock');
+        showAlert('Неверный логин или пароль для этой формы!', 'lock');
     }
 }
 
@@ -1463,25 +1678,38 @@ function processSaveQuestion(type, title, useInline) {
     const hasExpCheck = document.getElementById('questionHasExplanation');
     if (hasExpCheck && hasExpCheck.checked) {
         newQ.hasExplanation = true;
-        newQ.explanationTitle = document.getElementById('questionExplanationTitle').value.trim();
-        newQ.explanationText = document.getElementById('questionExplanationText').value.trim();
-        newQ.holdTimer = parseInt(document.getElementById('questionHoldTimer').value) || 0;
+        newQ.explanationTitle = (document.getElementById('questionExplanationTitle') || {}).value || '';
+        newQ.explanationTitle = String(newQ.explanationTitle).trim();
+        newQ.explanationText = (document.getElementById('questionExplanationText') || {}).value || '';
+        newQ.explanationText = String(newQ.explanationText).trim();
+        var holdEl = document.getElementById('questionHoldTimer');
+        newQ.holdTimer = holdEl ? (parseInt(holdEl.value, 10) || 0) : 0;
+    } else {
+        newQ.hasExplanation = false;
+        newQ.explanationTitle = '';
+        newQ.explanationText = '';
+        newQ.holdTimer = 0;
     }
 
     const hasAnsExp = document.getElementById('questionHasAnswerExplanations');
     if (hasAnsExp && hasAnsExp.checked) {
         newQ.hasAnswerExplanations = true;
-        newQ.answerExpCorrect = document.getElementById('answerExpCorrect').value.trim();
-        const rawIncorrect = document.getElementById('answerExpIncorrect').value.trim();
+        newQ.answerExpCorrect = ((document.getElementById('answerExpCorrect') || {}).value || '').trim();
+        const rawIncorrect = ((document.getElementById('answerExpIncorrect') || {}).value || '').trim();
         const incorrectMap = {};
         if (rawIncorrect) {
-            rawIncorrect.split('|').forEach(part => {
-                const m = part.trim().match(/^(\d+)\s*[:\-]\s*(.+)$/);
-                if (m) incorrectMap[parseInt(m[1])] = m[2].trim();
+            rawIncorrect.split('|').forEach(function(part) {
+                var m = part.trim().match(/^(\d+)\s*[:\-]\s*(.+)$/);
+                if (m) incorrectMap[parseInt(m[1], 10)] = m[2].trim();
             });
         }
         newQ.answerExpIncorrect = incorrectMap;
+    } else {
+        newQ.hasAnswerExplanations = false;
+        newQ.answerExpCorrect = '';
+        newQ.answerExpIncorrect = {};
     }
+
 
     // Всегда привязываем к выбранной теме в админке
     ensureFormThemes(form);
@@ -1503,46 +1731,75 @@ function processSaveQuestion(type, title, useInline) {
 
 function openFormSettings() {
     const form = allForms[currentFormIndex];
+    if (!form) return;
     if (!form.settings) form.settings = { isTestMode: false, publishType: 'immediate', defaultPoints: 10, showWrong: true, showCorrect: true, showPoints: true };
-    
-    document.getElementById('fs-test-mode').checked = !!form.settings.isTestMode;
-    document.getElementById('fs-publish-type').value = form.settings.publishType || 'immediate';
-    document.getElementById('fs-default-points').value = form.settings.defaultPoints || 10;
-    document.getElementById('fs-show-wrong').checked = form.settings.showWrong !== false;
-    document.getElementById('fs-show-correct').checked = form.settings.showCorrect !== false;
-    document.getElementById('fs-show-points').checked = form.settings.showPoints !== false;
-    var lockEl = document.getElementById('fs-lock-themes');
-    if (lockEl) lockEl.checked = !!form.settings.lockNextThemes;
-    var defReq = document.getElementById('fs-default-required');
-    if (defReq) defReq.checked = !!form.settings.defaultRequired;
-    
-    toggleTestModeSettings();
-    enhanceAllSelects(document.getElementById('form-settings-modal'));
-    document.getElementById('form-settings-modal').classList.add('active');
+
+    const modal = document.getElementById('form-settings-modal');
+    if (!modal) {
+        showAlert('Модалка настроек не найдена', 'error');
+        return;
+    }
+
+    try {
+        document.getElementById('fs-test-mode').checked = !!form.settings.isTestMode;
+        const pub = document.getElementById('fs-publish-type');
+        if (pub) {
+            pub.value = form.settings.publishType || 'immediate';
+            syncEnhancedSelect(pub);
+        }
+        document.getElementById('fs-default-points').value = form.settings.defaultPoints || 10;
+        document.getElementById('fs-show-wrong').checked = form.settings.showWrong !== false;
+        document.getElementById('fs-show-correct').checked = form.settings.showCorrect !== false;
+        document.getElementById('fs-show-points').checked = form.settings.showPoints !== false;
+        var lockEl = document.getElementById('fs-lock-themes');
+        if (lockEl) lockEl.checked = !!form.settings.lockNextThemes;
+        var defReq = document.getElementById('fs-default-required');
+        if (defReq) defReq.checked = !!form.settings.defaultRequired;
+        var emailEl = document.getElementById('fs-teacher-email');
+        if (emailEl) emailEl.value = form.settings.teacherEmail || '';
+
+        toggleTestModeSettings();
+        enhanceAllSelects(modal);
+    } catch (e) {
+        console.warn('openFormSettings fill error', e);
+    }
+
+    modal.classList.add('active');
 }
 
 function toggleTestModeSettings() {
-    const isTest = document.getElementById('fs-test-mode').checked;
-    document.getElementById('fs-test-settings').classList.toggle('hidden', !isTest);
+    const isTest = document.getElementById('fs-test-mode') && document.getElementById('fs-test-mode').checked;
+    const box = document.getElementById('fs-test-settings');
+    if (box) box.classList.toggle('hidden', !isTest);
 }
 
 function saveFormSettings() {
+    if (!allForms[currentFormIndex]) return;
     var prev = allForms[currentFormIndex].settings || {};
     var lockEl = document.getElementById('fs-lock-themes');
+    var emailEl = document.getElementById('fs-teacher-email');
+    var pub = document.getElementById('fs-publish-type');
     allForms[currentFormIndex].settings = Object.assign({}, prev, {
-        isTestMode: document.getElementById('fs-test-mode').checked,
-        publishType: document.getElementById('fs-publish-type').value,
-        showWrong: document.getElementById('fs-show-wrong').checked,
-        showCorrect: document.getElementById('fs-show-correct').checked,
-        showPoints: document.getElementById('fs-show-points').checked,
-        defaultPoints: parseInt(document.getElementById('fs-default-points').value) || 10,
-        defaultRequired: document.getElementById('fs-default-required').checked,
-        lockNextThemes: !!(lockEl && lockEl.checked)
+        isTestMode: !!(document.getElementById('fs-test-mode') && document.getElementById('fs-test-mode').checked),
+        publishType: pub ? pub.value : (prev.publishType || 'immediate'),
+        showWrong: !!(document.getElementById('fs-show-wrong') && document.getElementById('fs-show-wrong').checked),
+        showCorrect: !!(document.getElementById('fs-show-correct') && document.getElementById('fs-show-correct').checked),
+        showPoints: !!(document.getElementById('fs-show-points') && document.getElementById('fs-show-points').checked),
+        defaultPoints: parseInt((document.getElementById('fs-default-points') || {}).value, 10) || 10,
+        defaultRequired: !!(document.getElementById('fs-default-required') && document.getElementById('fs-default-required').checked),
+        lockNextThemes: !!(lockEl && lockEl.checked),
+        teacherEmail: emailEl ? (emailEl.value || '').trim() : (prev.teacherEmail || '')
     });
     saveFormsToStorage();
-    document.getElementById('form-settings-modal').classList.remove('active');
+    const modal = document.getElementById('form-settings-modal');
+    if (modal) modal.classList.remove('active');
     if (typeof renderThemeUI === 'function') renderThemeUI();
     showAlert('Настройки формы применены!', 'check_circle');
+}
+
+function closeFormSettings() {
+    const modal = document.getElementById('form-settings-modal');
+    if (modal) modal.classList.remove('active');
 }
 
 function editQuestion(idx) {
@@ -1656,7 +1913,12 @@ function cancelEditQuestion() {
     document.getElementById('new-correct-text').value = '';
     document.getElementById('new-flashcard-answer').value = '';
     document.getElementById('new-hint-text').value = '';
-    document.getElementById('new-required').checked = false;
+    // По умолчанию из настроек формы «Помечать новые вопросы обязательными»
+    (function() {
+        var form = allForms[currentFormIndex];
+        var def = form && form.settings && form.settings.defaultRequired;
+        document.getElementById('new-required').checked = !!def;
+    })();
     
     const inlineCheck = document.getElementById('new-inline-input');
     if (inlineCheck) inlineCheck.checked = false;
@@ -1795,15 +2057,15 @@ function renderAdminQuestionsList() {
         const isLast = pos === themeQs.length - 1;
 
         list.innerHTML += `
-            <div class="gcard" style="margin-top:10px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-                <div>
+            <div class="gcard admin-q-card" data-q-idx="${idx}">
+                <div class="admin-q-card-main">
                     <strong>${idx + 1}. ${q.title}</strong>
                     ${q.description ? `<span style="font-size:12px; color:var(--text-muted); display:block; font-style: italic;">${q.description}</span>` : ''}
                     <span style="font-size:11px; color:var(--accent-color); display:block; margin-top:2px;">
                         Тип: ${q.type} ${q.useInlineInput ? '(Inline)' : ''} ${q.hasExplanation ? '(с Объяснением)' : ''}
                     </span>
                 </div>
-                <div style="display:flex; gap:6px;">
+                <div class="admin-q-card-actions">
                     <button onclick="moveQuestionUp(${idx})" class="q-action-btn" title="Переместить вверх" ${isFirst ? 'disabled style="opacity: 0.3; cursor: not-allowed;"' : ''}>
                         <span class="material-symbols-rounded" style="font-size:18px;">arrow_upward</span>
                     </button>
@@ -1812,6 +2074,10 @@ function renderAdminQuestionsList() {
                     </button>
                     <button onclick="viewQuestionDetails(${idx})" class="q-action-btn" title="Просмотреть все данные">
                         <span class="material-symbols-rounded" style="font-size:16px;">visibility</span> Инфо
+                    </button>
+                    <button onclick="openQuestionPreview(${idx})" class="q-action-btn preview-q-btn" title="Протестировать вопрос">
+                        <span class="material-symbols-rounded" style="font-size:16px;">play_circle</span> Тест
+                        <span class="novelty-badge">НОВИНКА</span>
                     </button>
                     <button onclick="editQuestion(${idx})" class="q-action-btn" title="Изменить вопрос">
                         <span class="material-symbols-rounded" style="font-size:16px;">edit</span> Изменить
@@ -1837,6 +2103,7 @@ function moveQuestionUp(idx) {
     form.questions[idx] = temp;
     saveFormsToStorage();
     renderAdminQuestionsList();
+    highlightMovedQuestionCards([idx, otherIdx]);
 }
 
 function moveQuestionDown(idx) {
@@ -1851,6 +2118,33 @@ function moveQuestionDown(idx) {
     form.questions[idx] = temp;
     saveFormsToStorage();
     renderAdminQuestionsList();
+    highlightMovedQuestionCards([idx, otherIdx]);
+}
+
+var _moveHighlightTimer = null;
+function highlightMovedQuestionCards(indices) {
+    if (_moveHighlightTimer) {
+        clearTimeout(_moveHighlightTimer);
+        _moveHighlightTimer = null;
+    }
+    document.querySelectorAll('.admin-q-card.card-highlight').forEach(function(el) {
+        el.classList.remove('card-highlight');
+    });
+    var list = document.getElementById('admin-questions-list');
+    if (!list) return;
+    (indices || []).forEach(function(i) {
+        var el = list.querySelector('.admin-q-card[data-q-idx="' + i + '"]');
+        if (el) {
+            el.classList.add('card-highlight');
+            try { el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (e) {}
+        }
+    });
+    _moveHighlightTimer = setTimeout(function() {
+        document.querySelectorAll('.admin-q-card.card-highlight').forEach(function(el) {
+            el.classList.remove('card-highlight');
+        });
+        _moveHighlightTimer = null;
+    }, 2000);
 }
 
 function deleteQuestion(idx) {
@@ -1867,7 +2161,18 @@ function deleteQuestion(idx) {
    ========================================== */
 function openAuthModal() {
     const modal = document.getElementById('authModal');
-    if (modal) modal.classList.add('active');
+    if (!modal) return;
+    var auth = getFormAdminAuth(allForms[currentFormIndex]);
+    var loginEl = document.getElementById('newAdminLogin');
+    var passEl = document.getElementById('newAdminPass');
+    var confEl = document.getElementById('confirmAdminPass');
+    if (loginEl) loginEl.value = auth.u || '';
+    if (passEl) passEl.value = '';
+    if (confEl) confEl.value = '';
+    var formTitle = (allForms[currentFormIndex] && allForms[currentFormIndex].title) || 'текущей формы';
+    var hint = document.getElementById('auth-form-hint');
+    if (hint) hint.textContent = 'Доступ к админке формы: «' + formTitle + '»';
+    modal.classList.add('active');
 }
 
 function closeAuthModal() {
@@ -1881,14 +2186,27 @@ function saveAuthChange(e) {
     const pass = document.getElementById('newAdminPass').value;
     const confirmPass = document.getElementById('confirmAdminPass').value;
 
+    if (!login) {
+        showAlert('Введите логин!', 'warning');
+        return;
+    }
     if (pass !== confirmPass) {
         showAlert('Пароли не совпадают!', 'warning');
         return;
     }
 
-    localStorage.setItem('admin_auth', JSON.stringify({ u: login, p: pass }));
+    const form = allForms[currentFormIndex];
+    if (!form) {
+        showAlert('Форма не найдена', 'error');
+        return;
+    }
+    // Логин/пароль только для ТЕКУЩЕЙ формы (не глобально)
+    form.adminAuth = { u: login, p: pass };
+    if (!form.settings) form.settings = {};
+    form.settings.adminAuth = { u: login, p: pass };
+    saveFormsToStorage();
     closeAuthModal();
-    showAlert('Логин и пароль администратора успешно изменены!', 'check_circle');
+    showAlert('Логин и пароль сохранены только для формы «' + (form.title || 'Без названия') + '»', 'check_circle');
 }
 
 function formatText(command) {
@@ -1942,11 +2260,18 @@ function openShareModal() {
     });
 
     var expSel = document.getElementById('share-expiry-select');
-    if (expSel) expSel.value = String(shareState.expiryDays);
+    if (expSel) {
+        expSel.value = String(shareState.expiryDays);
+        try { syncEnhancedSelect(expSel); } catch (e) {}
+    }
 
     updateShareLinkPreview();
     var modal = document.getElementById('share-modal');
-    if (modal) modal.classList.add('active');
+    if (modal) {
+        try { enhanceAllSelects(modal); } catch (e) {}
+        if (expSel) try { syncEnhancedSelect(expSel); } catch (e) {}
+        modal.classList.add('active');
+    }
 }
 
 function closeShareModal() {
@@ -2127,35 +2452,84 @@ function stopSpeaking() {
 
 function showAnswerExplanation(selectedIdx) {
     const form = allForms[currentFormIndex];
-    const q = form.questions[currentRealQuestionIndex] || form.questions[currentQuestionIndex];
+    if (!form) return;
+    var q = null;
+    try {
+        var act = resolveActiveQuestion();
+        q = act && act.q ? act.q : null;
+        if (act && typeof act.realIdx === 'number') currentRealQuestionIndex = act.realIdx;
+    } catch (e) {}
+    if (!q) q = form.questions[currentRealQuestionIndex] || form.questions[currentQuestionIndex];
     const area = document.getElementById('answer-explanation-area');
-    if (!area || !q || !q.hasAnswerExplanations) {
+    if (!area || !q) {
         if (area) area.innerHTML = '';
         return;
     }
 
-    const isCorrect = q.correctChoices && q.correctChoices.includes(selectedIdx);
-    let text = '';
-    let isOk = false;
-
-    if (isCorrect) {
-        text = q.answerExpCorrect || 'Верно!';
-        isOk = true;
-    } else {
-        const map = q.answerExpIncorrect || {};
-        text = map[selectedIdx] || map[String(selectedIdx)] || 'Неверно.';
-        isOk = false;
+    var mode = getFormMode(form);
+    // Test / FlashCards: не палим верно/неверно во время прохождения
+    if (mode !== 'learn') {
+        area.innerHTML = '';
+        document.querySelectorAll('#question-body .option').forEach(function(lab) {
+            lab.classList.remove('correct-highlight', 'incorrect-highlight');
+        });
+        return;
     }
 
-    area.innerHTML = `
-        <div class="explanation-card" style="border-color: ${isOk ? '#2e7d32' : '#d32f2f'}; background: ${isOk ? 'rgba(46,125,50,0.08)' : 'rgba(211,47,47,0.08)'};">
-            <div class="explanation-title" style="color: ${isOk ? '#2e7d32' : '#d32f2f'};">
-                <span class="material-symbols-rounded">${isOk ? 'check_circle' : 'cancel'}</span>
-                ${isOk ? 'Верно' : 'Неверно'}
-            </div>
-            <div class="explanation-body">${text}</div>
-        </div>
-    `;
+    selectedIdx = parseInt(selectedIdx, 10);
+    var correctSet = (q.correctChoices || []).map(Number);
+    var isCorrect = !isNaN(selectedIdx) && correctSet.indexOf(selectedIdx) >= 0;
+
+    // Learn: подсветка вариантов
+    if (q.type === 'radio' || q.type === 'select') {
+        document.querySelectorAll('#question-body .option').forEach(function(lab) {
+            lab.classList.remove('correct-highlight', 'incorrect-highlight');
+            var inp = lab.querySelector('input');
+            if (!inp) return;
+            var v = parseInt(inp.value, 10);
+            if (correctSet.indexOf(v) >= 0) lab.classList.add('correct-highlight');
+            else if (v === selectedIdx) lab.classList.add('incorrect-highlight');
+        });
+    } else if (q.type === 'checkbox') {
+        document.querySelectorAll('#question-body .option').forEach(function(lab) {
+            lab.classList.remove('correct-highlight', 'incorrect-highlight');
+            var inp = lab.querySelector('input');
+            if (!inp) return;
+            var v = parseInt(inp.value, 10);
+            if (correctSet.indexOf(v) >= 0) lab.classList.add('correct-highlight');
+            else if (inp.checked) lab.classList.add('incorrect-highlight');
+        });
+    }
+
+    // Пояснение под ответом (тумблер «Объяснение под верным и неверным») — только Learn
+    if (!q.hasAnswerExplanations) {
+        area.innerHTML = '';
+        return;
+    }
+
+    var text = '';
+    var isOk = !!isCorrect;
+    if (q.type === 'checkbox') {
+        var ua = Array.isArray(userAnswers[currentRealQuestionIndex])
+            ? userAnswers[currentRealQuestionIndex].map(Number).slice().sort()
+            : [];
+        var cc = correctSet.slice().sort();
+        isOk = cc.length === ua.length && cc.every(function(v, i) { return v === ua[i]; });
+    }
+    if (isOk) {
+        text = q.answerExpCorrect || 'Верно!';
+    } else {
+        var map = q.answerExpIncorrect || q.answerExplanations || {};
+        text = map[selectedIdx] || map[String(selectedIdx)] || 'Неверно.';
+    }
+
+    area.innerHTML =
+        '<div class="explanation-card" style="border-color:' + (isOk ? '#2e7d32' : '#d32f2f') +
+        ';background:' + (isOk ? 'rgba(46,125,50,0.08)' : 'rgba(211,47,47,0.08)') + ';">' +
+        '<div class="explanation-title" style="color:' + (isOk ? '#2e7d32' : '#d32f2f') + ';">' +
+        '<span class="material-symbols-rounded">' + (isOk ? 'check_circle' : 'cancel') + '</span> ' +
+        (isOk ? 'Верно' : 'Неверно') +
+        '</div><div class="explanation-body">' + escapeHtml(text) + '</div></div>';
 }
 
 function openPrintPreview() {
@@ -2279,8 +2653,12 @@ function getActiveQuestionList() {
     var form = allForms[currentFormIndex];
     if (!form) return [];
     ensureFormThemes(form);
+    // FlashCards: все темы = одна колода
+    if (getFormMode(form) === 'flashcards') {
+        return (form.questions || []).map(function(q, idx) { return { q: q, idx: idx }; });
+    }
     if (!themesEnabled(form) || !currentThemeId) {
-        return form.questions.map(function(q, idx) { return { q: q, idx: idx }; });
+        return (form.questions || []).map(function(q, idx) { return { q: q, idx: idx }; });
     }
     return getQuestionsForTheme(form, currentThemeId);
 }
@@ -2332,7 +2710,7 @@ function renderThemeUI() {
     var form = allForms[currentFormIndex];
     if (!form) return;
     ensureFormThemes(form);
-    var enabled = themesEnabled(form);
+    var enabled = themesEnabled(form) && getFormMode(form) !== 'flashcards';
     var burger = document.getElementById('theme-burger-btn');
     var sidebar = document.getElementById('theme-sidebar');
     if (enabled) {
@@ -2572,7 +2950,6 @@ function showThemeResults() {
    CUSTOM SELECT (без нативного <select> UI)
    ========================================== */
 function buildCustomSelect(options, selectedValue, onChange, placeholder) {
-    // options: [{value, label}] or string array
     var opts = (options || []).map(function(o, i) {
         if (o && typeof o === 'object') return { value: String(o.value), label: o.label };
         return { value: String(i), label: String(o) };
@@ -2580,58 +2957,447 @@ function buildCustomSelect(options, selectedValue, onChange, placeholder) {
     var sel = (selectedValue === undefined || selectedValue === null || selectedValue === '') ? '' : String(selectedValue);
     var selectedLabel = placeholder || '-- Выберите --';
     opts.forEach(function(o) { if (o.value === sel) selectedLabel = o.label; });
-    var uid = 'cs-' + Date.now() + '-' + Math.floor(Math.random()*10000);
-    var html = '<div class="cselect" id="'+uid+'" data-value="'+escapeHtml(sel)+'">' +
-        '<button type="button" class="cselect-trigger" onclick="toggleCSelect(\''+uid+'\')">' +
-        '<span class="cselect-label">'+escapeHtml(selectedLabel)+'</span>' +
+    var uid = 'cs-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
+    var html = '<div class="cselect" id="' + uid + '" data-value="' + escapeHtml(sel) + '">' +
+        '<button type="button" class="cselect-trigger" onclick="toggleCSelect(\'' + uid + '\')">' +
+        '<span class="cselect-label">' + escapeHtml(selectedLabel) + '</span>' +
         '<span class="material-symbols-rounded cselect-arrow">expand_more</span></button>' +
         '<div class="cselect-dropdown hidden">' +
-        (placeholder ? '<div class="cselect-option cselect-placeholder" data-value="" onclick="pickCSelect(\''+uid+'\',\'\',\''+escapeHtml(placeholder).replace(/'/g,"\\'")+'\')">'+escapeHtml(placeholder)+'</div>' : '') +
+        (placeholder ? '<div class="cselect-option cselect-placeholder" data-value="" onclick="pickCSelect(\'' + uid + '\',\'\',\'' + escapeHtml(placeholder).replace(/'/g, "\\'") + '\')">' + escapeHtml(placeholder) + '</div>' : '') +
         opts.map(function(o) {
             var act = o.value === sel ? ' active' : '';
-            return '<div class="cselect-option'+act+'" data-value="'+escapeHtml(o.value)+'" onclick="pickCSelect(\''+uid+'\',\''+escapeHtml(o.value).replace(/'/g,"\\'")+'\',\''+escapeHtml(o.label).replace(/'/g,"\\'")+'\')">'+escapeHtml(o.label)+'</div>';
+            return '<div class="cselect-option' + act + '" data-value="' + escapeHtml(o.value) + '" onclick="pickCSelect(\'' + uid + '\',\'' + escapeHtml(o.value).replace(/'/g, "\\'") + '\',\'' + escapeHtml(o.label).replace(/'/g, "\\'") + '\')">' + escapeHtml(o.label) + '</div>';
         }).join('') +
         '</div></div>';
-    // store callback
     setTimeout(function() {
         var el = document.getElementById(uid);
         if (el) el._onChange = onChange;
     }, 0);
     return html;
 }
+
+function positionCSelectDropdown(el, dd) {
+    if (!el || !dd) return;
+    dd.classList.remove('drop-up');
+    dd.style.maxHeight = '';
+    var rect = el.getBoundingClientRect();
+    var spaceBelow = window.innerHeight - rect.bottom - 12;
+    var spaceAbove = rect.top - 12;
+    var desired = Math.min(280, Math.max(Math.max(spaceBelow, spaceAbove), 120));
+    dd.style.maxHeight = desired + 'px';
+    if (spaceBelow < 140 && spaceAbove > spaceBelow) {
+        dd.classList.add('drop-up');
+    }
+}
+
 function toggleCSelect(uid) {
     var el = document.getElementById(uid);
     if (!el) return;
     var dd = el.querySelector('.cselect-dropdown');
     var open = dd && !dd.classList.contains('hidden');
-    document.querySelectorAll('.cselect-dropdown').forEach(function(d){ d.classList.add('hidden'); });
-    document.querySelectorAll('.cselect').forEach(function(c){ c.classList.remove('open'); });
+    document.querySelectorAll('.cselect-dropdown').forEach(function(d) {
+        d.classList.add('hidden');
+        d.classList.remove('drop-up');
+    });
+    document.querySelectorAll('.cselect').forEach(function(c) { c.classList.remove('open'); });
     if (!open && dd) {
         dd.classList.remove('hidden');
         el.classList.add('open');
+        positionCSelectDropdown(el, dd);
     }
 }
+
 function pickCSelect(uid, value, label) {
     var el = document.getElementById(uid);
     if (!el) return;
     el.dataset.value = value;
     var lab = el.querySelector('.cselect-label');
     if (lab) lab.textContent = label || value || '--';
-    el.querySelectorAll('.cselect-option').forEach(function(o){
+    el.querySelectorAll('.cselect-option').forEach(function(o) {
         o.classList.toggle('active', o.getAttribute('data-value') === value);
     });
     var dd = el.querySelector('.cselect-dropdown');
-    if (dd) dd.classList.add('hidden');
+    if (dd) {
+        dd.classList.add('hidden');
+        dd.classList.remove('drop-up');
+    }
     el.classList.remove('open');
+
+    var native = el._nativeSelect;
+    if (native) {
+        native.value = value;
+        try {
+            native.dispatchEvent(new Event('change', { bubbles: true }));
+        } catch (e) {
+            var ev = document.createEvent('HTMLEvents');
+            ev.initEvent('change', true, false);
+            native.dispatchEvent(ev);
+        }
+    }
     if (typeof el._onChange === 'function') el._onChange(value);
 }
+
+function syncEnhancedSelect(nativeSelect) {
+    if (!nativeSelect || !nativeSelect._cselectId) return;
+    var el = document.getElementById(nativeSelect._cselectId);
+    if (!el) return;
+    var value = String(nativeSelect.value);
+    el.dataset.value = value;
+    var label = '--';
+    var opts = nativeSelect.options;
+    for (var i = 0; i < opts.length; i++) {
+        if (String(opts[i].value) === value) {
+            label = opts[i].textContent;
+            break;
+        }
+    }
+    var lab = el.querySelector('.cselect-label');
+    if (lab) lab.textContent = label;
+    el.querySelectorAll('.cselect-option').forEach(function(o) {
+        o.classList.toggle('active', o.getAttribute('data-value') === value);
+    });
+}
+
+function enhanceNativeSelect(nativeSelect) {
+    if (!nativeSelect || nativeSelect.tagName !== 'SELECT') return;
+    if (nativeSelect.dataset.cselectDone === '1') {
+        syncEnhancedSelect(nativeSelect);
+        return;
+    }
+    if (nativeSelect.nextElementSibling && nativeSelect.nextElementSibling.classList.contains('cselect')) {
+        nativeSelect.dataset.cselectDone = '1';
+        nativeSelect._cselectId = nativeSelect.nextElementSibling.id;
+        nativeSelect.nextElementSibling._nativeSelect = nativeSelect;
+        syncEnhancedSelect(nativeSelect);
+        return;
+    }
+
+    var opts = [];
+    for (var i = 0; i < nativeSelect.options.length; i++) {
+        var o = nativeSelect.options[i];
+        opts.push({ value: o.value, label: o.textContent });
+    }
+    var selected = nativeSelect.value;
+    var placeholder = null;
+    if (opts.length && (opts[0].value === '' || (opts[0].label || '').indexOf('--') === 0)) {
+        placeholder = opts[0].label;
+    }
+
+    var wrapper = document.createElement('div');
+    wrapper.innerHTML = buildCustomSelect(opts, selected, null, placeholder);
+    var csel = wrapper.firstElementChild;
+    if (!csel) return;
+
+    nativeSelect.classList.add('cselect-native-hidden');
+    nativeSelect.setAttribute('aria-hidden', 'true');
+    nativeSelect.tabIndex = -1;
+    nativeSelect.dataset.cselectDone = '1';
+    nativeSelect._cselectId = csel.id;
+    csel._nativeSelect = nativeSelect;
+
+    if (nativeSelect.parentNode) {
+        nativeSelect.parentNode.insertBefore(csel, nativeSelect.nextSibling);
+    }
+}
+
+function enhanceAllSelects(root) {
+    var scope = root || document;
+    if (!scope.querySelectorAll) return;
+    var list = scope.querySelectorAll('select');
+    for (var i = 0; i < list.length; i++) {
+        try { enhanceNativeSelect(list[i]); } catch (e) { console.warn(e); }
+    }
+}
+
 document.addEventListener('click', function(e) {
     if (!e.target.closest('.cselect')) {
-        document.querySelectorAll('.cselect-dropdown').forEach(function(d){ d.classList.add('hidden'); });
-        document.querySelectorAll('.cselect').forEach(function(c){ c.classList.remove('open'); });
+        document.querySelectorAll('.cselect-dropdown').forEach(function(d) {
+            d.classList.add('hidden');
+            d.classList.remove('drop-up');
+        });
+        document.querySelectorAll('.cselect').forEach(function(c) { c.classList.remove('open'); });
     }
 });
 
+window.addEventListener('resize', function() {
+    document.querySelectorAll('.cselect.open').forEach(function(el) {
+        var dd = el.querySelector('.cselect-dropdown');
+        if (dd && !dd.classList.contains('hidden')) positionCSelectDropdown(el, dd);
+    });
+});
+
 function escapeHtml(str) {
-    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+    return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 }
+
+
+/* ==========================================
+   PREVIEW / ПРОТЕСТИРОВАТЬ (форма и вопрос)
+   ========================================== */
+function createPreviewToken() {
+    var token = 'pv_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+    var map = {};
+    try { map = JSON.parse(localStorage.getItem(PREVIEW_TOKEN_KEY) || '{}') || {}; } catch (e) { map = {}; }
+    map[token] = { ts: Date.now(), used: false };
+    // чистим старше 2 часов
+    var now = Date.now();
+    Object.keys(map).forEach(function(k) {
+        if (!map[k] || (now - (map[k].ts || 0)) > 2 * 60 * 60 * 1000) delete map[k];
+    });
+    localStorage.setItem(PREVIEW_TOKEN_KEY, JSON.stringify(map));
+    return token;
+}
+
+function consumePreviewToken(token) {
+    if (!token) return false;
+    var map = {};
+    try { map = JSON.parse(localStorage.getItem(PREVIEW_TOKEN_KEY) || '{}') || {}; } catch (e) { map = {}; }
+    var entry = map[token];
+    if (!entry) return false;
+    if (Date.now() - (entry.ts || 0) > 2 * 60 * 60 * 1000) {
+        delete map[token];
+        localStorage.setItem(PREVIEW_TOKEN_KEY, JSON.stringify(map));
+        return false;
+    }
+    // В iframe (оверлей) токен можно использовать повторно, пока сессия жива —
+    // иначе перезагрузка iframe ломает превью. Одноразовость — для внешних ссылок.
+    var inFrame = false;
+    try { inFrame = window.parent && window.parent !== window; } catch (e) { inFrame = true; }
+    if (entry.used && !inFrame) return false;
+    entry.used = true;
+    map[token] = entry;
+    localStorage.setItem(PREVIEW_TOKEN_KEY, JSON.stringify(map));
+    return true;
+}
+
+function buildPreviewUrl(type, formIndex, questionIndex) {
+    var token = createPreviewToken();
+    var url = new URL(window.location.href);
+    url.search = '';
+    url.searchParams.set('preview', type);
+    url.searchParams.set('fi', String(formIndex));
+    if (type === 'question' && questionIndex != null) {
+        url.searchParams.set('q', String(questionIndex));
+    }
+    url.searchParams.set('token', token);
+    return url.toString();
+}
+
+function openFormPreview() {
+    var fi = currentFormIndex;
+    if (!allForms[fi] || !(allForms[fi].questions || []).length) {
+        showAlert('В форме нет вопросов для теста', 'warning');
+        return;
+    }
+    openPreviewInOverlay(buildPreviewUrl('form', fi, null));
+}
+
+function openQuestionPreview(qIdx) {
+    var fi = currentFormIndex;
+    if (!allForms[fi] || !allForms[fi].questions[qIdx]) {
+        showAlert('Вопрос не найден', 'warning');
+        return;
+    }
+    openPreviewInOverlay(buildPreviewUrl('question', fi, qIdx));
+}
+
+/** Превью без popup: iframe-оверлей (браузер не блокирует) */
+function openPreviewInOverlay(url) {
+    closePreviewOverlay();
+    var safeUrl = String(url).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    var jsUrl = String(url).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    var ov = document.createElement('div');
+    ov.id = 'preview-overlay';
+    ov.className = 'preview-overlay';
+    ov.innerHTML =
+        '<div class="preview-overlay-bar">' +
+            '<span class="material-symbols-rounded">science</span>' +
+            '<span style="flex:1;font-weight:600;">Превью — без всплывающих окон</span>' +
+            '<button type="button" class="btn btn-ghost" style="width:auto;padding:6px 12px;margin:0;" onclick="openPreviewInNewTab(\'' + jsUrl + '\')">В новой вкладке</button>' +
+            '<button type="button" class="btn" style="width:auto;padding:6px 14px;margin:0;" onclick="closePreviewOverlay()">Закрыть</button>' +
+        '</div>' +
+        '<iframe id="preview-iframe" class="preview-iframe" src="' + safeUrl + '" title="Превью"></iframe>';
+    document.body.appendChild(ov);
+    document.body.classList.add('preview-overlay-open');
+}
+
+function openPreviewInNewTab(url) {
+    // Не обязательный путь: если браузер блокирует — открываем в этой вкладке
+    var w = null;
+    try { w = window.open(url, '_blank'); } catch (e) { w = null; }
+    if (!w) {
+        showAlert('Всплывающие окна заблокированы — открываю превью в этой вкладке', 'info');
+        setTimeout(function() { window.location.href = url; }, 600);
+    }
+}
+
+function closePreviewOverlay() {
+    var ov = document.getElementById('preview-overlay');
+    if (ov) ov.remove();
+    document.body.classList.remove('preview-overlay-open');
+}
+
+window.addEventListener('message', function(e) {
+    if (!e.data || typeof e.data !== 'object') return;
+    if (e.data.type === 'myform-preview-done' || e.data.type === 'myform-preview-close') {
+        closePreviewOverlay();
+    }
+});
+
+function applyPreviewFromUrl() {
+    try {
+        var params = new URLSearchParams(window.location.search);
+        var pv = params.get('preview');
+        if (!pv || (pv !== 'form' && pv !== 'question')) return false;
+
+        var token = params.get('token') || '';
+        if (!consumePreviewToken(token)) {
+            // токен уже использован или невалиден
+            document.body.innerHTML = '<div style="max-width:420px;margin:40px auto;padding:24px;font-family:system-ui,sans-serif;text-align:center;">' +
+                '<div style="font-size:40px;margin-bottom:12px;">🔒</div>' +
+                '<h2 style="margin:0 0 8px;">Ссылка превью недействительна</h2>' +
+                '<p style="color:#666;margin:0 0 16px;">Одноразовая ссылка уже использована или истекла. Откройте превью заново из админки.</p>' +
+                '<button onclick="window.close()" style="padding:10px 18px;border:none;border-radius:10px;background:#1a73e8;color:#fff;font-weight:600;cursor:pointer;">Закрыть</button>' +
+                '</div>';
+            return true;
+        }
+
+        var fi = parseInt(params.get('fi'), 10);
+        if (isNaN(fi) || fi < 0 || fi >= allForms.length) fi = 0;
+        currentFormIndex = fi;
+
+        var qIdx = params.get('q') != null ? parseInt(params.get('q'), 10) : null;
+        previewMode = {
+            type: pv,
+            formIndex: fi,
+            questionIndex: (pv === 'question' && !isNaN(qIdx)) ? qIdx : null,
+            token: token
+        };
+
+        document.body.classList.add('preview-mode');
+        document.title = 'Превью | My Form';
+
+        // скрыть хром
+        [
+            'forms-toolbar-container', 'footer-link', 'theme-burger-btn', 'theme-sidebar',
+            'theme-sidebar-overlay', 'admin-screen', 'login-screen', 'tools-menu'
+        ].forEach(function(sel) {
+            var el = document.querySelector('.' + sel) || document.getElementById(sel);
+            if (el) el.classList.add('hidden');
+        });
+        var toolbar = document.querySelector('.forms-toolbar-container');
+        if (toolbar) toolbar.classList.add('hidden');
+        var footer = document.getElementById('footer-link');
+        if (footer) footer.classList.add('hidden');
+
+        // баннер превью
+        var banner = document.getElementById('preview-banner');
+        if (!banner) {
+            banner = document.createElement('div');
+            banner.id = 'preview-banner';
+            banner.className = 'preview-banner';
+            banner.innerHTML = '<span class="material-symbols-rounded">science</span>' +
+                '<span><b>Режим превью</b> — ответы сразу с подсветкой (Learn). Результаты не сохраняются.</span>' +
+                '<button type="button" class="btn btn-ghost" style="width:auto;padding:6px 12px;margin:0;" onclick="closePreviewWindow()">Закрыть</button>';
+            var container = document.querySelector('.container');
+            if (container) container.insertBefore(banner, container.firstChild);
+            else document.body.insertBefore(banner, document.body.firstChild);
+        }
+
+        // форма (режим Learn через getFormMode → previewMode, без записи в storage)
+        var form = allForms[currentFormIndex];
+
+        if (previewMode.type === 'question' && previewMode.questionIndex != null) {
+            // один вопрос: временно сужаем questions
+            var only = form.questions[previewMode.questionIndex];
+            if (only) {
+                previewMode._fullQuestions = form.questions;
+                form.questions = [JSON.parse(JSON.stringify(only))];
+                // без тем в превью одного вопроса
+                form.themes = [{ id: 'theme-preview', title: 'Превью', icon: 'science', description: '' }];
+                form.questions[0].themeId = 'theme-preview';
+            }
+        }
+
+        currentQuestionIndex = 0;
+        userAnswers = {};
+        isExplanationShowing = false;
+        currentThemeId = null;
+
+        document.getElementById('quiz-screen').classList.remove('hidden');
+        document.getElementById('quiz-box').classList.remove('hidden');
+        document.getElementById('result-box').classList.add('hidden');
+        document.getElementById('admin-screen').classList.add('hidden');
+        var tc = document.getElementById('theme-complete-box');
+        if (tc) tc.classList.add('hidden');
+
+        ensureFormThemes(form);
+        initCurrentTheme();
+        // без бокового меню тем
+        document.body.classList.remove('has-themes');
+        var burger = document.getElementById('theme-burger-btn');
+        if (burger) burger.classList.add('hidden');
+
+        renderQuestion();
+        return true;
+    } catch (e) {
+        console.warn('applyPreviewFromUrl', e);
+        return false;
+    }
+}
+
+function injectPreviewFinishUI() {
+    var box = document.getElementById('result-box');
+    if (!box) return;
+    var bar = document.getElementById('preview-finish-bar');
+    if (bar) bar.remove();
+    bar = document.createElement('div');
+    bar.id = 'preview-finish-bar';
+    bar.className = 'preview-finish-bar';
+    bar.innerHTML =
+        '<p style="text-align:center;color:var(--text-muted);font-size:13px;margin:0 0 10px;">Превью завершено. Окно закроется через <b id="preview-countdown">3</b> с</p>' +
+        '<button class="btn" style="width:100%;" onclick="closePreviewWindow()">Закрыть сейчас</button>';
+    box.appendChild(bar);
+
+    // postMessage родителю / opener
+    try {
+        var msg = { type: 'myform-preview-done', formIndex: previewMode && previewMode.formIndex, token: previewMode && previewMode.token };
+        if (window.opener && !window.opener.closed) window.opener.postMessage(msg, '*');
+        if (window.parent && window.parent !== window) window.parent.postMessage(msg, '*');
+    } catch (e) {}
+
+    var left = 3;
+    var cd = document.getElementById('preview-countdown');
+    var t = setInterval(function() {
+        left--;
+        if (cd) cd.textContent = String(left);
+        if (left <= 0) {
+            clearInterval(t);
+            closePreviewWindow();
+        }
+    }, 1000);
+}
+
+function closePreviewWindow() {
+    try {
+        var msg = { type: 'myform-preview-close', token: previewMode && previewMode.token };
+        if (window.opener && !window.opener.closed) window.opener.postMessage(msg, '*');
+        if (window.parent && window.parent !== window) window.parent.postMessage(msg, '*');
+    } catch (e) {}
+    if (previewMode && previewMode._fullQuestions && allForms[previewMode.formIndex]) {
+        allForms[previewMode.formIndex].questions = previewMode._fullQuestions;
+    }
+    // В iframe просто сообщаем родителю — оверлей закроет сам
+    var inFrame = false;
+    try { inFrame = window.parent && window.parent !== window; } catch (e) { inFrame = true; }
+    if (inFrame) return;
+    try { window.close(); } catch (e) {}
+    setTimeout(function() {
+        if (!window.closed) {
+            var u = new URL(window.location.href);
+            u.search = '';
+            window.location.href = u.toString();
+        }
+    }, 200);
+}
+
