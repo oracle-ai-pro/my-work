@@ -4,38 +4,34 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>My WorkGens AI | Prestige HQ</title>
-  <link rel="icon" type="image/png" href="icon.png">
-  <!-- Material Symbols Rounded -->
+<link rel="icon" type="image/png" href="icon.png">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-  
   <link rel="stylesheet" href="style.css">
-  <script src="script.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="script.js" defer></script>
 </head>
 <body>
 
-  <!-- Мобильная шапка -->
   <header class="mobile-header">
-    <button id="burgerBtn" class="icon-btn ripple">
+    <button id="burgerBtn" class="icon-btn ripple" type="button">
       <span class="material-symbols-rounded">menu</span>
     </button>
     <div class="logo-group">
       <span class="material-symbols-rounded logo-icon">smart_toy</span>
       <span class="logo-text">WorkGens AI</span>
     </div>
-    <button id="themeToggleMobile" class="icon-btn ripple">
+    <button id="themeToggleMobile" class="icon-btn ripple" type="button">
       <span class="material-symbols-rounded">contrast</span>
     </button>
   </header>
 
-  <!-- Боковое меню (Sidebar) -->
   <aside id="sidebar" class="sidebar">
     <div class="sidebar-header">
-      <button class="new-chat-btn ripple" id="newChatBtn">
+      <button class="new-chat-btn ripple" id="newChatBtn" type="button">
         <span class="material-symbols-rounded">add</span>
         <span class="btn-text">Новый чат</span>
       </button>
-      <button id="collapseBtn" class="icon-btn desktop-only ripple" title="Свернуть меню">
+      <button id="collapseBtn" class="icon-btn desktop-only ripple" title="Свернуть меню" type="button">
         <span class="material-symbols-rounded">chevron_left</span>
       </button>
     </div>
@@ -49,23 +45,23 @@
       <div class="nav-section">
         <span class="section-title">Библиотека проектов</span>
         <ul class="project-list">
-          <li data-service="Document" class="ripple">
+          <li class="ripple service-link" data-href="../document">
             <span class="material-symbols-rounded icon-doc">description</span>
             <span class="item-text">My Document</span>
           </li>
-          <li data-service="Spreadsheets" class="ripple">
+          <li class="ripple service-link" data-href="../spreadsheet" title="На обслуживании">
             <span class="material-symbols-rounded icon-sheets">table_chart</span>
-            <span class="item-text">My Spreadsheets</span>
+            <span class="item-text">My Spreadsheets (ТО)</span>
           </li>
-          <li data-service="Forms" class="ripple">
+          <li class="ripple service-link" data-href="../forms">
             <span class="material-symbols-rounded icon-forms">assignment</span>
             <span class="item-text">My Forms</span>
           </li>
-          <li data-service="Slides" class="ripple">
+          <li class="ripple service-link" data-href="../slides">
             <span class="material-symbols-rounded icon-slides">slideshow</span>
             <span class="item-text">My Slides</span>
           </li>
-          <li data-service="Keeps" class="ripple">
+          <li class="ripple service-link" data-href="../keeps">
             <span class="material-symbols-rounded icon-keeps">keep</span>
             <span class="item-text">My Keeps</span>
           </li>
@@ -82,125 +78,104 @@
         <div class="limit-bar"><div class="limit-fill" id="limitFill" style="width: 100%;"></div></div>
       </div>
 
-      <button id="toggleStudioBtn" class="footer-btn ripple">
+      <button id="toggleStudioBtn" class="footer-btn ripple" type="button">
         <span class="material-symbols-rounded">auto_awesome</span>
         <span class="btn-text">Открыть Студию</span>
       </button>
 
-      <button id="settingsBtn" class="footer-btn ripple">
+      <button id="settingsBtn" class="footer-btn ripple" type="button">
         <span class="material-symbols-rounded">settings</span>
         <span class="btn-text">Настройки API</span>
       </button>
 
-      <button id="themeToggle" class="footer-btn ripple">
+      <button id="themeToggle" class="footer-btn ripple" type="button">
         <span class="material-symbols-rounded">contrast</span>
         <span class="btn-text">Сменить тему</span>
       </button>
     </div>
   </aside>
 
-  <!-- Оверлей для мобилок -->
   <div id="overlay" class="overlay"></div>
 
-  <!-- Главная область -->
   <main class="chat-container">
     <div class="chat-header-mobile">
       <span class="active-chat-title" id="activeChatTitle">Новый чат</span>
     </div>
 
-    <!-- Область сообщений -->
     <div id="chatMessages" class="chat-messages hidden"></div>
 
-    <!-- Экран приветствия -->
     <div id="chatWelcome" class="chat-welcome">
       <h1>Чем могу помочь в <span class="accent-text">WorkGens</span>?</h1>
       <p class="subtitle">Задайте вопрос или выберите готовый сценарий</p>
 
       <div class="quick-cards">
-        <div class="card ripple" data-prompt="Помоги составить структуру документа в My Document">
+        <div class="card ripple" data-prompt="Подготовь структуру и текст документа для My Document на тему: отчёт о проделанной работе">
           <span class="material-symbols-rounded card-icon icon-doc">description</span>
           <h3>Document</h3>
           <p>Написать статью, отчет или отредактировать текст</p>
         </div>
-        <div class="card ripple" data-prompt="Напиши сложное выражение или формулу для My Spreadsheets">
+        <div class="card ripple" data-prompt="Предложи структуру таблицы и формулы для My Spreadsheets: учёт расходов">
           <span class="material-symbols-rounded card-icon icon-sheets">table_chart</span>
           <h3>Spreadsheets</h3>
-          <p>Сгенерировать формулу, скрипт или таблицу</p>
+          <p>Структура таблицы и идеи формул</p>
         </div>
-        <div class="card ripple" data-prompt="Создай опрос с тестами и ответами для My Forms">
+        <div class="card ripple" data-prompt="Создай тест из 5 вопросов для My Forms по теме: основы математики">
           <span class="material-symbols-rounded card-icon icon-forms">assignment</span>
           <h3>Forms</h3>
-          <p>Создать опрос, тест или структуру анкеты</p>
+          <p>Создать опрос, тест или анкету</p>
         </div>
-        <div class="card ripple" data-prompt="Подготовь план и тезисы презентации для My Slides">
+        <div class="card ripple" data-prompt="Подготовь презентацию из 5 слайдов для My Slides: введение в проект">
           <span class="material-symbols-rounded card-icon icon-slides">slideshow</span>
           <h3>Slides</h3>
-          <p>Составить слайды и заметки докладчика</p>
+          <p>Слайды и заметки докладчика</p>
         </div>
       </div>
     </div>
 
-    <!-- Блок анимации анализа (Thinking Stage) -->
     <div id="thinkingBlock" class="thinking-block hidden">
       <div class="thinking-header">
         <div class="thinking-brain">
           <span class="material-symbols-rounded spin-slow">psychology</span>
         </div>
-        <span class="thinking-title">Анализ запроса и вычисление...</span>
+        <span class="thinking-title">Анализ запроса и генерация...</span>
       </div>
-      <div class="thinking-pulser">
-        <div class="pulse-line"></div>
-      </div>
+      <div class="thinking-pulser"><div class="pulse-line"></div></div>
       <p class="warning-note">
         <span class="material-symbols-rounded warning-icon">local_fire_department</span>
-        При длительной генерации сложной задачи устройство может нагреваться.
+        При длительной генерации устройство может нагреваться.
       </p>
     </div>
 
-    <!-- Область ввода -->
     <div class="input-area">
-      <!-- Панель предпросмотра прикрепленного файла -->
       <div id="attachedFilePreview" class="attached-file-preview hidden">
         <div class="file-info">
           <span class="material-symbols-rounded file-icon">attach_file</span>
           <span id="attachedFileName" class="file-name">filename.txt</span>
         </div>
-        <button id="removeFileBtn" class="icon-btn remove-file-btn ripple" title="Убрать файл">
+        <button id="removeFileBtn" class="icon-btn remove-file-btn ripple" title="Убрать файл" type="button">
           <span class="material-symbols-rounded">close</span>
         </button>
       </div>
 
       <div class="input-wrapper">
         <textarea id="promptInput" rows="1" placeholder="Спросите WorkGens или поставьте задачу..."></textarea>
-        
         <div class="input-actions">
-          <!-- Скрытый файловый инпут -->
-          <input type="file" id="fileInput" style="display: none;">
-          
-          <!-- Кнопка "Прикрепить файл" -->
-          <button id="attachFileBtn" class="icon-btn ripple" title="Прикрепить файл">
+          <input type="file" id="fileInput" style="display:none" accept="image/*,.txt,.md,.json,.csv">
+          <button id="attachFileBtn" class="icon-btn ripple" title="Прикрепить файл" type="button">
             <span class="material-symbols-rounded">attach_file</span>
           </button>
-
-          <!-- Переключатель модели -->
           <div class="inline-model-selector" id="inlineModelSelector">
-            <button class="model-chip active ripple" data-model="plan" title="Plan: Создание планов и схем">
-              <span class="material-symbols-rounded">schema</span>
-              <span>Plan</span>
+            <button class="model-chip active ripple" data-model="plan" type="button" title="Plan: план шагов">
+              <span class="material-symbols-rounded">schema</span><span>Plan</span>
             </button>
-            <button class="model-chip ripple" data-model="agent" title="Agent: Генерация текста и выполнение действий">
-              <span class="material-symbols-rounded">bolt</span>
-              <span>Agent</span>
+            <button class="model-chip ripple" data-model="agent" type="button" title="Agent: полная генерация">
+              <span class="material-symbols-rounded">bolt</span><span>Agent</span>
             </button>
           </div>
-
-          <!-- Голосовой ввод -->
-          <button id="micBtn" class="icon-btn mic-btn ripple" title="Голосовой ввод">
+          <button id="micBtn" class="icon-btn mic-btn ripple" title="Голосовой ввод" type="button">
             <span class="material-symbols-rounded">mic</span>
           </button>
-
-          <!-- Кнопка Отправки / Остановки -->
-          <button id="sendBtn" class="send-btn ripple" title="Отправить">
+          <button id="sendBtn" class="send-btn ripple" title="Отправить" type="button">
             <span class="material-symbols-rounded" id="sendBtnIcon">arrow_upward</span>
           </button>
         </div>
@@ -208,158 +183,157 @@
     </div>
   </main>
 
-  <!-- Правая панель: Студия -->
+  <!-- Студия -->
   <aside class="studio-sidebar hidden" id="studioSidebar">
     <div class="studio-header">
       <div class="studio-title">
         <span class="material-symbols-rounded">auto_awesome</span>
         <h3>Студия WorkGens</h3>
       </div>
-      <button class="icon-btn ripple" id="closeStudioBtn" title="Закрыть">
+      <button class="icon-btn ripple" id="closeStudioBtn" title="Закрыть" type="button">
         <span class="material-symbols-rounded">close</span>
       </button>
     </div>
 
-    <!-- Кнопки быстрых генераций в Студии -->
     <div class="studio-quick-actions">
-      <button class="studio-action-btn ripple" data-gen="document">
-        <span class="material-symbols-rounded icon-doc">description</span>
-        <span>Документ</span>
+      <button class="studio-action-btn ripple" data-gen="document" type="button">
+        <span class="material-symbols-rounded icon-doc">description</span><span>Документ</span>
       </button>
-      <button class="studio-action-btn ripple" data-gen="spreadsheets">
-        <span class="material-symbols-rounded icon-sheets">table_chart</span>
-        <span>Таблицу</span>
+      <button class="studio-action-btn ripple" data-gen="forms" type="button">
+        <span class="material-symbols-rounded icon-forms">assignment</span><span>Форму</span>
       </button>
-      <button class="studio-action-btn ripple" data-gen="forms">
-        <span class="material-symbols-rounded icon-forms">assignment</span>
-        <span>Форму</span>
+      <button class="studio-action-btn ripple" data-gen="slides" type="button">
+        <span class="material-symbols-rounded icon-slides">slideshow</span><span>Слайды</span>
       </button>
-      <button class="studio-action-btn ripple" data-gen="slides">
-        <span class="material-symbols-rounded icon-slides">slideshow</span>
-        <span>Слайды</span>
+      <button class="studio-action-btn ripple" data-gen="keeps" type="button">
+        <span class="material-symbols-rounded icon-keeps">keep</span><span>Заметки</span>
       </button>
-      <button class="studio-action-btn ripple" data-gen="keeps">
-        <span class="material-symbols-rounded icon-keeps">keep</span>
-        <span>Заметки</span>
+      <button class="studio-action-btn ripple" data-gen="spreadsheets" type="button" title="Пока упрощённо">
+        <span class="material-symbols-rounded icon-sheets">table_chart</span><span>Таблицу</span>
       </button>
+    </div>
+
+    <div class="studio-type-badge" id="studioTypeBadge">Тип: —</div>
+
+    <!-- Слайдер для slides -->
+    <div id="studioSlideNav" class="studio-slide-nav hidden">
+      <button type="button" class="icon-btn" id="studioSlidePrev"><span class="material-symbols-rounded">chevron_left</span></button>
+      <span id="studioSlideCounter">1 / 1</span>
+      <button type="button" class="icon-btn" id="studioSlideNext"><span class="material-symbols-rounded">chevron_right</span></button>
     </div>
 
     <div class="studio-content">
       <div class="studio-preview-card" id="studioPreview">
-        <p class="studio-placeholder">Здесь появится сгенерированный проект для экспорта.</p>
+        <p class="studio-placeholder">Здесь появится сгенерированный проект. Можно листать слайды и экспортировать в сервис.</p>
       </div>
     </div>
 
     <div class="studio-footer">
-      <label for="exportServiceSelect" class="studio-label">Экспорт в сервис My Work:</label>
+      <label class="studio-label">Экспорт в сервис My Work</label>
       <div class="export-controls">
-        <select id="exportServiceSelect" class="studio-select">
-          <option value="document">📄 Document (Документы)</option>
-          <option value="spreadsheets">📊 Spreadsheets (Таблицы)</option>
-          <option value="forms">📝 Forms (Формы)</option>
-          <option value="slides">🖼️ Slides (Презентации)</option>
-          <option value="keeps">💡 Keeps (Заметки)</option>
-        </select>
-        <button class="primary-btn ripple" id="exportProjectBtn">
+        <div class="custom-select-wrapper">
+          <select id="exportServiceSelect" class="studio-select">
+            <option value="document">Document (Документы)</option>
+            <option value="forms">Forms (Формы)</option>
+            <option value="slides">Slides (Презентации)</option>
+            <option value="keeps">Keeps (Заметки)</option>
+            <option value="spreadsheets" disabled>Spreadsheets (на обслуживании)</option>
+          </select>
+          <span class="material-symbols-rounded select-icon">expand_more</span>
+        </div>
+        <button class="primary-btn ripple" id="exportProjectBtn" type="button">
           <span class="material-symbols-rounded">output</span>
-          Импортировать
+          Импортировать в сервис
         </button>
       </div>
     </div>
   </aside>
 
-  <!-- Модальное окно генерации проекта в Студии -->
+  <!-- Генерация в студии -->
   <div id="studioGenModal" class="modal-overlay hidden">
     <div class="modal-card">
       <div class="modal-header">
         <h2 id="studioGenTitle">Генерация в Студии</h2>
-        <button id="closeStudioGenBtn" class="icon-btn ripple">
+        <button id="closeStudioGenBtn" class="icon-btn ripple" type="button">
           <span class="material-symbols-rounded">close</span>
         </button>
       </div>
       <div class="modal-body">
-        <label for="studioGenPrompt">Опишите, что вы хотите увидеть:</label>
-        <textarea id="studioGenPrompt" rows="4" class="studio-gen-textarea" placeholder="Например: Создай отчет по продажам за Q1 со сводной таблицей и показателями..."></textarea>
+        <label for="studioGenPrompt">Опишите, что нужно сгенерировать:</label>
+        <textarea id="studioGenPrompt" rows="4" class="studio-gen-textarea" placeholder="Например: тест из 5 вопросов по алгебре..."></textarea>
       </div>
       <div class="modal-footer">
-        <button id="studioSubmitGenBtn" class="primary-btn ripple">
-          <span class="material-symbols-rounded">bolt</span>
-          Generate
+        <button id="studioSubmitGenBtn" class="primary-btn ripple" type="button">
+          <span class="material-symbols-rounded">bolt</span> Сгенерировать
         </button>
       </div>
     </div>
   </div>
 
-  <!-- Обязательное Onboarding Модальное окно (Первый запуск / Нет API ключа) -->
   <div id="onboardingModal" class="modal-overlay hidden modal-forced">
     <div class="modal-card onboarding-card">
-      <div class="modal-header">
-        <h2>Добро пожаловать в WorkGens AI! 🚀</h2>
-      </div>
+      <div class="modal-header"><h2>Добро пожаловать в WorkGens AI</h2></div>
       <div class="modal-body">
-        <p class="onboarding-text">Для полноценной работы приложения необходимо добавить ваш **Google Gemini API Key**.</p>
-        
+        <p class="onboarding-text">Для работы нужен API-ключ. Сейчас поддерживается <strong>Google Gemini</strong> (позже — другие провайдеры).</p>
         <div class="onboarding-steps">
-          <div class="step">
-            <span class="step-num">1</span>
-            <span>Перейдите в <a href="https://aistudio.google.com/" target="_blank" rel="noopener">Google AI Studio</a>.</span>
-          </div>
-          <div class="step">
-            <span class="step-num">2</span>
-            <span>Нажмите <strong>Get API Key</strong> ➔ <strong>Create API Key</strong>.</span>
-          </div>
-          <div class="step">
-            <span class="step-num">3</span>
-            <span>Вставьте ваш ключ ниже:</span>
-          </div>
+          <div class="step"><span class="step-num">1</span><span>Откройте <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio → API Key</a></span></div>
+          <div class="step"><span class="step-num">2</span><span>Создайте ключ и вставьте ниже</span></div>
         </div>
-
-        <input type="password" id="onboardingKeyInput" placeholder="Вставьте ваш API Key здесь...">
+        <input type="password" id="onboardingKeyInput" placeholder="Gemini API Key...">
       </div>
       <div class="modal-footer">
-        <button id="saveOnboardingKeyBtn" class="primary-btn ripple">Сохранить и продолжить</button>
+        <button id="saveOnboardingKeyBtn" class="primary-btn ripple" type="button">Сохранить и продолжить</button>
       </div>
     </div>
   </div>
 
-  <!-- Контекстное меню (ПКМ) -->
   <div id="contextMenu" class="context-menu hidden">
     <div class="context-item ripple" id="ctxRename">
-      <span class="material-symbols-rounded">edit</span>
-      <span>Переименовать</span>
+      <span class="material-symbols-rounded">edit</span><span>Переименовать</span>
     </div>
     <div class="context-item danger ripple" id="ctxDelete">
-      <span class="material-symbols-rounded">delete</span>
-      <span>Удалить</span>
+      <span class="material-symbols-rounded">delete</span><span>Удалить</span>
     </div>
   </div>
 
-  <!-- Модальное окно настроек -->
   <div id="settingsModal" class="modal-overlay hidden">
     <div class="modal-card">
       <div class="modal-header">
         <h2>Настройки WorkGens AI</h2>
-        <button id="closeSettingsBtn" class="icon-btn ripple">
+        <button id="closeSettingsBtn" class="icon-btn ripple" type="button">
           <span class="material-symbols-rounded">close</span>
         </button>
       </div>
       <div class="modal-body">
-        <label for="apiKeyInput">Google API Key:</label>
-        <input type="password" id="apiKeyInput" placeholder="Ключ от Google AI Studio">
-        <p class="help-text">Если удалить ключ и сохранить, снова откроется окно настройки.</p>
-        
-        <div class="modal-limit-info">
-          <h3>Статус лимитов</h3>
-          <p>Автоматический полный сброс происходит каждые 3 часа.</p>
+        <label>Провайдер API</label>
+        <div class="custom-select-wrapper" style="margin-bottom:12px;">
+          <select id="providerSelect" class="studio-select">
+            <option value="gemini">Google Gemini</option>
+            <option value="openai" disabled>OpenAI (скоро)</option>
+            <option value="grok" disabled>xAI Grok (скоро)</option>
+          </select>
+          <span class="material-symbols-rounded select-icon">expand_more</span>
         </div>
+        <label for="apiKeyInput">API Key:</label>
+        <input type="password" id="apiKeyInput" placeholder="Ключ API">
+        <label for="modelSelect" style="margin-top:12px;display:block;">Модель Gemini</label>
+        <div class="custom-select-wrapper">
+          <select id="modelSelect" class="studio-select">
+            <option value="gemini-3.6-flash" selected>gemini-3.6-flash (актуальная)</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash</option>
+            <option value="gemini-1.5-flash">gemini-1.5-flash</option>
+            <option value="gemini-1.5-pro">gemini-1.5-pro</option>
+          </select>
+          <span class="material-symbols-rounded select-icon">expand_more</span>
+        </div>
+        <p class="help-text">Лимит сбрасывается каждые 3 часа (локальный счётчик).</p>
       </div>
       <div class="modal-footer">
-        <button id="saveSettingsBtn" class="primary-btn ripple">Сохранить</button>
+        <button id="saveSettingsBtn" class="primary-btn ripple" type="button">Сохранить</button>
       </div>
     </div>
   </div>
 
-  <!-- Тоасты и диалоги -->
   <div id="toastContainer" class="toast-container"></div>
   <div id="customDialogModal" class="modal-overlay hidden">
     <div class="modal-card dialog-card">
@@ -372,8 +346,8 @@
         <input type="text" id="dialogInput" class="hidden" placeholder="Введите значение...">
       </div>
       <div class="dialog-footer">
-        <button id="dialogCancelBtn" class="secondary-btn ripple">Отмена</button>
-        <button id="dialogOkBtn" class="primary-btn ripple">ОК</button>
+        <button id="dialogCancelBtn" class="secondary-btn ripple" type="button">Отмена</button>
+        <button id="dialogOkBtn" class="primary-btn ripple" type="button">ОК</button>
       </div>
     </div>
   </div>
