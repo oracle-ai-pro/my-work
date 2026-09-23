@@ -1796,3 +1796,29 @@ body.preview-overlay-open {
         justify-content: flex-end;
     }
 }
+
+.fs-save-progress-warning {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 12px 14px;
+    margin: 4px 0 8px;
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(211, 47, 47, 0.45);
+    background: rgba(211, 47, 47, 0.1);
+    color: var(--text-color);
+    font-size: 12.5px;
+    line-height: 1.45;
+}
+.fs-save-progress-warning.hidden { display: none !important; }
+.fs-save-progress-warning .material-symbols-rounded {
+    color: #d32f2f;
+    font-size: 22px;
+    flex-shrink: 0;
+}
+.fs-save-progress-warning strong {
+    display: block;
+    margin-bottom: 4px;
+    color: #b71c1c;
+}
+body.dark-theme .fs-save-progress-warning strong { color: #ef9a9a; }
