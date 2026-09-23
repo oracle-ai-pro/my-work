@@ -23,6 +23,8 @@ let editingThemeId = null;
 let selectedThemeIcon = 'school';
 const THEME_PROGRESS_KEY = 'my_forms_theme_progress';
 const THEME_PROGRESS_DAYS = 30;
+const SESSION_PROGRESS_KEY = 'my_forms_session_progress';
+const SESSION_PROGRESS_DAYS = 30;
 const THEME_ICONS = [
     'school','menu_book','science','calculate','history_edu','language',
     'psychology','biotech','public','palette','music_note','sports_soccer',
@@ -581,6 +583,29 @@ function loadCurrentForm() {
     const form = allForms[currentFormIndex];
     if (form) {
         ensureFormThemes(form);
+        // восстановить ответы / позицию, если включено «Сохранять прохождения»
+        if (isSaveProgressEnabled(form)) {
+            var prog = restoreSessionProgress();
+            if (prog) {
+                userAnswers = prog.answers || {};
+                if (prog.themeId) currentThemeId = prog.themeId;
+                if (typeof prog.questionIndex === 'number') currentQuestionIndex = prog.questionIndex;
+                if (typeof prog.realIndex === 'number') currentRealQuestionIndex = prog.realIndex;
+                if (prog.flashcardStats) flashcardStats = prog.flashcardStats;
+            }
+        } else {
+            // режим без сохранения: сбросить сессию и галочки тем этой формы
+            clearSessionProgress(currentFormIndex);
+            try {
+                var map = loadThemeProgress();
+                var prefix = currentFormIndex + '::';
+                var changed = false;
+                Object.keys(map).forEach(function(k) {
+                    if (k.indexOf(prefix) === 0) { delete map[k]; changed = true; }
+                });
+                if (changed) saveThemeProgress(map);
+            } catch (e) {}
+        }
         initCurrentTheme();
         renderThemeUI();
     }
@@ -684,6 +709,7 @@ function renderFlashcardMode() {
 function flashcardKnow() {
     flashcardStats.know++;
     userAnswers[currentRealQuestionIndex] = 'know';
+    persistSessionProgress();
     var _al = getActiveQuestionList();
     if (currentQuestionIndex < _al.length - 1) {
         currentQuestionIndex++;
@@ -696,6 +722,7 @@ function flashcardKnow() {
 function flashcardDontKnow() {
     flashcardStats.dontKnow++;
     userAnswers[currentRealQuestionIndex] = 'dontknow';
+    persistSessionProgress();
     var _al = getActiveQuestionList();
     if (currentQuestionIndex < _al.length - 1) {
         currentQuestionIndex++;
@@ -988,16 +1015,21 @@ function renderQuestion() {
     }
 }
 
-function saveAnswer(val) { userAnswers[currentRealQuestionIndex] = val; }
+function saveAnswer(val) {
+    userAnswers[currentRealQuestionIndex] = val;
+    persistSessionProgress();
+}
 
 function saveCheckboxAnswer() {
     const checked = Array.from(document.querySelectorAll('input[name="q_opt"]:checked')).map(el => parseInt(el.value));
     userAnswers[currentRealQuestionIndex] = checked;
+    persistSessionProgress();
 }
 
 function savePuzzleAnswer() {
     const items = Array.from(document.querySelectorAll('.puzzle-item')).map(el => parseInt(el.getAttribute('data-idx')));
     userAnswers[currentRealQuestionIndex] = items;
+    persistSessionProgress();
 }
 
 function movePuzzleItem(btn, direction) {
@@ -1095,6 +1127,7 @@ function nextStep(force = false) {
     var activeLen = (_active && _active.activeCount) ? _active.activeCount : getActiveQuestionList().length;
     if (currentQuestionIndex < activeLen - 1) {
         currentQuestionIndex++;
+    persistSessionProgress();;
         renderQuestion();
     } else {
         if (themesEnabled(form)) showThemeCompleteScreen();
@@ -1276,6 +1309,8 @@ function calculateResults() {
     stopHoldTimer();
     document.getElementById('quiz-box').classList.add('hidden');
     document.getElementById('result-box').classList.remove('hidden');
+    // прохождение завершено — сбрасываем только черновик ответов (галочки тем остаются)
+    try { clearSessionProgress(currentFormIndex); } catch (e) {}
     var tc = document.getElementById('theme-complete-box');
     if (tc) tc.classList.add('hidden');
 
@@ -1729,6 +1764,14 @@ function processSaveQuestion(type, title, useInline) {
     if (typeof renderThemeUI === 'function') renderThemeUI();
 }
 
+function toggleSaveProgressWarning() {
+    var el = document.getElementById('fs-save-progress');
+    var warn = document.getElementById('fs-save-progress-warning');
+    if (!warn) return;
+    if (el && !el.checked) warn.classList.remove('hidden');
+    else warn.classList.add('hidden');
+}
+
 function openFormSettings() {
     const form = allForms[currentFormIndex];
     if (!form) return;
@@ -1757,6 +1800,9 @@ function openFormSettings() {
         if (defReq) defReq.checked = !!form.settings.defaultRequired;
         var emailEl = document.getElementById('fs-teacher-email');
         if (emailEl) emailEl.value = form.settings.teacherEmail || '';
+        var saveProg = document.getElementById('fs-save-progress');
+        if (saveProg) saveProg.checked = form.settings.saveProgress !== false;
+        if (typeof toggleSaveProgressWarning === 'function') toggleSaveProgressWarning();
 
         toggleTestModeSettings();
         enhanceAllSelects(modal);
@@ -1788,8 +1834,19 @@ function saveFormSettings() {
         defaultPoints: parseInt((document.getElementById('fs-default-points') || {}).value, 10) || 10,
         defaultRequired: !!(document.getElementById('fs-default-required') && document.getElementById('fs-default-required').checked),
         lockNextThemes: !!(lockEl && lockEl.checked),
-        teacherEmail: emailEl ? (emailEl.value || '').trim() : (prev.teacherEmail || '')
+        teacherEmail: emailEl ? (emailEl.value || '').trim() : (prev.teacherEmail || ''),
+        saveProgress: !!(document.getElementById('fs-save-progress') && document.getElementById('fs-save-progress').checked)
     });
+    // если сохранение выключили — чистим прогресс этой формы
+    if (!allForms[currentFormIndex].settings.saveProgress) {
+        try { clearSessionProgress(currentFormIndex); } catch (e) {}
+        try {
+            var map = loadThemeProgress();
+            var prefix = currentFormIndex + '::';
+            Object.keys(map).forEach(function(k) { if (k.indexOf(prefix) === 0) delete map[k]; });
+            saveThemeProgress(map);
+        } catch (e) {}
+    }
     saveFormsToStorage();
     const modal = document.getElementById('form-settings-modal');
     if (modal) modal.classList.remove('active');
@@ -2662,6 +2719,77 @@ function getActiveQuestionList() {
     }
     return getQuestionsForTheme(form, currentThemeId);
 }
+
+/* ===== Сохранение прогресса прохождения (ответы + тема) ===== */
+function isSaveProgressEnabled(form) {
+    if (!form) form = allForms[currentFormIndex];
+    if (!form) return true;
+    if (!form.settings) return true;
+    // по умолчанию ВКЛ; только явное false отключает
+    return form.settings.saveProgress !== false;
+}
+
+function sessionProgressKey(formIndex) {
+    var form = allForms[formIndex];
+    var id = (form && (form.id || form.title)) ? String(form.id || form.title) : String(formIndex);
+    return formIndex + '::' + id;
+}
+
+function loadSessionProgressMap() {
+    try {
+        var raw = localStorage.getItem(SESSION_PROGRESS_KEY);
+        if (!raw) return {};
+        var data = JSON.parse(raw);
+        var now = Date.now();
+        var maxAge = SESSION_PROGRESS_DAYS * 24 * 60 * 60 * 1000;
+        var cleaned = {};
+        Object.keys(data).forEach(function(k) {
+            if (data[k] && (now - (data[k].ts || 0)) < maxAge) cleaned[k] = data[k];
+        });
+        localStorage.setItem(SESSION_PROGRESS_KEY, JSON.stringify(cleaned));
+        return cleaned;
+    } catch (e) { return {}; }
+}
+
+function saveSessionProgressMap(map) {
+    localStorage.setItem(SESSION_PROGRESS_KEY, JSON.stringify(map));
+}
+
+function persistSessionProgress() {
+    var form = allForms[currentFormIndex];
+    if (!form || !isSaveProgressEnabled(form)) return;
+    if (previewMode) return;
+    var map = loadSessionProgressMap();
+    var key = sessionProgressKey(currentFormIndex);
+    map[key] = {
+        answers: userAnswers || {},
+        themeId: currentThemeId || null,
+        questionIndex: currentQuestionIndex || 0,
+        realIndex: currentRealQuestionIndex || 0,
+        flashcardStats: flashcardStats || { know: 0, dontKnow: 0 },
+        ts: Date.now()
+    };
+    saveSessionProgressMap(map);
+}
+
+function restoreSessionProgress() {
+    var form = allForms[currentFormIndex];
+    if (!form || !isSaveProgressEnabled(form)) return null;
+    if (previewMode) return null;
+    var map = loadSessionProgressMap();
+    var key = sessionProgressKey(currentFormIndex);
+    return map[key] || null;
+}
+
+function clearSessionProgress(formIndex) {
+    if (formIndex == null) formIndex = currentFormIndex;
+    var map = loadSessionProgressMap();
+    var key = sessionProgressKey(formIndex);
+    delete map[key];
+    saveSessionProgressMap(map);
+}
+
+
 function loadThemeProgress() {
     try {
         var raw = localStorage.getItem(THEME_PROGRESS_KEY);
@@ -2685,9 +2813,15 @@ function isThemeCompleted(formIndex, themeId) {
     return !!(map[k] && map[k].done);
 }
 function markThemeCompleted(formIndex, themeId) {
+    var form = allForms[formIndex];
+    if (!isSaveProgressEnabled(form)) {
+        // без сохранения прогресса — галочки тем не пишем в localStorage
+        return;
+    }
     var map = loadThemeProgress();
     map[themeProgressKey(formIndex, themeId)] = { done: true, ts: Date.now() };
     saveThemeProgress(map);
+    persistSessionProgress();
 }
 function isThemeLocked(form, themeIndex) {
     if (!form.settings || !form.settings.lockNextThemes) return false;
@@ -2772,8 +2906,9 @@ function selectTheme(themeId, themeIndex) {
     }
     currentThemeId = themeId;
     currentQuestionIndex = 0;
-    userAnswers = {};
+    // НЕ обнуляем userAnswers: ключи — глобальные индексы вопросов формы
     isExplanationShowing = false;
+    persistSessionProgress();
     toggleThemeSidebar(false);
     renderThemeUI();
     document.getElementById('quiz-box').classList.remove('hidden');
