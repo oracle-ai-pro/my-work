@@ -88,7 +88,7 @@
             </button>
 
             <button class="tools-btn" onclick="window.location.href='../WorkGens/index.html'" title="ИИ Помощник WorkGens">
-                <img src="../document/ai.png" alt="AI" style="width:20px; height:20px; object-fit:contain;">
+                <img src="ai.png" alt="AI" style="width:20px; height:20px; object-fit:contain;">
             </button>
             
             <div class="tools-dropdown">
@@ -570,8 +570,19 @@
             </div>
 
 
-            <h4 style="margin: 15px 0 10px;">Темы</h4>
-            <label class="switch-label" style="margin-bottom: 12px;">
+            <h4 style="margin: 15px 0 10px;">Прогресс и темы</h4>
+            <label class="switch-label" style="margin-bottom: 8px;">
+                <span class="switch"><input type="checkbox" id="fs-save-progress" checked onchange="toggleSaveProgressWarning()"><span class="slider liquid-slider"></span></span>
+                <span class="switch-text">Сохранять прохождения, темы, ответы</span>
+            </label>
+            <div id="fs-save-progress-warning" class="fs-save-progress-warning hidden">
+                <span class="material-symbols-rounded">warning</span>
+                <div>
+                    <strong>Внимание</strong>
+                    <p style="margin:0;">При выключении данные (ответы, галочки тем, прогресс) после выхода из формы <b>пропадут</b>. У учеников ничего не сохранится, пока они не пройдут форму до конца за один заход.</p>
+                </div>
+            </div>
+            <label class="switch-label" style="margin-bottom: 12px; margin-top: 12px;">
                 <span class="switch"><input type="checkbox" id="fs-lock-themes"><span class="slider liquid-slider"></span></span>
                 <span class="switch-text">Не пускать в следующую тему, пока не пройдёшь текущую</span>
             </label>
