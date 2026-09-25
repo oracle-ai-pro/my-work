@@ -23,7 +23,6 @@
             --code-bg: #0f172a;
             --card-radius: 16px;
             --transition-speed: 0.25s;
-            /* icon wrappers dark */
             --iw-doc-bg: #0f2447;
             --iw-doc-fg: #3b82f6;
             --iw-slides-bg: #3a2205;
@@ -50,7 +49,6 @@
             --accent-glow: rgba(26, 115, 232, 0.12);
             --modal-bg: #ffffff;
             --code-bg: #f1f5f9;
-            /* icon wrappers light — soft tinted, not dark blobs */
             --iw-doc-bg: #dbeafe;
             --iw-doc-fg: #2563eb;
             --iw-slides-bg: #ffedd5;
@@ -67,12 +65,7 @@
             --maint-border: rgba(217, 119, 6, 0.4);
             --maint-text: #b45309;
         }
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
         body {
             background-color: var(--bg-color);
             color: var(--text-color);
@@ -84,18 +77,8 @@
             padding: 24px;
             transition: background-color var(--transition-speed) ease, color var(--transition-speed) ease;
         }
-        .container {
-            width: 100%;
-            max-width: 1100px;
-            text-align: center;
-            position: relative;
-        }
-        .top-nav {
-            display: flex;
-            justify-content: flex-end;
-            width: 100%;
-            margin-bottom: 10px;
-        }
+        .container { width: 100%; max-width: 1100px; text-align: center; position: relative; }
+        .top-nav { display: flex; justify-content: flex-end; width: 100%; margin-bottom: 10px; }
         .icon-btn {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
@@ -130,20 +113,10 @@
             line-height: 1.4;
             animation: fadeIn 0.3s ease;
         }
-        body.light-theme .notice-banner {
-            background: rgba(26, 115, 232, 0.08);
-        }
+        body.light-theme .notice-banner { background: rgba(26, 115, 232, 0.08); }
         .notice-banner.hidden { display: none; }
-        .notice-content {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .notice-content .material-symbols-rounded {
-            color: var(--accent-color);
-            font-size: 22px;
-            flex-shrink: 0;
-        }
+        .notice-content { display: flex; align-items: center; gap: 10px; }
+        .notice-content .material-symbols-rounded { color: var(--accent-color); font-size: 22px; flex-shrink: 0; }
         .notice-close-btn {
             background: transparent;
             border: none;
@@ -155,8 +128,6 @@
             border-radius: 6px;
         }
         .notice-close-btn:hover { color: var(--text-color); }
-
-        /* Maintenance banner for Tables */
         .maint-banner {
             display: flex;
             align-items: flex-start;
@@ -173,18 +144,9 @@
             animation: fadeIn 0.3s ease;
         }
         .maint-banner.hidden { display: none; }
-        .maint-banner .material-symbols-rounded {
-            color: var(--maint-text);
-            font-size: 22px;
-            flex-shrink: 0;
-        }
+        .maint-banner .material-symbols-rounded { color: var(--maint-text); font-size: 22px; flex-shrink: 0; }
         .maint-banner strong { color: var(--maint-text); }
-        .maint-countdown {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-top: 4px;
-        }
-
+        .maint-countdown { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
         .header { margin-bottom: 40px; }
         .badge {
             display: inline-flex;
@@ -198,16 +160,8 @@
             font-weight: 600;
             margin-bottom: 16px;
         }
-        .header h1 {
-            font-size: 2.2rem;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-            margin-bottom: 8px;
-        }
-        .header p {
-            color: var(--text-muted);
-            font-size: 1rem;
-        }
+        .header h1 { font-size: 2.2rem; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 8px; }
+        .header p { color: var(--text-muted); font-size: 1rem; }
         .services-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
@@ -251,7 +205,6 @@
             transform: none !important;
             color: var(--maint-text);
         }
-
         .lock-badge {
             position: absolute;
             top: 12px;
@@ -269,10 +222,7 @@
             color: var(--maint-text);
             border: 1px solid var(--maint-border);
         }
-        .lock-badge .material-symbols-rounded {
-            font-size: 14px;
-        }
-
+        .lock-badge .material-symbols-rounded { font-size: 14px; }
         .icon-wrapper {
             padding: 10px 16px;
             border-radius: 14px;
@@ -283,31 +233,17 @@
             margin-bottom: 16px;
             transition: transform var(--transition-speed) ease, background 0.25s ease, color 0.25s ease;
         }
-        .custom-card-icon {
-            width: 30px;
-            height: 30px;
-            object-fit: contain;
-        }
+        .custom-card-icon { width: 30px; height: 30px; object-fit: contain; }
         .service-card:not(.disabled):hover .icon-wrapper { transform: scale(1.08); }
         .icon-wrapper .material-symbols-rounded { font-size: 30px; }
-
         .card-doc .icon-wrapper { background: var(--iw-doc-bg); color: var(--iw-doc-fg); }
         .card-slides .icon-wrapper { background: var(--iw-slides-bg); color: var(--iw-slides-fg); }
         .card-forms .icon-wrapper { background: var(--iw-forms-bg); color: var(--iw-forms-fg); }
         .card-sheets .icon-wrapper { background: var(--iw-sheets-bg); color: var(--iw-sheets-fg); }
         .card-keeps .icon-wrapper { background: var(--iw-keeps-bg); color: var(--iw-keeps-fg); }
         .card-workgens .icon-wrapper { background: var(--iw-wg-bg); color: var(--iw-wg-fg); }
-
-        .service-card h2 {
-            font-size: 1.15rem;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-        .service-card p {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            line-height: 1.4;
-        }
+        .service-card h2 { font-size: 1.15rem; font-weight: 600; margin-bottom: 8px; }
+        .service-card p { font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; }
         .card-action {
             margin-top: 20px;
             display: flex;
@@ -320,11 +256,7 @@
             transform: translateY(6px);
             transition: all var(--transition-speed) ease;
         }
-        .service-card:not(.disabled):hover .card-action {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
+        .service-card:not(.disabled):hover .card-action { opacity: 1; transform: translateY(0); }
         .transition-overlay {
             position: fixed;
             top: 0; left: 0;
@@ -339,10 +271,7 @@
             pointer-events: none;
             transition: opacity 0.25s ease;
         }
-        .transition-overlay.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
+        .transition-overlay.active { opacity: 1; pointer-events: auto; }
         .loader-card-preview {
             width: 140px;
             height: 160px;
@@ -358,9 +287,7 @@
             animation: pulseCard 1s infinite alternate ease-in-out;
             margin-bottom: 20px;
         }
-        body.light-theme .loader-card-preview {
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-        }
+        body.light-theme .loader-card-preview { box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
         .loader-card-preview .material-symbols-rounded { font-size: 48px; }
         .loader-spinner {
             width: 28px; height: 28px;
@@ -369,17 +296,12 @@
             border-radius: 50%;
             animation: spin 0.6s linear infinite;
         }
-        .loader-text {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--text-color);
-        }
+        .loader-text { font-size: 1.1rem; font-weight: 600; color: var(--text-color); }
         @keyframes pulseCard {
             0% { transform: scale(0.95); }
             100% { transform: scale(1.05); }
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-
         .modal-overlay {
             position: fixed;
             top: 0; left: 0;
@@ -395,13 +317,8 @@
             transition: opacity 0.25s ease;
             padding: 20px;
         }
-        body.light-theme .modal-overlay {
-            background: rgba(15, 23, 42, 0.35);
-        }
-        .modal-overlay.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
+        body.light-theme .modal-overlay { background: rgba(15, 23, 42, 0.35); }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
         .modal-card {
             background: var(--modal-bg);
             border: 1px solid var(--border-color);
@@ -417,9 +334,7 @@
             overflow-y: auto;
             color: var(--text-color);
         }
-        body.light-theme .modal-card {
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-        }
+        body.light-theme .modal-card { box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1); }
         .modal-overlay.active .modal-card { transform: scale(1); }
         .modal-header {
             display: flex;
@@ -456,11 +371,7 @@
             margin-bottom: 10px;
             display: block;
         }
-        .theme-buttons {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-        }
+        .theme-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
         .theme-btn {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
@@ -476,9 +387,7 @@
             font-weight: 500;
             transition: all 0.2s ease;
         }
-        body.light-theme .theme-btn {
-            background: var(--code-bg);
-        }
+        body.light-theme .theme-btn { background: var(--code-bg); }
         .theme-btn:hover, .theme-btn.active {
             border-color: var(--accent-color);
             background: var(--card-hover-bg);
@@ -500,15 +409,8 @@
             margin-top: 10px;
             transition: all 0.2s ease;
         }
-        .info-link-btn:hover {
-            opacity: 0.9;
-            transform: translateY(-1px);
-        }
-        .api-explain-box {
-            font-size: 0.92rem;
-            line-height: 1.6;
-            color: var(--text-color);
-        }
+        .info-link-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .api-explain-box { font-size: 0.92rem; line-height: 1.6; color: var(--text-color); }
         .api-explain-box p { margin-bottom: 14px; }
         .api-card-section {
             background: var(--code-bg);
@@ -533,11 +435,7 @@
             font-family: monospace;
             font-size: 0.85rem;
         }
-        .footer {
-            margin-top: 50px;
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
+        .footer { margin-top: 50px; font-size: 0.8rem; color: var(--text-muted); }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-8px); }
             to { opacity: 1; transform: translateY(0); }
@@ -555,7 +453,6 @@
                 <span class="material-symbols-rounded">settings</span>
             </button>
         </div>
-
         <div id="repo-notice" class="notice-banner hidden">
             <div class="notice-content">
                 <span class="material-symbols-rounded">info</span>
@@ -565,18 +462,15 @@
                 <span class="material-symbols-rounded">close</span>
             </button>
         </div>
-
-        <!-- Баннер обслуживания Таблиц -->
         <div id="sheets-maint-banner" class="maint-banner">
             <div class="notice-content" style="align-items:flex-start;">
                 <span class="material-symbols-rounded">construction</span>
                 <div>
                     <strong>Таблицы временно недоступны</strong> — идут критические исправления.
-                    <div class="maint-countdown" id="sheets-maint-countdown">Доступ откроется через ~3 дня</div>
+                    <div class="maint-countdown" id="sheets-maint-countdown">Срок открытия пока неизвестен. Ваши данные не потеряются.</div>
                 </div>
             </div>
         </div>
-
         <header class="header">
             <div class="badge">
                 <span class="material-symbols-rounded" style="font-size: 16px;">dashboard</span>
@@ -585,7 +479,6 @@
             <h1>Выберите сервис для работы</h1>
             <p>Единый рабочий центр для ваших документов, презентаций и данных</p>
         </header>
-
         <div class="services-grid">
             <a href="./document/" class="service-card card-doc" onclick="navigateWithAnimation(event, './document/', 'Документы', 'article', '#3b82f6')">
                 <div class="icon-wrapper">
@@ -598,7 +491,6 @@
                     Открыть <span class="material-symbols-rounded" style="font-size:16px;">arrow_forward</span>
                 </div>
             </a>
-
             <a href="./slides/" class="service-card card-slides" onclick="navigateWithAnimation(event, './slides/', 'Презентации', 'slideshow', '#f59e0b')">
                 <div class="icon-wrapper">
                     <img src="Slides.png" alt="" class="custom-card-icon" onerror="this.style.display='none'">
@@ -610,7 +502,6 @@
                     Открыть <span class="material-symbols-rounded" style="font-size:16px;">arrow_forward</span>
                 </div>
             </a>
-
             <a href="./forms/" class="service-card card-forms" onclick="navigateWithAnimation(event, './forms/', 'Формы', 'assignment', '#a855f7')">
                 <div class="icon-wrapper">
                     <img src="forms.png" alt="" class="custom-card-icon" onerror="this.style.display='none'">
@@ -622,8 +513,6 @@
                     Открыть <span class="material-symbols-rounded" style="font-size:16px;">arrow_forward</span>
                 </div>
             </a>
-
-            <!-- ТАБЛИЦЫ — ЗАБЛОКИРОВАНЫ -->
             <a href="./spreadsheets/" class="service-card card-sheets disabled" id="sheets-card"
                onclick="return blockSheets(event)"
                aria-disabled="true">
@@ -642,7 +531,6 @@
                     На обслуживании
                 </div>
             </a>
-
             <a href="./keeps/" class="service-card card-keeps" onclick="navigateWithAnimation(event, './keeps/', 'Keeps', 'keep', '#ec4899')">
                 <div class="icon-wrapper">
                     <img src="keeps.png" alt="" class="custom-card-icon" onerror="this.style.display='none'">
@@ -654,7 +542,6 @@
                     Открыть <span class="material-symbols-rounded" style="font-size:16px;">arrow_forward</span>
                 </div>
             </a>
-
             <a href="./WorkGens/index.html" class="service-card card-workgens" onclick="navigateWithAnimation(event, './WorkGens/index.html', 'WorkGens AI', 'smart_toy', '#6366f1')">
                 <div class="icon-wrapper">
                     <img src="WorkGens/icon.png" alt="" class="custom-card-icon" onerror="this.style.display='none'">
@@ -667,12 +554,10 @@
                 </div>
             </a>
         </div>
-
         <footer class="footer">
             &copy; Prestige HQ Hub. Все права защищены.
         </footer>
     </div>
-
     <div id="transition-overlay" class="transition-overlay">
         <div id="loader-preview" class="loader-card-preview">
             <span id="loader-icon" class="material-symbols-rounded">article</span>
@@ -680,7 +565,6 @@
         </div>
         <div id="loader-text" class="loader-text">Открываем сервис...</div>
     </div>
-
     <div id="settings-modal" class="modal-overlay">
         <div class="modal-card">
             <div class="modal-header">
@@ -715,7 +599,6 @@
             </div>
         </div>
     </div>
-
     <div id="api-info-modal" class="modal-overlay">
         <div class="modal-card" style="max-width: 600px;">
             <div class="modal-header">
@@ -756,8 +639,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Модалка «Таблицы на обслуживании» -->
     <div id="sheets-block-modal" class="modal-overlay">
         <div class="modal-card" style="max-width: 420px; text-align: center;">
             <div class="modal-header" style="justify-content:center;">
@@ -767,33 +648,28 @@
                 </h3>
             </div>
             <p style="color:var(--text-muted); font-size:0.95rem; line-height:1.5; margin-bottom:8px;">
-                Сейчас идут критические исправления. Доступ временно закрыт примерно на <strong>2–3 дня</strong>.
+                Сейчас идут критические исправления. Доступ временно закрыт.
+                <strong>Точная дата возвращения пока неизвестна.</strong>
             </p>
-            <p id="sheets-modal-countdown" class="maint-countdown" style="margin-bottom:20px;"></p>
+            <p id="sheets-modal-countdown" class="maint-countdown" style="margin-bottom:20px;">
+                Мы вернём таблицы, как только всё стабилизируем. Ваши данные не потеряются.
+            </p>
             <button type="button" class="info-link-btn" onclick="closeModal('sheets-block-modal')" style="margin-top:0;">
                 Понятно
             </button>
         </div>
     </div>
-
     <script>
-        /* ===== Обслуживание Таблиц: ~3 дня с 21.09.2026 ===== */
-        // Конец блокировки: 24 сентября 2026, 18:00 CEST (UTC+2 ≈ 16:00 UTC)
-        const SHEETS_UNLOCK_AT = Date.UTC(2026, 8, 24, 16, 0, 0); // month 0-based: 8 = September
+        /* ===== Обслуживание Таблиц: бессрочно, пока SHEETS_MAINT_INDEFINITE === true ===== */
+        const SHEETS_MAINT_INDEFINITE = true;
+        // На будущее: когда будете готовы открыть — поставьте false и при желании дату:
+        // const SHEETS_UNLOCK_AT = Date.UTC(2026, 11, 1, 12, 0, 0);
+        const SHEETS_UNLOCK_AT = null;
 
         function isSheetsLocked() {
+            if (SHEETS_MAINT_INDEFINITE) return true;
+            if (SHEETS_UNLOCK_AT == null) return true;
             return Date.now() < SHEETS_UNLOCK_AT;
-        }
-
-        function formatRemaining(ms) {
-            if (ms <= 0) return 'доступ открыт';
-            const s = Math.floor(ms / 1000);
-            const d = Math.floor(s / 86400);
-            const h = Math.floor((s % 86400) / 3600);
-            const m = Math.floor((s % 3600) / 60);
-            if (d > 0) return d + ' дн. ' + h + ' ч.';
-            if (h > 0) return h + ' ч. ' + m + ' мин.';
-            return m + ' мин.';
         }
 
         function updateSheetsUI() {
@@ -802,7 +678,6 @@
             const banner = document.getElementById('sheets-maint-banner');
             const cd = document.getElementById('sheets-maint-countdown');
             const modalCd = document.getElementById('sheets-modal-countdown');
-            const rem = SHEETS_UNLOCK_AT - Date.now();
 
             if (!locked) {
                 if (card) {
@@ -822,9 +697,17 @@
                 return;
             }
 
-            if (cd) cd.textContent = 'Осталось примерно: ' + formatRemaining(rem);
-            if (modalCd) modalCd.textContent = 'Осталось: ' + formatRemaining(rem);
+            if (cd) {
+                cd.textContent = 'Срок открытия пока неизвестен. Ваши данные не потеряются.';
+            }
+            if (modalCd) {
+                modalCd.textContent = 'Мы вернём таблицы, как только всё стабилизируем. Ваши данные не потеряются.';
+            }
             if (banner) banner.classList.remove('hidden');
+            if (card) {
+                card.classList.add('disabled');
+                card.setAttribute('aria-disabled', 'true');
+            }
         }
 
         function blockSheets(event) {
@@ -845,14 +728,12 @@
             }
             initTheme();
             updateSheetsUI();
-            setInterval(updateSheetsUI, 60000);
         });
 
         function dismissNotice() {
             localStorage.setItem('repo_rename_notice_dismissed', 'true');
             document.getElementById('repo-notice').classList.add('hidden');
         }
-
         function openModal(id) {
             document.getElementById(id).classList.add('active');
         }
@@ -863,7 +744,6 @@
             closeModal('settings-modal');
             openModal('api-info-modal');
         }
-
         function navigateWithAnimation(event, url, title, iconName, color) {
             event.preventDefault();
             const overlay = document.getElementById('transition-overlay');
@@ -877,18 +757,15 @@
             overlay.classList.add('active');
             setTimeout(() => { window.location.href = url; }, 300);
         }
-
         document.querySelectorAll('.modal-overlay').forEach(overlay => {
             overlay.addEventListener('click', (e) => {
                 if (e.target === overlay) overlay.classList.remove('active');
             });
         });
-
         function setTheme(theme) {
             localStorage.setItem('app_theme', theme);
             applyTheme(theme);
         }
-
         function applyTheme(theme) {
             const body = document.body;
             document.querySelectorAll('.theme-btn').forEach(btn => btn.classList.remove('active'));
@@ -907,12 +784,10 @@
                 }
             }
         }
-
         function initTheme() {
             const savedTheme = localStorage.getItem('app_theme') || 'system';
             applyTheme(savedTheme);
         }
-
         if (window.matchMedia) {
             window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
                 if ((localStorage.getItem('app_theme') || 'system') === 'system') {
