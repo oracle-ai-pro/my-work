@@ -1822,3 +1822,109 @@ body.preview-overlay-open {
     color: #b71c1c;
 }
 body.dark-theme .fs-save-progress-warning strong { color: #ef9a9a; }
+
+
+/* ===== Offline / PWA / Mini AI ===== */
+body.is-offline .tools-online-only {
+    opacity: 0.45;
+    pointer-events: none;
+    position: relative;
+}
+body.is-offline .tools-online-only .online-lock {
+    display: inline-flex !important;
+    font-size: 14px;
+    margin-left: auto;
+    color: var(--text-muted);
+}
+.online-lock { display: none; }
+.online-only-hint {
+    font-weight: 500;
+    text-transform: none;
+    font-size: 10px;
+}
+body:not(.is-offline) .online-only-hint { display: none; }
+
+.offline-status-btn {
+    color: #d97706 !important;
+    border-color: rgba(217, 119, 6, 0.4) !important;
+}
+body.is-offline .offline-status-btn {
+    display: flex !important;
+}
+.form-tab .offline-edit-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #f59e0b;
+    flex-shrink: 0;
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25);
+}
+
+.mini-ai-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.35);
+    z-index: 19990;
+}
+.mini-ai-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: min(380px, 100vw);
+    height: 100vh;
+    height: 100dvh;
+    background: var(--card-bg);
+    border-left: 1px solid var(--border-color);
+    box-shadow: -8px 0 32px rgba(0,0,0,0.12);
+    z-index: 20000;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(105%);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.mini-ai-panel.open {
+    transform: translateX(0);
+}
+.mini-ai-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+.mini-ai-body {
+    padding: 16px;
+    overflow-y: auto;
+    flex: 1;
+}
+.mini-ai-hint {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.45;
+    margin-bottom: 12px;
+}
+.mini-ai-textarea {
+    min-height: 110px;
+    resize: vertical;
+}
+.mini-ai-status {
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--text-muted);
+    min-height: 1.2em;
+}
+.mini-ai-footer-note {
+    margin-top: 16px;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+body.mini-ai-open { overflow: hidden; }
+@media (max-width: 520px) {
+    .mini-ai-panel { width: 100vw; }
+}
