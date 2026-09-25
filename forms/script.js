@@ -85,6 +85,9 @@ document.addEventListener('DOMContentLoaded', () => {
         window.speechSynthesis.getVoices();
         window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
     }
+
+    initOfflineManager();
+    registerServiceWorker();
 });
 
 /* Проверка наличия старых данных при входе */
@@ -156,6 +159,7 @@ function loadFormsFromStorage() {
 
 function saveFormsToStorage() {
     localStorage.setItem('my_forms_data', JSON.stringify(allForms));
+    if (typeof markOfflineEditIfNeeded === 'function') markOfflineEditIfNeeded();
 }
 
 /* ==========================================
@@ -1498,6 +1502,17 @@ function exportFormToJSON() {
     downloadAnchor.remove();
 
     showAlert('Форма успешно экспортирована в файл JSON!', 'check_circle');
+}
+
+function triggerImportForm() {
+    var el = document.getElementById('import-file-toolbar')
+        || document.getElementById('import-file');
+    if (!el) {
+        showAlert('Поле импорта не найдено', 'error');
+        return;
+    }
+    el.value = '';
+    el.click();
 }
 
 function importFormFromJSON(input) {
@@ -3536,3 +3551,278 @@ function closePreviewWindow() {
     }, 200);
 }
 
+
+
+/* ==========================================
+   PWA / OFFLINE / MINI WORKGENS
+   ========================================== */
+const OFFLINE_EDITS_KEY = 'my_forms_offline_edits';
+
+function registerServiceWorker() {
+    if (!('serviceWorker' in navigator)) return;
+    try {
+        navigator.serviceWorker.register('./sw.js').catch(function(e) {
+            console.warn('SW register', e);
+        });
+    } catch (e) { console.warn(e); }
+}
+
+function isOnline() {
+    return navigator.onLine !== false;
+}
+
+function initOfflineManager() {
+    updateOnlineUI();
+    window.addEventListener('online', function() {
+        updateOnlineUI();
+        showAlert('Сеть снова доступна', 'wifi');
+    });
+    window.addEventListener('offline', function() {
+        updateOnlineUI();
+        showAlert('Вы офлайн. Share, WorkGens и другие сервисы недоступны.', 'cloud_off');
+    });
+}
+
+function updateOnlineUI() {
+    var online = isOnline();
+    document.body.classList.toggle('is-offline', !online);
+    var btn = document.getElementById('offline-status-btn');
+    if (btn) {
+        if (!online || hasPendingOfflineEdits()) btn.classList.remove('hidden');
+        else btn.classList.add('hidden');
+        btn.title = !online
+            ? 'Офлайн — нажмите для справки'
+            : 'Есть офлайн-правки — нажмите';
+        var icon = btn.querySelector('.material-symbols-rounded');
+        if (icon) icon.textContent = !online ? 'cloud_off' : 'sync_problem';
+    }
+    if (typeof renderAllFormsUI === 'function') {
+        // refresh dots on tabs without full reload if possible
+        try { refreshOfflineDotsOnTabs(); } catch (e) {}
+    }
+}
+
+function loadOfflineEditsMap() {
+    try { return JSON.parse(localStorage.getItem(OFFLINE_EDITS_KEY) || '{}') || {}; }
+    catch (e) { return {}; }
+}
+function saveOfflineEditsMap(map) {
+    localStorage.setItem(OFFLINE_EDITS_KEY, JSON.stringify(map));
+}
+function offlineEditKey(formIndex) {
+    var form = allForms[formIndex];
+    return formIndex + '::' + ((form && (form.id || form.title)) || formIndex);
+}
+function markOfflineEditIfNeeded() {
+    if (isOnline()) return;
+    if (previewMode) return;
+    var map = loadOfflineEditsMap();
+    map[offlineEditKey(currentFormIndex)] = { ts: Date.now(), formIndex: currentFormIndex };
+    saveOfflineEditsMap(map);
+    updateOnlineUI();
+    refreshOfflineDotsOnTabs();
+}
+function hasPendingOfflineEdits() {
+    var map = loadOfflineEditsMap();
+    return Object.keys(map).length > 0;
+}
+function clearOfflineEditFlag(formIndex) {
+    var map = loadOfflineEditsMap();
+    var k = offlineEditKey(formIndex != null ? formIndex : currentFormIndex);
+    delete map[k];
+    // also try numeric-only keys
+    Object.keys(map).forEach(function(key) {
+        if (map[key] && map[key].formIndex === (formIndex != null ? formIndex : currentFormIndex)) delete map[key];
+    });
+    saveOfflineEditsMap(map);
+    updateOnlineUI();
+    refreshOfflineDotsOnTabs();
+}
+function refreshOfflineDotsOnTabs() {
+    var map = loadOfflineEditsMap();
+    document.querySelectorAll('.form-tab').forEach(function(tab) {
+        var idx = parseInt(tab.dataset.formIndex, 10);
+        var need = false;
+        Object.keys(map).forEach(function(k) {
+            if (map[k] && (map[k].formIndex === idx || k.indexOf(idx + '::') === 0)) need = true;
+        });
+        var dot = tab.querySelector('.offline-edit-dot');
+        if (need && !dot) {
+            dot = document.createElement('span');
+            dot.className = 'offline-edit-dot';
+            dot.title = 'Редактировалось офлайн';
+            tab.insertBefore(dot, tab.firstChild);
+        } else if (!need && dot) {
+            dot.remove();
+        }
+    });
+}
+
+function onOfflineBadgeClick() {
+    if (!isOnline()) {
+        showAlert('Сейчас нет сети.\n\n• Формы и ответы сохраняются на этом устройстве\n• Поделиться ссылкой, WorkGens AI и другие сервисы недоступны\n• После появления интернета нажмите эту иконку снова, если были офлайн-правки', 'cloud_off');
+        return;
+    }
+    if (hasPendingOfflineEdits()) {
+        clearOfflineEditFlag(currentFormIndex);
+        // clear all pending as "synced" to local (already in localStorage)
+        saveOfflineEditsMap({});
+        updateOnlineUI();
+        refreshOfflineDotsOnTabs();
+        showAlert('Офлайн-правки уже в localStorage этого устройства. Флаги сняты. Для другого устройства экспортируйте JSON.', 'check_circle');
+    } else {
+        showAlert('Сеть есть. Офлайн-правок нет.', 'wifi');
+    }
+}
+
+function goOnlineFeature(url, action) {
+    if (!isOnline()) {
+        showAlert('Нужен интернет для этой функции', 'wifi_off');
+        return;
+    }
+    if (action === 'share') {
+        try { generateShareLink(); } catch (e) { showAlert('Не удалось открыть «Поделиться»', 'error'); }
+        try { toggleToolsMenu(); } catch (e) {}
+        return;
+    }
+    if (url) window.location.href = url;
+}
+
+/* ----- Mini WorkGens (локальная генерация форм) ----- */
+function toggleMiniAI(force) {
+    var panel = document.getElementById('mini-ai-panel');
+    var bd = document.getElementById('mini-ai-backdrop');
+    if (!panel) return;
+    var open = force === true ? true : force === false ? false : !panel.classList.contains('open');
+    panel.classList.toggle('open', open);
+    panel.setAttribute('aria-hidden', open ? 'false' : 'true');
+    if (bd) bd.classList.toggle('hidden', !open);
+    document.body.classList.toggle('mini-ai-open', open);
+}
+
+function runMiniAIGenerate() {
+    var ta = document.getElementById('mini-ai-prompt');
+    var status = document.getElementById('mini-ai-status');
+    var asNew = document.getElementById('mini-ai-new-form');
+    var text = (ta && ta.value || '').trim();
+    if (!text) {
+        showAlert('Опишите, какую форму создать', 'edit');
+        return;
+    }
+    if (status) status.textContent = 'Генерирую…';
+    try {
+        var form = miniAIBuildForm(text);
+        if (asNew && asNew.checked) {
+            allForms.push(form);
+            currentFormIndex = allForms.length - 1;
+        } else {
+            if (!allForms[currentFormIndex]) allForms.push(form);
+            else {
+                allForms[currentFormIndex].title = form.title;
+                allForms[currentFormIndex].questions = (allForms[currentFormIndex].questions || []).concat(form.questions);
+            }
+        }
+        saveFormsToStorage();
+        renderAllFormsUI();
+        loadCurrentForm();
+        if (status) status.textContent = 'Готово: «' + form.title + '» — вопросов: ' + form.questions.length;
+        showAlert('Форма создана: ' + form.title + ' (' + form.questions.length + ' вопр.)', 'check_circle');
+        // открыть админку удобно
+        try { switchScreen('login'); } catch (e) {}
+    } catch (e) {
+        console.warn(e);
+        if (status) status.textContent = 'Ошибка генерации';
+        showAlert('Не удалось разобрать описание', 'error');
+    }
+}
+
+function miniAIBuildForm(text) {
+    var titleMatch = text.match(/(?:форма|тест|квиз)\s*[«"]?([^»"\n,.]+)/i);
+    var title = titleMatch ? titleMatch[1].trim() : text.split(/[.\n]/)[0].slice(0, 48) || 'Форма от Mini WorkGens';
+
+    var countMatch = text.match(/(\d+)\s*(?:вопрос|questions?)/i);
+    var n = countMatch ? Math.min(20, Math.max(1, parseInt(countMatch[1], 10))) : 5;
+
+    var wantRadio = /radio|один из|выбор/i.test(text);
+    var wantCheck = /checkbox|несколько|множествен/i.test(text);
+    var wantText = /текст|вставь|input|напишите/i.test(text);
+    var wantFlash = /флеш|карточк|flashcard/i.test(text);
+    var wantSelect = /select|выпадающ/i.test(text);
+
+    var types = [];
+    if (wantRadio) types.push('radio');
+    if (wantCheck) types.push('checkbox');
+    if (wantText) types.push('text');
+    if (wantFlash) types.push('flashcard');
+    if (wantSelect) types.push('select');
+    if (!types.length) types = ['radio', 'radio', 'text', 'flashcard', 'radio'];
+
+    // topic keywords
+    var topic = title;
+    var questions = [];
+    for (var i = 0; i < n; i++) {
+        var type = types[i % types.length];
+        questions.push(miniAIMakeQuestion(type, topic, i));
+    }
+    return {
+        title: title,
+        questions: questions,
+        settings: { saveProgress: true, showWrong: true, showCorrect: true }
+    };
+}
+
+function miniAIMakeQuestion(type, topic, i) {
+    var num = i + 1;
+    if (type === 'radio' || type === 'select' || type === 'checkbox') {
+        return {
+            type: type,
+            title: 'Вопрос ' + num + ' по теме «' + topic + '»',
+            description: type === 'checkbox' ? 'Выберите все верные варианты' : 'Выберите один вариант',
+            options: ['Вариант A', 'Вариант B', 'Вариант C', 'Вариант D'],
+            correctChoices: type === 'checkbox' ? [0, 2] : [0],
+            required: true
+        };
+    }
+    if (type === 'text') {
+        return {
+            type: 'text',
+            title: 'Кратко ответьте (вопрос ' + num + '): что вы знаете о «' + topic + '»?',
+            correctText: [],
+            required: false
+        };
+    }
+    if (type === 'flashcard') {
+        return {
+            type: 'flashcard',
+            title: topic + ' — термин #' + num,
+            flashcardAnswer: 'Определение для «' + topic + '» (отредактируйте в админке)'
+        };
+    }
+    return {
+        type: 'radio',
+        title: 'Вопрос ' + num,
+        options: ['Да', 'Нет'],
+        correctChoices: [0],
+        required: true
+    };
+}
+
+// после renderAllFormsUI — точки офлайн
+(function() {
+    var _orig = null;
+    function wrapRender() {
+        if (typeof renderAllFormsUI !== 'function') return;
+        if (renderAllFormsUI._offlineWrapped) return;
+        var orig = renderAllFormsUI;
+        renderAllFormsUI = function() {
+            orig.apply(this, arguments);
+            try { refreshOfflineDotsOnTabs(); } catch (e) {}
+        };
+        renderAllFormsUI._offlineWrapped = true;
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', wrapRender);
+    } else {
+        wrapRender();
+    }
+})();
