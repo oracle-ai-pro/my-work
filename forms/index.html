@@ -259,6 +259,8 @@
                         <option value="checkbox">Несколько из списка (Checkbox)</option>
                         <option value="select">Выпадающий список (Select)</option>
                         <option value="text">Текстовый ответ</option>
+                        <option value="true-false">Верно / Неверно ★ NEW</option>
+                        <option value="fill-blank">Заполнение пропусков ★ NEW</option>
                         <option value="puzzle-drag">Пазл (Drag & Drop)</option>
                         <option value="info-slide">Инфо-слайд (Картинка/Видео/Аудио)</option>
                         <option value="flashcard">Флешкарта (Карточка для запоминания)</option>
@@ -285,6 +287,70 @@
                     
                     <label style="font-size:13px; color:var(--text-muted); display:block; margin-top:10px; margin-bottom:4px;">Индексы правильных ответов (с 0, через запятую):</label>
                     <input type="text" id="new-correct-choices" class="admin-input" placeholder="0">
+                </div>
+
+
+                <!-- Верно / Неверно -->
+                <div id="admin-truefalse-fields" class="hidden" style="margin-top:10px;">
+                    <div class="novelty-inline"><span class="novelty-badge">NEW</span> Верно / Неверно</div>
+                    <label style="font-size:13px; color:var(--text-muted); display:block; margin-bottom:8px;">Правильный ответ:</label>
+                    <div class="tf-admin-choices" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+                        <label class="option" style="flex:1; min-width:120px; margin:0;">
+                            <input type="radio" name="tf-correct" id="tf-correct-true" value="0" checked>
+                            <span id="tf-label-true-preview">Верно</span>
+                        </label>
+                        <label class="option" style="flex:1; min-width:120px; margin:0;">
+                            <input type="radio" name="tf-correct" id="tf-correct-false" value="1">
+                            <span id="tf-label-false-preview">Неверно</span>
+                        </label>
+                    </div>
+                    <label class="switch-label" style="margin-bottom:10px;">
+                        <span class="switch">
+                            <input type="checkbox" id="tf-use-en" onchange="updateTrueFalsePreview()">
+                            <span class="slider liquid-slider"></span>
+                        </span>
+                        <span class="switch-text">Подписи True / False (англ.)</span>
+                    </label>
+                    <label class="switch-label" style="margin-bottom:10px;">
+                        <span class="switch">
+                            <input type="checkbox" id="tf-big-buttons">
+                            <span class="slider liquid-slider"></span>
+                        </span>
+                        <span class="switch-text">Крупные кнопки (удобно на телефоне)</span>
+                    </label>
+                </div>
+
+                <!-- Заполнение пропусков -->
+                <div id="admin-fillblank-fields" class="hidden" style="margin-top:10px;">
+                    <div class="novelty-inline"><span class="novelty-badge">NEW</span> Заполнение пропусков</div>
+                    <p style="font-size:12.5px; color:var(--text-muted); line-height:1.45; margin-bottom:10px;">
+                        Пишите текст в <b>большом поле</b>. Пропуск = <code>[правильный ответ]</code>.<br>
+                        Пример: <code>Столица Франции — [Париж], а Италии — [Рим].</code>
+                    </p>
+                    <label style="font-size:13px; color:var(--text-muted); display:block; margin-bottom:4px;">Текст с пропусками:</label>
+                    <textarea id="new-fillblank-text" class="admin-input" rows="6" placeholder="Например: Вода кипит при [100] градусах Цельсия." style="min-height:120px; font-family:inherit;"></textarea>
+                    <div id="fillblank-preview" class="fillblank-admin-preview"></div>
+                    <label class="switch-label" style="margin-top:12px; margin-bottom:10px;">
+                        <span class="switch">
+                            <input type="checkbox" id="fb-case-sensitive">
+                            <span class="slider liquid-slider"></span>
+                        </span>
+                        <span class="switch-text">Учитывать регистр (A ≠ a)</span>
+                    </label>
+                    <label class="switch-label" style="margin-bottom:10px;">
+                        <span class="switch">
+                            <input type="checkbox" id="fb-trim-spaces" checked>
+                            <span class="slider liquid-slider"></span>
+                        </span>
+                        <span class="switch-text">Игнорировать лишние пробелы</span>
+                    </label>
+                    <label class="switch-label" style="margin-bottom:10px;">
+                        <span class="switch">
+                            <input type="checkbox" id="fb-accept-alts" checked>
+                            <span class="slider liquid-slider"></span>
+                        </span>
+                        <span class="switch-text">Несколько вариантов: [ответ1|ответ2]</span>
+                    </label>
                 </div>
 
                 <!-- Текстовые ответы -->
@@ -491,6 +557,21 @@
                         <span class="slider"></span>
                     </span>
                 </label>
+
+                <label class="switch-label" style="justify-content:space-between; margin-bottom:12px;">
+                    <span class="switch-text" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <span class="material-symbols-rounded" style="font-size:18px;">blur_on</span>
+                        Liquid Glass
+                        <span class="novelty-badge">BETA</span>
+                    </span>
+                    <span class="switch">
+                        <input type="checkbox" id="toggle-liquid-glass" onchange="toggleLiquidGlass(this.checked)">
+                        <span class="slider liquid-slider"></span>
+                    </span>
+                </label>
+                <p style="font-size:12px; color:var(--text-muted); margin:-4px 0 14px; line-height:1.4;">
+                    Полупрозрачные карточки, размытие и мягкие анимации. Работает в светлой и тёмной теме.
+                </p>
 
                 <button class="btn" onclick="closeSettingsModal()" style="width:100%; margin-top:15px;">Готово</button>
             </div>
