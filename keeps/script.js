@@ -21,16 +21,29 @@ let state = {
     notes: JSON.parse(localStorage.getItem('keeps_notes')) || DEMO_NOTES,
     theme: localStorage.getItem('keeps_theme') || 'dark',
     radius: localStorage.getItem('keeps_radius') || 'rounded',
-    aiKey: localStorage.getItem('keeps_ai_key') || '',
+    liquidGlass: localStorage.getItem('keeps_liquid_glass') === 'true',
+    uiScale: localStorage.getItem('keeps_ui_scale') === 'true',
+    viewMode: localStorage.getItem('keeps_view_mode') || 'grid', // grid | list
+    filter: 'all', // all | pinned | reminders | archived
     activeNoteId: null,
     openMenuId: null,
     reminderNoteId: null,
-    createBgColor: null, // Хранит colorId
-    editBgColor: null,   // Хранит colorId
+    createBgColor: null,
+    editBgColor: null,
     pendingDelete: null,
     undoTimer: null,
-    undoSecondsLeft: 5
+    undoSecondsLeft: 5,
+    editAutosaveTimer: null
 };
+
+// migrate: ensure archived field
+(function migrateNotes() {
+    let changed = false;
+    state.notes.forEach(n => {
+        if (typeof n.archived === 'undefined') { n.archived = false; changed = true; }
+    });
+    if (changed) try { localStorage.setItem('keeps_notes', JSON.stringify(state.notes)); } catch (e) {}
+})();
 
 // Палитры матовых цветов с ID
 const MATTE_COLORS_DARK = [
@@ -123,6 +136,26 @@ document.addEventListener('DOMContentLoaded', () => {
     renderNotes();
     renderColorPalette('create-color-palette', changeCreateCardColor);
     if (typeof enhanceAllSelects === 'function') enhanceAllSelects();
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js').catch(function() {});
+    }
+    applyViewMode();
+    // auto persist every 2 minutes
+    setInterval(function() {
+        try {
+            localStorage.setItem('keeps_notes', JSON.stringify(state.notes));
+            flashSaveStatus('Автосохранение');
+        } catch (err) {}
+    }, 120000);
+    // autosave edit modal
+    var editContent = document.getElementById('edit-note-content');
+    var editTitle = document.getElementById('edit-note-title');
+    function scheduleEditAutosave() {
+        if (state.editAutosaveTimer) clearTimeout(state.editAutosaveTimer);
+        state.editAutosaveTimer = setTimeout(autosaveActiveNote, 600);
+    }
+    if (editContent) editContent.addEventListener('input', scheduleEditAutosave);
+    if (editTitle) editTitle.addEventListener('input', scheduleEditAutosave);
     try {
         const params = new URLSearchParams(window.location.search);
         const noteId = params.get('note');
@@ -195,8 +228,17 @@ function renderNotes() {
 
     const sortedNotes = [...state.notes].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
 
-    const filtered = sortedNotes.filter(n => 
-        (n.title && n.title.toLowerCase().includes(query)) || 
+    let filtered = sortedNotes.filter(n => {
+        const archived = !!n.archived;
+        if (state.filter === 'archived') return archived;
+        if (archived) return false;
+        if (state.filter === 'pinned') return !!n.pinned;
+        if (state.filter === 'reminders') return !!n.reminder;
+        return true;
+    });
+
+    filtered = filtered.filter(n =>
+        (n.title && n.title.toLowerCase().includes(query)) ||
         (n.content && n.content.toLowerCase().includes(query))
     );
 
@@ -276,6 +318,15 @@ function renderNotes() {
                             </div>
                             <div class="tools-item" onclick="copyNoteLink(event, ${note.id})">
                                 <span class="material-symbols-rounded">link</span> Копировать ссылку
+                            </div>
+                            <div class="tools-item" onclick="duplicateNote(event, ${note.id})">
+                                <span class="material-symbols-rounded">content_copy</span> Дублировать <span class="novelty-badge">NEW</span>
+                            </div>
+                            <div class="tools-item" onclick="toggleArchiveNote(event, ${note.id})">
+                                <span class="material-symbols-rounded">${note.archived ? 'unarchive' : 'archive'}</span> ${note.archived ? 'Из архива' : 'В архив'} <span class="novelty-badge">NEW</span>
+                            </div>
+                            <div class="tools-item" onclick="exportToMarkdown(event, ${note.id})">
+                                <span class="material-symbols-rounded">markdown</span> Скачать (.md)
                             </div>
                             <div style="border-top: 1px solid var(--border-color); margin: 2px 0;"></div>
                             <div class="tools-item delete" onclick="startDeleteNote(event, ${note.id})">
@@ -479,8 +530,9 @@ function createNote() {
         title, 
         content, 
         bgColor: state.createBgColor, 
-        pinned: false, 
-        reminder: null 
+        pinned: false,
+        archived: false,
+        reminder: null
     };
 
     state.notes.unshift(newNote);
@@ -502,7 +554,11 @@ function restoreDemoNotes() {
 }
 
 function saveNotes() {
-    localStorage.setItem('keeps_notes', JSON.stringify(state.notes));
+    try {
+        localStorage.setItem('keeps_notes', JSON.stringify(state.notes));
+    } catch (err) {
+        showAlert('warning', 'Не удалось сохранить (память переполнена?)');
+    }
 }
 
 function exportNote(e, id, type) {
@@ -573,22 +629,16 @@ function checkAI() {
     window.location.href = '../WorkGens/index.html';
 }
 
-function saveAiKey() {
-    const val = document.getElementById('ai-key-input').value.trim();
-    if (val.endsWith(')')) {
-        state.aiKey = val;
-        localStorage.setItem('keeps_ai_key', val);
-        showAlert('check_circle', 'ИИ ключ успешно сохранен!');
-    } else {
-        showAlert('warning', 'Ошибка: Ключ должен оканчиваться на символ ")"!');
-    }
-}
+function saveAiKey() { /* removed */ }
 
 function openSettingsModal() {
     document.getElementById('tools-menu').classList.add('hidden');
     document.getElementById('theme-select').value = state.theme;
     document.getElementById('radius-select').value = state.radius;
-    document.getElementById('ai-key-input').value = state.aiKey;
+    var lg = document.getElementById('toggle-liquid-glass');
+    if (lg) lg.checked = !!state.liquidGlass;
+    var us = document.getElementById('toggle-ui-scale');
+    if (us) us.checked = !!state.uiScale;
     if (typeof enhanceAllSelects === 'function') enhanceAllSelects(document.getElementById('settings-modal'));
     if (typeof refreshEnhancedSelect === 'function') {
         refreshEnhancedSelect(document.getElementById('theme-select'));
@@ -616,9 +666,15 @@ function closeSettingsModal() {
 function saveSettings() {
     state.theme = document.getElementById('theme-select').value;
     state.radius = document.getElementById('radius-select').value;
+    var lg = document.getElementById('toggle-liquid-glass');
+    state.liquidGlass = lg ? lg.checked : false;
+    var us = document.getElementById('toggle-ui-scale');
+    state.uiScale = us ? us.checked : false;
 
     localStorage.setItem('keeps_theme', state.theme);
     localStorage.setItem('keeps_radius', state.radius);
+    localStorage.setItem('keeps_liquid_glass', state.liquidGlass ? 'true' : 'false');
+    localStorage.setItem('keeps_ui_scale', state.uiScale ? 'true' : 'false');
 
     applySettings();
     
@@ -640,7 +696,149 @@ function applySettings() {
     } else {
         document.body.classList.remove('dark-theme');
     }
-    document.body.setAttribute('data-radius', state.radius);
+    document.body.setAttribute('data-radius', state.radius || 'rounded');
+    document.body.classList.toggle('liquid-glass', !!state.liquidGlass);
+    document.body.classList.toggle('ui-scale-up', !!state.uiScale);
+    applyViewMode();
+}
+
+function applyViewMode() {
+    var mode = state.viewMode === 'list' ? 'list' : 'grid';
+    document.body.classList.toggle('view-list', mode === 'list');
+    document.body.classList.toggle('view-grid', mode === 'grid');
+    var icon = document.getElementById('view-mode-icon');
+    if (icon) icon.textContent = mode === 'list' ? 'grid_view' : 'view_agenda';
+    var btn = document.getElementById('btn-view-mode');
+    if (btn) btn.title = mode === 'list' ? 'Сетка' : 'Список';
+    var grid = document.getElementById('notes-grid');
+    if (grid) {
+        grid.classList.toggle('notes-list', mode === 'list');
+        grid.classList.toggle('notes-grid-mode', mode === 'grid');
+    }
+}
+
+function toggleViewMode() {
+    state.viewMode = state.viewMode === 'list' ? 'grid' : 'list';
+    localStorage.setItem('keeps_view_mode', state.viewMode);
+    applyViewMode();
+    renderNotes();
+}
+
+function manualSaveAndRefresh() {
+    try {
+        localStorage.setItem('keeps_notes', JSON.stringify(state.notes));
+        localStorage.setItem('keeps_theme', state.theme);
+        localStorage.setItem('keeps_radius', state.radius);
+        localStorage.setItem('keeps_liquid_glass', state.liquidGlass ? 'true' : 'false');
+        localStorage.setItem('keeps_ui_scale', state.uiScale ? 'true' : 'false');
+        localStorage.setItem('keeps_view_mode', state.viewMode || 'grid');
+    } catch (err) {}
+    // reload from storage to confirm
+    try {
+        var raw = localStorage.getItem('keeps_notes');
+        if (raw) state.notes = JSON.parse(raw);
+    } catch (err) {}
+    renderNotes();
+    renderColorPalette('create-color-palette', changeCreateCardColor);
+    flashSaveStatus('Сохранено');
+    var btn = document.getElementById('btn-refresh-notes');
+    if (btn) {
+        btn.classList.add('spinning');
+        setTimeout(function() { btn.classList.remove('spinning'); }, 600);
+    }
+}
+
+function flashSaveStatus(msg) {
+    var t = document.getElementById('save-status-toast');
+    if (!t) return;
+    t.textContent = msg || 'Сохранено';
+    t.classList.remove('hidden');
+    clearTimeout(t._hide);
+    t._hide = setTimeout(function() { t.classList.add('hidden'); }, 1600);
+}
+
+function toggleLiquidGlassLive(on) {
+    state.liquidGlass = !!on;
+    localStorage.setItem('keeps_liquid_glass', state.liquidGlass ? 'true' : 'false');
+    document.body.classList.toggle('liquid-glass', state.liquidGlass);
+}
+
+function toggleUiScaleLive(on) {
+    state.uiScale = !!on;
+    localStorage.setItem('keeps_ui_scale', state.uiScale ? 'true' : 'false');
+    document.body.classList.toggle('ui-scale-up', state.uiScale);
+}
+
+function setNotesFilter(f) {
+    state.filter = f || 'all';
+    document.querySelectorAll('.filter-chip').forEach(function(chip) {
+        chip.classList.toggle('active', chip.getAttribute('data-filter') === state.filter);
+    });
+    renderNotes();
+}
+
+function autosaveActiveNote() {
+    if (!state.activeNoteId) return;
+    const note = state.notes.find(n => n.id === state.activeNoteId);
+    if (!note) return;
+    const t = document.getElementById('edit-note-title');
+    const c = document.getElementById('edit-note-content');
+    if (t) note.title = t.value.trim();
+    if (c) note.content = c.innerHTML.trim();
+    note.bgColor = state.editBgColor;
+    saveNotes();
+}
+
+function duplicateNote(e, id) {
+    if (e) e.stopPropagation();
+    const note = state.notes.find(n => n.id === id);
+    if (!note) return;
+    const copy = JSON.parse(JSON.stringify(note));
+    copy.id = Date.now();
+    copy.title = (note.title || 'Заметка') + ' — копия';
+    copy.pinned = false;
+    copy.archived = false;
+    state.notes.unshift(copy);
+    state.openMenuId = null;
+    saveNotes();
+    renderNotes();
+    showAlert('content_copy', 'Заметка продублирована');
+}
+
+function toggleArchiveNote(e, id) {
+    if (e) e.stopPropagation();
+    const note = state.notes.find(n => n.id === id);
+    if (!note) return;
+    note.archived = !note.archived;
+    if (note.archived) note.pinned = false;
+    state.openMenuId = null;
+    saveNotes();
+    renderNotes();
+    showAlert(note.archived ? 'archive' : 'unarchive', note.archived ? 'В архиве' : 'Восстановлено из архива');
+}
+
+function exportToMarkdown(e, id) {
+    if (e) e.stopPropagation();
+    const note = state.notes.find(n => n.id === id);
+    if (!note) return;
+    const temp = document.createElement('div');
+    temp.innerHTML = note.content || '';
+    // crude html to md
+    let md = '# ' + (note.title || 'Заметка') + '\n\n';
+    temp.querySelectorAll('h1').forEach(h => { h.replaceWith(document.createTextNode('\n# ' + h.innerText + '\n')); });
+    temp.querySelectorAll('h2').forEach(h => { h.replaceWith(document.createTextNode('\n## ' + h.innerText + '\n')); });
+    temp.querySelectorAll('h3').forEach(h => { h.replaceWith(document.createTextNode('\n### ' + h.innerText + '\n')); });
+    temp.querySelectorAll('li').forEach(li => { li.replaceWith(document.createTextNode('- ' + li.innerText + '\n')); });
+    temp.querySelectorAll('b,strong').forEach(b => { b.replaceWith(document.createTextNode('**' + b.innerText + '**')); });
+    temp.querySelectorAll('i,em').forEach(i => { i.replaceWith(document.createTextNode('*' + i.innerText + '*')); });
+    md += (temp.innerText || temp.textContent || '').trim();
+    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = ((note.title || 'note') + '.md').replace(/[/\\?%*:|"<>]/g, '-');
+    a.click();
+    state.openMenuId = null;
+    renderNotes();
 }
 
 function showAlert(icon, msg) {
