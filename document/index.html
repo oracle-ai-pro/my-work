@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Document | Prestige HQ</title>
+    <link rel="icon" type="image/png" href="Document.png">
+    <meta name="theme-color" content="#1a73e8">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
-    <link rel="icon" href="Document.png" type="image/png">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -13,7 +14,9 @@
     <div class="container">
         <!-- ВЕРХНЯЯ ПАНЕЛЬ -->
         <div class="forms-toolbar-container">
-            <select id="forms-tabs-select" class="forms-select hidden" onchange="switchDocFromSelect(this.value)"></select>
+            <div class="forms-select-wrap hidden" id="forms-select-wrap">
+                <select id="forms-tabs-select" class="forms-select" onchange="switchDocFromSelect(this.value)"></select>
+            </div>
             <div class="forms-tabs-list" id="forms-tabs-list"></div>
 
             <button class="add-form-btn" onclick="createNewDocPrompt()" title="Создать новый документ">
@@ -52,7 +55,7 @@
                     <div class="tools-item" onclick="window.location.href='../forms'">
                         <span class="material-symbols-rounded">description</span> <span>Формы</span>
                     </div>
-                    <div class="tools-item" onclick="window.location.href='../spreadsheet'">
+                    <div class="tools-item" onclick="window.location.href='../spreadsheets'">
                         <span class="material-symbols-rounded">table_chart</span> <span>Таблицы</span>
                     </div>
                     <div class="tools-item" onclick="window.location.href='../slides'">
@@ -150,12 +153,18 @@
                 <label style="font-size:13px; color:var(--text-muted);">Тип блока:</label>
                 <div class="custom-select-wrapper">
                 <select id="new-type" class="admin-input" onchange="toggleAdminFields()">
-                    <option value="text-block">Текстовый раздел / Параграф</option>
-                    <option value="a4-sheet">📄 Свободный Лист А4 (Rich Text)</option>
-                    <option value="interactive-fields">Форма / Поля ввода данных</option>
-                    <option value="checklist">Чек-лист / Согласование</option>
-                    <option value="info-slide">Медиа-слайд (Изображение/Документ)</option>
-                    <option value="flashcard">Карточка-выжимка (Памятка)</option>
+                    <option value="text-block">Текстовый раздел</option>
+                    <option value="a4-sheet">Лист А4 (Rich Text)</option>
+                    <option value="interactive-fields">Поле ввода</option>
+                    <option value="checklist">Чек-лист</option>
+                    <option value="info-slide">Медиа (изображение)</option>
+                    <option value="flashcard">Карточка-памятка</option>
+                    <option value="callout">Callout / Важно ★ NEW</option>
+                    <option value="steps">Шаги / инструкция ★ NEW</option>
+                    <option value="quote">Цитата ★ NEW</option>
+                    <option value="code">Блок кода ★ NEW</option>
+                    <option value="divider">Разделитель ★ NEW</option>
+                    <option value="video">Видео (YouTube URL) ★ NEW</option>
                 </select>
                 <span class="material-symbols-rounded select-icon">expand_more</span>
                 </div>
@@ -199,6 +208,39 @@
                 <div id="flashcard-answer-box" class="hidden" style="margin-top:15px;">
                     <label style="font-size:13px; color:var(--text-muted);">Детали / Оборотная сторона памятки:</label>
                     <input type="text" id="new-flashcard-answer" class="admin-input" placeholder="Дополнительная информация...">
+                </div>
+
+
+                <!-- Callout -->
+                <div id="callout-fields" class="hidden" style="margin-top:15px;">
+                    <label style="font-size:13px;color:var(--text-muted);">Стиль callout:</label>
+                    <div class="custom-select-wrapper">
+                        <select id="new-callout-style" class="admin-input">
+                            <option value="info">Info (синий)</option>
+                            <option value="tip">Совет (зелёный)</option>
+                            <option value="warn">Внимание (жёлтый)</option>
+                            <option value="danger">Важно (красный)</option>
+                        </select>
+                        <span class="material-symbols-rounded select-icon">expand_more</span>
+                    </div>
+                </div>
+
+                <!-- Steps / Code / Quote use description + options-like -->
+                <div id="steps-fields" class="hidden" style="margin-top:15px;">
+                    <label style="font-size:13px;color:var(--text-muted);">Шаги (каждый с новой строки):</label>
+                    <textarea id="new-steps-text" class="admin-input" rows="5" placeholder="Шаг 1&#10;Шаг 2&#10;Шаг 3"></textarea>
+                </div>
+
+                <div id="code-fields" class="hidden" style="margin-top:15px;">
+                    <label style="font-size:13px;color:var(--text-muted);">Код:</label>
+                    <textarea id="new-code-text" class="admin-input" rows="6" placeholder="console.log('hello')" style="font-family:ui-monospace,monospace;"></textarea>
+                    <label style="font-size:13px;color:var(--text-muted);">Язык (подпись):</label>
+                    <input type="text" id="new-code-lang" class="admin-input" placeholder="javascript">
+                </div>
+
+                <div id="video-fields" class="hidden" style="margin-top:15px;">
+                    <label style="font-size:13px;color:var(--text-muted);">Ссылка YouTube:</label>
+                    <input type="url" id="new-video-url" class="admin-input" placeholder="https://www.youtube.com/watch?v=...">
                 </div>
 
                 <!-- Загрузка Медиа -->
@@ -307,7 +349,7 @@
                 </div>
 
                 <label style="font-size:12px; font-weight:600; color:var(--text-muted); text-transform:uppercase; margin-bottom:8px; display:block;">Скругление углов</label>
-                <div class="custom-select-wrapper" style="margin-bottom:20px;">
+                <div class="custom-select-wrapper" style="margin-bottom:16px;">
                     <select id="settings-radius-select" class="admin-input" onchange="setRadius(this.value)">
                         <option value="rounded">Умеренное (Rounded)</option>
                         <option value="sharp">Острые углы (Sharp)</option>
@@ -315,6 +357,19 @@
                     </select>
                     <span class="material-symbols-rounded select-icon">expand_more</span>
                 </div>
+
+                <label class="switch-label" style="justify-content:space-between; margin-bottom:8px;">
+                    <span style="display:flex;align-items:center;gap:8px;font-size:0.95rem;">
+                        <span class="material-symbols-rounded" style="font-size:18px;">blur_on</span>
+                        Liquid Glass
+                        <span class="novelty-badge">BETA</span>
+                    </span>
+                    <span class="switch">
+                        <input type="checkbox" id="toggle-liquid-glass" onchange="toggleLiquidGlass(this.checked)">
+                        <span class="slider liquid-slider"></span>
+                    </span>
+                </label>
+                <p style="font-size:12px;color:var(--text-muted);margin:0 0 16px;line-height:1.4;">Стекло, blur и мягкие анимации — светлая и тёмная тема.</p>
 
                 <button class="btn" onclick="closeSettingsModal()" style="width:100%;">Готово</button>
             </div>
