@@ -1,0 +1,38 @@
+{
+  "name": "My Keeps | Prestige HQ",
+  "short_name": "Keeps",
+  "description": "Заметки Prestige HQ",
+  "id": "./",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#e5e5e5",
+  "theme_color": "#1a73e8",
+  "lang": "ru",
+  "icons": [
+    {
+      "src": "keeps.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "keeps.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "keeps.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "keeps.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
