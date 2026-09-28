@@ -444,6 +444,107 @@
             .header h1 { font-size: 1.6rem; }
             .theme-buttons { grid-template-columns: 1fr; }
         }
+
+        /* WorkGens floating assistant */
+        .wg-fab-root {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            z-index: 1500;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0;
+        }
+        .wg-fab {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            border-radius: 999px;
+            padding: 10px 16px 10px 10px;
+            cursor: pointer;
+            box-shadow: 0 8px 28px rgba(0,0,0,0.35);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, width 0.25s ease;
+            max-width: min(320px, calc(100vw - 40px));
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        body.light-theme .wg-fab { box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+        .wg-fab:hover { transform: translateY(-2px); border-color: var(--accent-color); }
+        .wg-fab-icon {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            object-fit: contain;
+            background: var(--iw-wg-bg);
+            padding: 4px;
+            flex-shrink: 0;
+        }
+        .wg-fab-label {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text-color);
+        }
+        .wg-fab-root.expanded .wg-fab { display: none; }
+        .wg-fab-panel {
+            display: none;
+            width: min(420px, calc(100vw - 32px));
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            padding: 12px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+            animation: fadeIn 0.2s ease;
+        }
+        body.light-theme .wg-fab-panel { box-shadow: 0 12px 32px rgba(0,0,0,0.12); }
+        .wg-fab-root.expanded .wg-fab-panel { display: block; }
+        .wg-fab-panel-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .wg-fab-panel-row img {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            object-fit: contain;
+            background: var(--iw-wg-bg);
+            padding: 3px;
+            flex-shrink: 0;
+        }
+        .wg-fab-input {
+            flex: 1;
+            min-width: 0;
+            border: 1px solid var(--border-color);
+            background: var(--bg-color);
+            color: var(--text-color);
+            border-radius: 12px;
+            padding: 10px 12px;
+            font-size: 0.95rem;
+            outline: none;
+        }
+        .wg-fab-input:focus { border-color: var(--accent-color); }
+        .wg-fab-send {
+            background: var(--accent-color);
+            color: #fff;
+            border: none;
+            width: 40px; height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .wg-fab-send:hover { filter: brightness(1.08); }
+        @media (max-width: 600px) {
+            .wg-fab-root { right: 12px; bottom: 12px; left: 12px; align-items: stretch; }
+            .wg-fab { justify-content: flex-start; max-width: none; }
+            .wg-fab-panel { width: 100%; }
+        }
+
     </style>
 </head>
 <body>
@@ -461,15 +562,6 @@
             <button class="notice-close-btn" type="button" onclick="dismissNotice()" title="Закрыть">
                 <span class="material-symbols-rounded">close</span>
             </button>
-        </div>
-        <div id="sheets-maint-banner" class="maint-banner">
-            <div class="notice-content" style="align-items:flex-start;">
-                <span class="material-symbols-rounded">construction</span>
-                <div>
-                    <strong>Таблицы временно недоступны</strong> — идут критические исправления.
-                    <div class="maint-countdown" id="sheets-maint-countdown">Срок открытия пока неизвестен. Ваши данные не потеряются.</div>
-                </div>
-            </div>
         </div>
         <header class="header">
             <div class="badge">
@@ -513,13 +605,8 @@
                     Открыть <span class="material-symbols-rounded" style="font-size:16px;">arrow_forward</span>
                 </div>
             </a>
-            <a href="./spreadsheets/" class="service-card card-sheets disabled" id="sheets-card"
-               onclick="return blockSheets(event)"
-               aria-disabled="true">
-                <span class="lock-badge">
-                    <span class="material-symbols-rounded">lock</span>
-                    Скоро
-                </span>
+            <a href="./spreadsheets/" class="service-card card-sheets" id="sheets-card"
+               onclick="navigateWithAnimation(event, './spreadsheets/', 'Таблицы', 'table_chart', '#10b981')">
                 <div class="icon-wrapper">
                     <img src="spreadsheets.png" alt="" class="custom-card-icon" onerror="this.style.display='none'">
                     <span class="material-symbols-rounded">table_chart</span>
@@ -527,8 +614,7 @@
                 <h2>Таблицы</h2>
                 <p>Работа с данными, расчетами и структурированием.</p>
                 <div class="card-action">
-                    <span class="material-symbols-rounded" style="font-size:16px;">construction</span>
-                    На обслуживании
+                    Открыть <span class="material-symbols-rounded" style="font-size:16px;">arrow_forward</span>
                 </div>
             </a>
             <a href="./keeps/" class="service-card card-keeps" onclick="navigateWithAnimation(event, './keeps/', 'Keeps', 'keep', '#ec4899')">
@@ -542,22 +628,28 @@
                     Открыть <span class="material-symbols-rounded" style="font-size:16px;">arrow_forward</span>
                 </div>
             </a>
-            <a href="./WorkGens/index.html" class="service-card card-workgens" onclick="navigateWithAnimation(event, './WorkGens/index.html', 'WorkGens AI', 'smart_toy', '#6366f1')">
-                <div class="icon-wrapper">
-                    <img src="WorkGens/icon.png" alt="" class="custom-card-icon" onerror="this.style.display='none'">
-                    <span class="material-symbols-rounded">smart_toy</span>
-                </div>
-                <h2>WorkGens AI</h2>
-                <p>Умный ассистент и генератор для всей экосистемы.</p>
-                <div class="card-action">
-                    Открыть <span class="material-symbols-rounded" style="font-size:16px;">arrow_forward</span>
-                </div>
-            </a>
         </div>
         <footer class="footer">
             &copy; Prestige HQ Hub. Все права защищены.
         </footer>
     </div>
+    
+    <div class="wg-fab-root" id="wg-fab-root">
+        <button type="button" class="wg-fab" id="wg-fab-btn" aria-label="WorkGens AI">
+            <img src="./WorkGens/icon.png" alt="" class="wg-fab-icon" onerror="this.src='';this.style.background='var(--iw-wg-bg)'">
+            <span class="wg-fab-label" id="wg-fab-label">Need help?</span>
+        </button>
+        <div class="wg-fab-panel" id="wg-fab-panel">
+            <div class="wg-fab-panel-row">
+                <img src="./WorkGens/icon.png" alt="" onerror="this.style.display='none'">
+                <input type="text" class="wg-fab-input" id="wg-fab-input" placeholder="Спросите WorkGens…" autocomplete="off">
+                <button type="button" class="wg-fab-send" id="wg-fab-send" title="Отправить в WorkGens">
+                    <span class="material-symbols-rounded">arrow_upward</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div id="transition-overlay" class="transition-overlay">
         <div id="loader-preview" class="loader-card-preview">
             <span id="loader-icon" class="material-symbols-rounded">article</span>
@@ -639,100 +731,31 @@
             </div>
         </div>
     </div>
-    <div id="sheets-block-modal" class="modal-overlay">
-        <div class="modal-card" style="max-width: 420px; text-align: center;">
-            <div class="modal-header" style="justify-content:center;">
-                <h3 style="justify-content:center;">
-                    <span class="material-symbols-rounded" style="color:var(--maint-text);">construction</span>
-                    Таблицы на обслуживании
-                </h3>
-            </div>
-            <p style="color:var(--text-muted); font-size:0.95rem; line-height:1.5; margin-bottom:8px;">
-                Сейчас идут критические исправления. Доступ временно закрыт.
-                <strong>Точная дата возвращения пока неизвестна.</strong>
-            </p>
-            <p id="sheets-modal-countdown" class="maint-countdown" style="margin-bottom:20px;">
-                Мы вернём таблицы, как только всё стабилизируем. Ваши данные не потеряются.
-            </p>
-            <button type="button" class="info-link-btn" onclick="closeModal('sheets-block-modal')" style="margin-top:0;">
-                Понятно
-            </button>
-        </div>
-    </div>
     <script>
-        /* ===== Обслуживание Таблиц: бессрочно, пока SHEETS_MAINT_INDEFINITE === true ===== */
-        const SHEETS_MAINT_INDEFINITE = true;
-        // На будущее: когда будете готовы открыть — поставьте false и при желании дату:
-        // const SHEETS_UNLOCK_AT = Date.UTC(2026, 11, 1, 12, 0, 0);
-        const SHEETS_UNLOCK_AT = null;
-
-        function isSheetsLocked() {
-            if (SHEETS_MAINT_INDEFINITE) return true;
-            if (SHEETS_UNLOCK_AT == null) return true;
-            return Date.now() < SHEETS_UNLOCK_AT;
-        }
-
-        function updateSheetsUI() {
-            const locked = isSheetsLocked();
-            const card = document.getElementById('sheets-card');
-            const banner = document.getElementById('sheets-maint-banner');
-            const cd = document.getElementById('sheets-maint-countdown');
-            const modalCd = document.getElementById('sheets-modal-countdown');
-
-            if (!locked) {
-                if (card) {
-                    card.classList.remove('disabled');
-                    card.removeAttribute('aria-disabled');
-                    card.onclick = function (e) {
-                        navigateWithAnimation(e, './spreadsheets/', 'Таблицы', 'table_chart', '#10b981');
-                    };
-                    const badge = card.querySelector('.lock-badge');
-                    if (badge) badge.remove();
-                    const action = card.querySelector('.card-action');
-                    if (action) {
-                        action.innerHTML = 'Открыть <span class="material-symbols-rounded" style="font-size:16px;">arrow_forward</span>';
-                    }
-                }
-                if (banner) banner.classList.add('hidden');
-                return;
-            }
-
-            if (cd) {
-                cd.textContent = 'Срок открытия пока неизвестен. Ваши данные не потеряются.';
-            }
-            if (modalCd) {
-                modalCd.textContent = 'Мы вернём таблицы, как только всё стабилизируем. Ваши данные не потеряются.';
-            }
-            if (banner) banner.classList.remove('hidden');
-            if (card) {
-                card.classList.add('disabled');
-                card.setAttribute('aria-disabled', 'true');
-            }
-        }
-
-        function blockSheets(event) {
-            event.preventDefault();
-            event.stopPropagation();
-            if (!isSheetsLocked()) {
-                navigateWithAnimation(event, './spreadsheets/', 'Таблицы', 'table_chart', '#10b981');
-                return false;
-            }
-            openModal('sheets-block-modal');
-            return false;
-        }
+        const WG_HINTS = [
+            'Need help?',
+            'Спросить ИИ?',
+            'Создать форму?',
+            'Сгенерировать слайды?',
+            'Помочь с документом?',
+            'WorkGens рядом',
+            'Задайте вопрос…'
+        ];
 
         document.addEventListener('DOMContentLoaded', () => {
             const isNoticeDismissed = localStorage.getItem('repo_rename_notice_dismissed');
             if (!isNoticeDismissed) {
-                document.getElementById('repo-notice').classList.remove('hidden');
+                const n = document.getElementById('repo-notice');
+                if (n) n.classList.remove('hidden');
             }
             initTheme();
-            updateSheetsUI();
+            initWorkGensFab();
         });
 
         function dismissNotice() {
             localStorage.setItem('repo_rename_notice_dismissed', 'true');
-            document.getElementById('repo-notice').classList.add('hidden');
+            const n = document.getElementById('repo-notice');
+            if (n) n.classList.add('hidden');
         }
         function openModal(id) {
             document.getElementById(id).classList.add('active');
@@ -795,6 +818,63 @@
                 }
             });
         }
-    </script>
+
+        /* ===== WorkGens floating FAB ===== */
+        function initWorkGensFab() {
+            const root = document.getElementById('wg-fab-root');
+            const btn = document.getElementById('wg-fab-btn');
+            const panel = document.getElementById('wg-fab-panel');
+            const input = document.getElementById('wg-fab-input');
+            const send = document.getElementById('wg-fab-send');
+            const label = document.getElementById('wg-fab-label');
+            if (!root || !btn) return;
+
+            label.textContent = WG_HINTS[Math.floor(Math.random() * WG_HINTS.length)];
+
+            function expand() {
+                root.classList.add('expanded');
+                setTimeout(() => input && input.focus(), 50);
+            }
+            function collapse() {
+                root.classList.remove('expanded');
+                if (input) input.value = '';
+                label.textContent = WG_HINTS[Math.floor(Math.random() * WG_HINTS.length)];
+            }
+            function goToWorkGens() {
+                const q = (input && input.value || '').trim();
+                if (!q) {
+                    input && input.focus();
+                    return;
+                }
+                const url = './WorkGens/index.html?q=' + encodeURIComponent(q) + '&autosend=1';
+                window.location.href = url;
+            }
+
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                expand();
+            });
+            send.addEventListener('click', (e) => {
+                e.stopPropagation();
+                goToWorkGens();
+            });
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    goToWorkGens();
+                } else if (e.key === 'Escape') {
+                    collapse();
+                }
+            });
+            input.addEventListener('click', (e) => e.stopPropagation());
+            panel.addEventListener('click', (e) => e.stopPropagation());
+
+            document.addEventListener('click', () => {
+                if (!root.classList.contains('expanded')) return;
+                if (input && input.value.trim()) return; // keep open if typing
+                collapse();
+            });
+        }
+    </script></script>
 </body>
 </html>
