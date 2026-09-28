@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Keeps | Prestige HQ</title>
-    <link rel="icon" type="image/png" href="Keeps.png">
+    <link rel="icon" type="image/png" href="keeps.png">
+    <link rel="apple-touch-icon" href="keeps.png">
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#1a73e8">
+    <meta name="mobile-web-app-capable" content="yes">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -40,7 +44,7 @@
 
                     <div class="tools-section-title">Наши сервисы</div>
                     <a href="../document" class="tools-item"><span class="material-symbols-rounded">description</span> Документы</a>
-                    <a href="../spreadsheet" class="tools-item"><span class="material-symbols-rounded">table_chart</span> Таблицы</a>
+                    <a href="../spreadsheets" class="tools-item"><span class="material-symbols-rounded">table_chart</span> Таблицы</a>
                     <a href="../forms" class="tools-item"><span class="material-symbols-rounded">quiz</span> Формы</a>
                     <a href="../slides" class="tools-item"><span class="material-symbols-rounded">slideshow</span> Слайды</a>
 
@@ -61,10 +65,26 @@
             <span class="material-symbols-rounded">search</span>
             <input type="text" id="search-input" placeholder="Поиск заметок..." oninput="renderNotes()">
         </div>
+
+        <div class="header-actions">
+            <button type="button" class="tools-icon-btn" id="btn-view-mode" onclick="toggleViewMode()" title="Список / Сетка">
+                <span class="material-symbols-rounded" id="view-mode-icon">view_agenda</span>
+            </button>
+            <button type="button" class="tools-icon-btn" id="btn-refresh-notes" onclick="manualSaveAndRefresh()" title="Сохранить и обновить">
+                <span class="material-symbols-rounded">sync</span>
+            </button>
+        </div>
     </header>
 
     <!-- ОСНОВНАЯ ОБЛАСТЬ -->
     <main class="container">
+        <div class="filter-bar" id="filter-bar">
+            <button type="button" class="filter-chip active" data-filter="all" onclick="setNotesFilter('all')">Все</button>
+            <button type="button" class="filter-chip" data-filter="pinned" onclick="setNotesFilter('pinned')">Закреплённые</button>
+            <button type="button" class="filter-chip" data-filter="reminders" onclick="setNotesFilter('reminders')">С напоминанием</button>
+            <button type="button" class="filter-chip" data-filter="archived" onclick="setNotesFilter('archived')">Архив <span class="novelty-badge">NEW</span></button>
+        </div>
+
         <!-- Создание заметки с обновленной панелью -->
         <div class="create-note-card" id="create-note-card">
             <input type="text" id="note-title-input" class="admin-input" style="font-weight: 600;" placeholder="Заголовок">
@@ -183,6 +203,7 @@
     </div>
 
     <!-- ТАЙМЕР ОТМЕНЫ УДАЛЕНИЯ -->
+    <div id="save-status-toast" class="save-status-toast hidden">Сохранено</div>
     <div id="undo-toast" class="undo-toast hidden">
         <span id="undo-toast-text">Заметка удалена</span>
         <button class="undo-btn" onclick="undoDelete()">Отмена (<span id="undo-timer">5</span>s)</button>
@@ -250,12 +271,30 @@
                 </div>
             </div>
 
+            <div style="text-align: left; margin-bottom: 12px;">
+                <label class="switch-label" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
+                    <span style="font-size:0.9rem;display:flex;align-items:center;gap:8px;">
+                        <span class="material-symbols-rounded" style="font-size:18px;">blur_on</span>
+                        Liquid Glass Style
+                        <span class="novelty-badge">BETA</span>
+                    </span>
+                    <span class="switch">
+                        <input type="checkbox" id="toggle-liquid-glass" onchange="toggleLiquidGlassLive(this.checked)">
+                        <span class="slider"></span>
+                    </span>
+                </label>
+            </div>
             <div style="text-align: left; margin-bottom: 20px;">
-                <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">Привязать ИИ ключ (заканчивается на ")")</label>
-                <div style="display: flex; gap: 8px; margin-top: 4px;">
-                    <input type="password" id="ai-key-input" class="admin-input" style="margin: 0;" placeholder="Введите ключ...">
-                    <button class="btn" onclick="saveAiKey()">Привязать</button>
-                </div>
+                <label class="switch-label" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
+                    <span style="font-size:0.9rem;display:flex;align-items:center;gap:8px;">
+                        <span class="material-symbols-rounded" style="font-size:18px;">zoom_in</span>
+                        Увеличить интерфейс (телефоны)
+                    </span>
+                    <span class="switch">
+                        <input type="checkbox" id="toggle-ui-scale" onchange="toggleUiScaleLive(this.checked)">
+                        <span class="slider"></span>
+                    </span>
+                </label>
             </div>
 
             <button class="btn" style="width: 100%;" onclick="saveSettings()">Сохранить изменения</button>
