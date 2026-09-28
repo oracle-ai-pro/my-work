@@ -47,6 +47,10 @@ document.addEventListener('DOMContentLoaded', () => {
     setTheme(savedTheme, false);
     const savedRadius = localStorage.getItem('app_radius') || 'rounded';
     setRadius(savedRadius, false);
+    const liquidOn = localStorage.getItem('liquid_glass_mode') === 'true';
+    const lt = document.getElementById('toggle-liquid-glass');
+    if (lt) lt.checked = liquidOn;
+    applyLiquidGlass(liquidOn);
     enhanceAllSelects();
     if (window.speechSynthesis) {
         window.speechSynthesis.getVoices();
@@ -93,45 +97,58 @@ function saveDocs() {
 function renderTabs() {
     const list = document.getElementById('forms-tabs-list');
     const select = document.getElementById('forms-tabs-select');
+    const selectWrap = document.getElementById('forms-select-wrap');
     
     if (!list || !select) return;
     list.innerHTML = '';
     select.innerHTML = '';
 
     allDocs.forEach((doc, idx) => {
-        // Рендер кнопок на ПК
         const btn = document.createElement('button');
-        btn.className = `btn ${idx === currentDocIndex ? '' : 'btn-secondary'}`;
-        btn.innerText = doc.title;
-        btn.style.whiteSpace = 'nowrap';
+        btn.type = 'button';
+        btn.className = 'doc-tab' + (idx === currentDocIndex ? ' active-tab' : '');
+        btn.textContent = doc.title;
         btn.onclick = () => switchDoc(idx);
-        
-        // ПКМ (Контекстное меню)
         btn.oncontextmenu = (e) => {
             e.preventDefault();
             showContextMenu(e, idx);
         };
-
         list.appendChild(btn);
 
-        // Рендер выпадающего списка на мобильных
         const opt = document.createElement('option');
         opt.value = idx;
-        opt.innerText = doc.title;
+        opt.textContent = doc.title;
         if (idx === currentDocIndex) opt.selected = true;
         select.appendChild(opt);
     });
 
-    if (window.innerWidth < 600) {
+    // Только один UI: вкладки на десктопе, select на мобилке
+    const mobile = window.innerWidth < 600;
+    if (mobile) {
         list.classList.add('hidden');
-        select.classList.remove('hidden');
+        if (selectWrap) selectWrap.classList.remove('hidden');
     } else {
         list.classList.remove('hidden');
-        select.classList.add('hidden');
+        if (selectWrap) selectWrap.classList.add('hidden');
     }
-    if (select.dataset.cselectEnhanced === '1') refreshEnhancedSelect(select);
-    else if (!select.classList.contains('hidden')) enhanceNativeSelect(select);
+
+    // кастомный select только если виден
+    if (mobile) {
+        if (select.dataset.cselectEnhanced === '1') {
+            var old = select.nextElementSibling;
+            // cselect may be inside wrap after select
+            var box = selectWrap && selectWrap.querySelector('.cselect');
+            if (typeof select._cselectRebuild === 'function') select._cselectRebuild();
+            else enhanceNativeSelect(select);
+        } else {
+            enhanceNativeSelect(select);
+        }
+    }
 }
+
+window.addEventListener('resize', function() {
+    if (typeof renderTabs === 'function') renderTabs();
+});
 
 function showContextMenu(e, idx) {
     contextTargetIndex = idx;
@@ -183,6 +200,23 @@ function switchDocFromSelect(idx) {
 // ==========================================
 // 5. ИНТЕРФЕЙС ЧТЕНИЯ И ПРОСМОТРА
 // ==========================================
+
+function youtubeEmbedUrl(url) {
+    if (!url) return '';
+    try {
+        var u = new URL(url);
+        var id = '';
+        if (u.hostname.indexOf('youtu.be') >= 0) id = u.pathname.slice(1);
+        else if (u.searchParams.get('v')) id = u.searchParams.get('v');
+        else {
+            var m = u.pathname.match(/\/embed\/([^/]+)/);
+            if (m) id = m[1];
+        }
+        if (!id) return '';
+        return 'https://www.youtube.com/embed/' + encodeURIComponent(id);
+    } catch (e) { return ''; }
+}
+
 function renderDocScreen() {
     clearInterval(readTimerInterval);
     const doc = allDocs[currentDocIndex];
@@ -211,10 +245,15 @@ function renderDocScreen() {
     
     body.style.opacity = 0;
     setTimeout(() => {
-        let content = `<h3>${escapeHTML(block.title)}</h3>`;
-
-        if (block.description) {
-            content += `<p>${escapeHTML(block.description).replace(/\n/g, '<br>')}</p>`;
+        let content = '';
+        var skipDefaultHead = ['callout', 'quote', 'divider', 'code', 'video'].indexOf(block.type) >= 0;
+        if (!skipDefaultHead) {
+            content += `<h3>${escapeHTML(block.title)}</h3>`;
+            if (block.description && block.type !== 'steps') {
+                content += `<p>${escapeHTML(block.description).replace(/\n/g, '<br>')}</p>`;
+            }
+        } else if (block.type === 'video' || block.type === 'code') {
+            content += `<h3>${escapeHTML(block.title)}</h3>`;
         }
 
         // Рендеринг различных типов блоков
@@ -270,6 +309,54 @@ function renderDocScreen() {
                         </div>`;
                 }
                 break;
+
+            case 'callout': {
+                var st = block.calloutStyle || 'info';
+                var icons = { info: 'info', tip: 'lightbulb', warn: 'warning', danger: 'error' };
+                content += '<div class="doc-callout callout-' + st + '">' +
+                    '<span class="material-symbols-rounded">' + (icons[st] || 'info') + '</span>' +
+                    '<div><strong>' + escapeHTML(block.title) + '</strong>' +
+                    (block.description ? '<p>' + escapeHTML(block.description).replace(/\n/g, '<br>') + '</p>' : '') +
+                    '</div></div>';
+                // title already in h3 — avoid double: strip h3 for callout by replacing content start
+                break;
+            }
+
+            case 'steps': {
+                content += '<ol class="doc-steps">';
+                (block.steps || []).forEach(function(step) {
+                    content += '<li>' + escapeHTML(step) + '</li>';
+                });
+                content += '</ol>';
+                break;
+            }
+
+            case 'quote':
+                content += '<blockquote class="doc-quote">' +
+                    '<p>' + escapeHTML(block.description || block.title).replace(/\n/g, '<br>') + '</p>' +
+                    '</blockquote>';
+                break;
+
+            case 'code':
+                content += '<div class="doc-code-wrap"><div class="doc-code-lang">' + escapeHTML(block.codeLang || 'code') + '</div>' +
+                    '<pre class="doc-code"><code>' + escapeHTML(block.code || '') + '</code></pre></div>';
+                break;
+
+            case 'divider':
+                content = '<div class="doc-divider">' +
+                    (block.title ? '<span>' + escapeHTML(block.title) + '</span>' : '') +
+                    '</div>';
+                break;
+
+            case 'video': {
+                var embed = youtubeEmbedUrl(block.videoUrl || '');
+                if (embed) {
+                    content += '<div class="doc-video"><iframe src="' + embed + '" title="video" allowfullscreen loading="lazy"></iframe></div>';
+                } else {
+                    content += '<p style="color:var(--text-muted);">Некорректная ссылка на видео</p>';
+                }
+                break;
+            }
         }
 
         body.innerHTML = content;
@@ -559,10 +646,24 @@ function toggleAdminFields() {
     const type = document.getElementById('new-type').value;
     
     document.getElementById('a4-editor-box').classList.toggle('hidden', type !== 'a4-sheet');
-    document.getElementById('desc-field-box').classList.toggle('hidden', type === 'a4-sheet');
+    document.getElementById('desc-field-box').classList.toggle('hidden', type === 'a4-sheet' || type === 'divider' || type === 'code' || type === 'steps' || type === 'video');
     document.getElementById('admin-choices-fields').classList.toggle('hidden', type !== 'checklist');
     document.getElementById('flashcard-answer-box').classList.toggle('hidden', type !== 'flashcard');
     document.getElementById('media-upload-box').classList.toggle('hidden', type !== 'info-slide');
+    var co = document.getElementById('callout-fields');
+    if (co) co.classList.toggle('hidden', type !== 'callout');
+    var st = document.getElementById('steps-fields');
+    if (st) st.classList.toggle('hidden', type !== 'steps');
+    var cd = document.getElementById('code-fields');
+    if (cd) cd.classList.toggle('hidden', type !== 'code');
+    var vd = document.getElementById('video-fields');
+    if (vd) vd.classList.toggle('hidden', type !== 'video');
+    // divider: title optional
+    var titleLab = document.querySelector('label[for="new-title"]');
+    if (titleLab) {
+        titleLab.textContent = type === 'divider' ? 'Подпись разделителя (необязательно):' : 'Заголовок блока/раздела:';
+    }
+    try { enhanceAllSelects(document.getElementById('admin-add-form')); } catch(e) {}
 }
 
 function execEditorCmd(cmd, value = null) {
@@ -591,7 +692,8 @@ function addBlock() {
     const title = document.getElementById('new-title').value.trim();
     const desc = document.getElementById('new-description').value.trim();
 
-    if (!title) return showAlert('Введите заголовок!');
+    if (!title && type !== 'divider') return showAlert('Введите заголовок!');
+    if (type === 'divider' && !title) title = '—';
 
     const doc = allDocs[currentDocIndex];
     if (!doc.blocks) doc.blocks = [];
@@ -603,7 +705,7 @@ function addBlock() {
         id: editingBlockIndex !== null ? doc.blocks[editingBlockIndex].id : Date.now(),
         type: type,
         title: title,
-        description: type === 'a4-sheet' ? '' : desc,
+        description: (type === 'a4-sheet' || type === 'divider' || type === 'code' || type === 'steps' || type === 'video') ? '' : desc,
         required: document.getElementById('new-required').checked,
         timer: timerVal
     };
@@ -618,6 +720,25 @@ function addBlock() {
         blockData.flashcardAnswer = document.getElementById('new-flashcard-answer').value.trim();
     } else if (type === 'info-slide') {
         blockData.mediaData = uploadedMediaData || (editingBlockIndex !== null ? doc.blocks[editingBlockIndex].mediaData : '');
+    } else if (type === 'callout') {
+        blockData.calloutStyle = (document.getElementById('new-callout-style') || {}).value || 'info';
+        blockData.description = desc;
+    } else if (type === 'steps') {
+        var stepsRaw = (document.getElementById('new-steps-text') || {}).value || '';
+        blockData.steps = String(stepsRaw).split(/\n/).map(function(l){ return l.trim(); }).filter(Boolean);
+        if (!blockData.steps.length) return showAlert('Добавьте хотя бы один шаг');
+    } else if (type === 'quote') {
+        blockData.description = desc;
+        blockData.quoteAuthor = ''; // optional via description second line if needed
+    } else if (type === 'code') {
+        blockData.code = (document.getElementById('new-code-text') || {}).value || '';
+        blockData.codeLang = ((document.getElementById('new-code-lang') || {}).value || '').trim() || 'code';
+        if (!blockData.code.trim()) return showAlert('Вставьте код');
+    } else if (type === 'video') {
+        blockData.videoUrl = ((document.getElementById('new-video-url') || {}).value || '').trim();
+        if (!blockData.videoUrl) return showAlert('Укажите ссылку YouTube');
+    } else if (type === 'divider') {
+        blockData.title = title === '—' ? '' : title;
     }
 
     if (editingBlockIndex !== null) {
@@ -658,6 +779,20 @@ function editBlock(index) {
         uploadedMediaData = block.mediaData || '';
         const container = document.getElementById('media-preview-container');
         container.innerHTML = uploadedMediaData ? `<img src="${uploadedMediaData}" style="max-width:100%; max-height:150px; margin-top:10px; border-radius:8px;">` : '';
+    } else if (block.type === 'callout') {
+        var cs = document.getElementById('new-callout-style');
+        if (cs) { cs.value = block.calloutStyle || 'info'; refreshEnhancedSelect(cs); }
+    } else if (block.type === 'steps') {
+        var st = document.getElementById('new-steps-text');
+        if (st) st.value = (block.steps || []).join('\n');
+    } else if (block.type === 'code') {
+        var ct = document.getElementById('new-code-text');
+        if (ct) ct.value = block.code || '';
+        var cl = document.getElementById('new-code-lang');
+        if (cl) cl.value = block.codeLang || '';
+    } else if (block.type === 'video') {
+        var vu = document.getElementById('new-video-url');
+        if (vu) vu.value = block.videoUrl || '';
     }
 
     if (block.timer) {
@@ -682,11 +817,24 @@ function cancelEditBlock() {
     document.getElementById('new-flashcard-answer').value = '';
     document.getElementById('media-preview-container').innerHTML = '';
     document.getElementById('new-media-file').value = '';
+    var _st = document.getElementById('new-steps-text'); if (_st) _st.value = '';
+    var _ct = document.getElementById('new-code-text'); if (_ct) _ct.value = '';
+    var _cl = document.getElementById('new-code-lang'); if (_cl) _cl.value = '';
+    var _vu = document.getElementById('new-video-url'); if (_vu) _vu.value = '';
     document.getElementById('new-required').checked = false;
     document.getElementById('toggle-timer-input').checked = false;
     document.getElementById('timer-config').classList.add('hidden');
     document.getElementById('admin-add-form').classList.add('hidden');
     toggleAdminFields();
+}
+
+function formatBlockType(t) {
+    var m = {
+        'text-block':'Текст','a4-sheet':'А4','interactive-fields':'Поле','checklist':'Чек-лист',
+        'info-slide':'Медиа','flashcard':'Памятка','callout':'Callout ★','steps':'Шаги ★',
+        'quote':'Цитата ★','code':'Код ★','divider':'Разделитель ★','video':'Видео ★'
+    };
+    return m[t] || t;
 }
 
 function renderAdminBlocksList() {
@@ -710,8 +858,8 @@ function renderAdminBlocksList() {
         item.innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <div>
-                    <strong>${index + 1}. ${escapeHTML(b.title)}</strong> 
-                    <span style="color:var(--text-muted); font-size:12px;">(${escapeHTML(b.type)})</span>
+                    <strong>${index + 1}. ${escapeHTML(b.title || 'Без названия')}</strong> 
+                    <span style="color:var(--text-muted); font-size:12px;">(${escapeHTML(formatBlockType(b.type))})</span>
                 </div>
                 <div style="display:flex; gap:6px;">
                     <button class="btn btn-secondary" style="padding:4px 8px; font-size:12px;" onclick="moveBlock(${index}, -1)" ${index === 0 ? 'disabled' : ''}>▲</button>
@@ -751,7 +899,7 @@ function deleteBlock(index) {
 // 9. ВСПЛЫВАЮЩИЕ И МОДАЛЬНЫЕ ОКНА
 // ==========================================
 function toggleToolsMenu() { document.getElementById('tools-menu').classList.toggle('hidden'); }
-function openSettingsModal() { document.getElementById('settings-modal').classList.remove('hidden'); }
+function openSettingsModal() { var m=document.getElementById('settings-modal'); try{enhanceAllSelects(m);}catch(e){} m.classList.remove('hidden'); }
 function closeSettingsModal() { document.getElementById('settings-modal').classList.add('hidden'); }
 
 function setTheme(theme, save = true) {
@@ -773,6 +921,14 @@ function setRadius(name, save = true) {
         if (typeof refreshEnhancedSelect === 'function') refreshEnhancedSelect(sel);
     }
     if (save) localStorage.setItem('app_radius', name);
+}
+
+function toggleLiquidGlass(on) {
+    localStorage.setItem('liquid_glass_mode', on ? 'true' : 'false');
+    applyLiquidGlass(!!on);
+}
+function applyLiquidGlass(on) {
+    document.body.classList.toggle('liquid-glass', !!on);
 }
 
 function speakCurrentBlock() {
