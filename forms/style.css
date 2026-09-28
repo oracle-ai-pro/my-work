@@ -1928,3 +1928,237 @@ body.mini-ai-open { overflow: hidden; }
 @media (max-width: 520px) {
     .mini-ai-panel { width: 100vw; }
 }
+
+
+/* ===== True/False + Fill-blank (NEW) ===== */
+.novelty-inline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-color);
+}
+.tf-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+.tf-choice {
+    flex: 1;
+    min-width: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 16px 18px;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--card-bg);
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 1.05rem;
+    color: var(--text-color);
+    user-select: none;
+    transition: border-color 0.15s, background 0.15s, transform 0.12s;
+}
+.tf-choice input { display: none; }
+.tf-choice:hover { border-color: var(--accent-color); }
+.tf-choice.selected {
+    border-color: var(--accent-color);
+    background: rgba(26, 115, 232, 0.1);
+    color: var(--accent-color);
+}
+.tf-choice.tf-big {
+    min-height: 72px;
+    font-size: 1.2rem;
+    border-radius: var(--radius-lg);
+}
+.tf-choice .tf-icon { font-size: 22px; }
+.tf-choice.correct-highlight {
+    border-color: #2e7d32 !important;
+    background: rgba(46, 125, 50, 0.12) !important;
+}
+.tf-choice.incorrect-highlight {
+    border-color: #d32f2f !important;
+    background: rgba(211, 47, 47, 0.1) !important;
+}
+
+.fillblank-passage {
+    font-size: 1.05rem;
+    line-height: 1.85;
+    color: var(--text-color);
+    margin: 8px 0 4px;
+}
+.fillblank-input {
+    display: inline-block;
+    min-width: 88px;
+    max-width: 100%;
+    width: auto;
+    padding: 4px 10px;
+    margin: 0 3px;
+    font-size: 1rem;
+    font-family: inherit;
+    color: var(--text-color);
+    background: var(--card-bg);
+    border: none;
+    border-bottom: 2px solid var(--accent-color);
+    border-radius: 4px 4px 0 0;
+    outline: none;
+    vertical-align: baseline;
+}
+.fillblank-input:focus {
+    background: rgba(26, 115, 232, 0.08);
+    box-shadow: 0 2px 0 var(--accent-color);
+}
+.fillblank-input.fb-ok {
+    border-bottom-color: #2e7d32;
+    background: rgba(46, 125, 50, 0.08);
+}
+.fillblank-input.fb-bad {
+    border-bottom-color: #d32f2f;
+    background: rgba(211, 47, 47, 0.08);
+}
+.fillblank-admin-preview {
+    margin-top: 8px;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px dashed var(--border-color);
+    background: var(--bg-color);
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-muted);
+    min-height: 0;
+}
+.fillblank-admin-preview:empty { display: none; }
+.fillblank-admin-preview .fb-tag {
+    display: inline-block;
+    padding: 1px 7px;
+    margin: 0 2px;
+    border-radius: 6px;
+    background: rgba(26, 115, 232, 0.15);
+    color: var(--accent-color);
+    font-weight: 600;
+    font-size: 12px;
+}
+.type-badge-new {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    padding: 1px 5px;
+    border-radius: 5px;
+    background: #ea4335;
+    color: #fff;
+    margin-left: 4px;
+    vertical-align: middle;
+}
+
+
+/* ===== Liquid Glass (BETA) ===== */
+body.liquid-glass {
+    --glass-bg: rgba(255, 255, 255, 0.55);
+    --glass-border: rgba(255, 255, 255, 0.45);
+    --glass-shadow: 0 8px 32px rgba(31, 38, 135, 0.12);
+    --glass-blur: 16px;
+}
+body.liquid-glass.dark-theme {
+    --glass-bg: rgba(20, 24, 36, 0.55);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+    --glass-blur: 18px;
+}
+body.liquid-glass .gcard,
+body.liquid-glass .admin-box,
+body.liquid-glass .result-card,
+body.liquid-glass .form-tab,
+body.liquid-glass .tools-menu,
+body.liquid-glass .custom-alert-card,
+body.liquid-glass .theme-sidebar,
+body.liquid-glass .mini-ai-panel,
+body.liquid-glass .hint-box,
+body.liquid-glass .option,
+body.liquid-glass .tf-choice,
+body.liquid-glass .cselect-trigger,
+body.liquid-glass .cselect-dropdown,
+body.liquid-glass .flashcard-side,
+body.liquid-glass .preview-overlay-bar {
+    background: var(--glass-bg) !important;
+    border-color: var(--glass-border) !important;
+    box-shadow: var(--glass-shadow) !important;
+    backdrop-filter: blur(var(--glass-blur)) saturate(1.35);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.35);
+}
+body.liquid-glass .btn {
+    box-shadow: 0 4px 16px rgba(26, 115, 232, 0.35);
+    backdrop-filter: blur(8px);
+}
+body.liquid-glass .progress-bar {
+    background: rgba(128, 128, 128, 0.2);
+    backdrop-filter: blur(4px);
+}
+body.liquid-glass .form-tab.active-tab {
+    background: rgba(26, 115, 232, 0.85) !important;
+    border-color: transparent !important;
+}
+body.liquid-glass .custom-alert-overlay {
+    background: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+body.liquid-glass.dark-theme .custom-alert-overlay {
+    background: rgba(0, 0, 0, 0.55);
+}
+
+/* Мягкие анимации появления */
+body.liquid-glass .gcard,
+body.liquid-glass .admin-box,
+body.liquid-glass .result-card {
+    animation: glassFadeIn 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes glassFadeIn {
+    from { opacity: 0; transform: translateY(10px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+body.liquid-glass .tf-choice,
+body.liquid-glass .option {
+    transition: border-color 0.2s ease, background 0.2s ease, transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease;
+}
+body.liquid-glass .tf-choice:hover,
+body.liquid-glass .option:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(26, 115, 232, 0.15);
+}
+body.liquid-glass .btn {
+    transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+body.liquid-glass .btn:hover {
+    transform: translateY(-1px);
+}
+body.liquid-glass .btn:active {
+    transform: scale(0.97);
+}
+
+/* Общие фиксы анимаций (без liquid) */
+.gcard, .admin-box {
+    animation: fadeInCard 0.32s ease-out;
+}
+@keyframes fadeInCard {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.custom-alert-overlay.active .custom-alert-card {
+    animation: alertPop 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes alertPop {
+    from { opacity: 0; transform: scale(0.94); }
+    to { opacity: 1; transform: scale(1); }
+}
+.tf-choice, .option {
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.12s ease;
+}
+.fillblank-input {
+    transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
