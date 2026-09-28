@@ -176,6 +176,20 @@ function initSettings() {
     const toggleInput = document.getElementById('toggle-compact-forms');
     if (toggleInput) toggleInput.checked = isCompact;
     applyFormsLayout(isCompact);
+
+    const liquidOn = localStorage.getItem('liquid_glass_mode') === 'true';
+    const liquidToggle = document.getElementById('toggle-liquid-glass');
+    if (liquidToggle) liquidToggle.checked = liquidOn;
+    applyLiquidGlass(liquidOn);
+}
+
+function toggleLiquidGlass(on) {
+    localStorage.setItem('liquid_glass_mode', on ? 'true' : 'false');
+    applyLiquidGlass(!!on);
+}
+
+function applyLiquidGlass(on) {
+    document.body.classList.toggle('liquid-glass', !!on);
 }
 
 function setTheme(themeName, save = true) {
@@ -855,7 +869,29 @@ function renderQuestion() {
         </button>
     `;
 
-    if (q.type === 'text' && q.useInlineInput && q.title.includes('[input]')) {
+    if (q.type === 'fill-blank') {
+        var fbHeading = '';
+        var tpl0 = q.fillBlankTemplate || '';
+        // заголовок показываем, только если он задан отдельно (не копия шаблона)
+        if (q.title && tpl0 && q.title !== tpl0 && q.title !== (tpl0.length > 60 ? tpl0.slice(0, 57) + '…' : tpl0)) {
+            fbHeading = q.title;
+        } else if (q.title && !tpl0) {
+            fbHeading = '';
+        } else if (q.title && !String(q.title).includes('[')) {
+            fbHeading = q.title;
+        }
+        body.innerHTML = '';
+        if (fbHeading) {
+            body.innerHTML = `<h3 style="margin-bottom: ${q.description ? '6px' : '12px'}; font-weight:600; display:flex; align-items:flex-start; gap:4px; flex-wrap:wrap;">
+                <span style="flex:1;">${escapeHtml(fbHeading)}</span>${speakBtnHTML}
+            </h3>`;
+        } else {
+            body.innerHTML = `<div style="display:flex;justify-content:flex-end;margin-bottom:4px;">${speakBtnHTML}</div>`;
+        }
+        if (q.description) {
+            body.innerHTML += `<p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 12px; line-height: 1.4;">${escapeHtml(q.description)}</p>`;
+        }
+    } else if (q.type === 'text' && q.useInlineInput && q.title.includes('[input]')) {
         const inputHTML = `<input type="text" class="inline-quiz-input" value="${savedVal}" placeholder="..." oninput="saveAnswer(this.value.trim())">`;
         const formattedTitle = q.title.replace('[input]', inputHTML);
         
@@ -959,6 +995,42 @@ function renderQuestion() {
                 }, 50);
             }
             break;
+
+        case 'true-false': {
+            var opts = (q.options && q.options.length >= 2) ? q.options : ['Верно', 'Неверно'];
+            var big = q.tfBigButtons ? ' tf-big' : '';
+            var icons = ['check_circle', 'cancel'];
+            body.innerHTML += '<div class="tf-row">';
+            opts.forEach(function(opt, idx) {
+                var sel = (savedVal === idx || savedVal === String(idx)) ? ' selected' : '';
+                body.innerHTML += '<label class="tf-choice' + big + sel + '" id="opt-label-' + idx + '">' +
+                    '<input type="radio" name="q_opt" value="' + idx + '"' + (sel ? ' checked' : '') +
+                    ' onchange="saveAnswer(' + idx + '); document.querySelectorAll(\'.tf-choice\').forEach(function(el){el.classList.remove(\'selected\')}); this.closest(\'.tf-choice\').classList.add(\'selected\'); showAnswerExplanation(' + idx + ')">' +
+                    '<span class="material-symbols-rounded tf-icon">' + icons[idx] + '</span>' +
+                    '<span>' + escapeHtml(opt) + '</span></label>';
+            });
+            body.innerHTML += '</div><div id="answer-explanation-area" style="margin-top:12px;"></div>';
+            if (savedVal !== '' && savedVal !== undefined) setTimeout(function(){ showAnswerExplanation(savedVal); }, 30);
+            break;
+        }
+
+        case 'fill-blank': {
+            var tpl = q.fillBlankTemplate || q.title || '';
+            var savedArr = Array.isArray(savedVal) ? savedVal : [];
+            var bi = 0;
+            var passage = escapeHtml(tpl).replace(/\[([^\]]+)\]/g, function() {
+                var val = savedArr[bi] != null ? escapeHtml(String(savedArr[bi])) : '';
+                var idx = bi;
+                bi++;
+                return '<input type="text" class="fillblank-input" data-fb-idx="' + idx + '" value="' + val +
+                    '" placeholder="…" autocomplete="off" oninput="saveFillBlankAnswers()">';
+            });
+            body.innerHTML += '<div class="fillblank-passage">' + passage + '</div>';
+            if (bi === 0) {
+                body.innerHTML += '<p style="color:var(--text-muted);font-size:13px;">В шаблоне нет пропусков [ответ]</p>';
+            }
+            break;
+        }
 
         case 'flashcard':
             body.innerHTML += `
@@ -1066,6 +1138,36 @@ function initPuzzleEvents() {
     });
 }
 
+
+function saveFillBlankAnswers() {
+    var inputs = document.querySelectorAll('#question-body .fillblank-input');
+    var arr = [];
+    inputs.forEach(function(inp) {
+        arr[parseInt(inp.getAttribute('data-fb-idx'), 10) || 0] = inp.value;
+    });
+    saveAnswer(arr);
+}
+
+function normalizeFbAnswer(s, q) {
+    var v = String(s == null ? '' : s);
+    if (q && q.fbTrimSpaces !== false) v = v.trim().replace(/\s+/g, ' ');
+    if (!(q && q.fbCaseSensitive)) v = v.toLowerCase();
+    return v;
+}
+
+function isFillBlankCorrect(q, userAns) {
+    if (!q || !Array.isArray(q.blanks)) return false;
+    var ua = Array.isArray(userAns) ? userAns : [];
+    for (var i = 0; i < q.blanks.length; i++) {
+        var accepted = q.blanks[i] || [];
+        if (!q.fbAcceptAlts && accepted.length) accepted = [accepted[0]];
+        var got = normalizeFbAnswer(ua[i], q);
+        var ok = accepted.some(function(a) { return normalizeFbAnswer(a, q) === got; });
+        if (!ok) return false;
+    }
+    return q.blanks.length > 0;
+}
+
 function nextStep(force = false) {
     var _active = resolveActiveQuestion();
     const form = _active.form;
@@ -1078,7 +1180,7 @@ function nextStep(force = false) {
     }
 
     var ans = userAnswers[currentRealQuestionIndex];
-    var answerIsEmpty = (ans === undefined || ans === null || ans === '' || (Array.isArray(ans) && ans.length === 0));
+    var answerIsEmpty = (ans === undefined || ans === null || ans === '' || (Array.isArray(ans) && (ans.length === 0 || ans.every(function(x){ return !String(x||'').trim(); }))));
     if (!force && !isExplanationShowing && q.required && answerIsEmpty) {
         showAlert('Пожалуйста, ответьте на обязательный вопрос!', 'warning');
         return;
@@ -1148,6 +1250,11 @@ function stopHoldTimer() {
 
 function getCorrectAnswerDisplay(q) {
     if (!q) return '—';
+    if (q.type === 'fill-blank' && Array.isArray(q.blanks)) {
+        return q.blanks.map(function(alts) {
+            return Array.isArray(alts) ? alts.join('|') : String(alts);
+        }).join(' · ');
+    }
     if (q.type === 'text' && q.correctText && q.correctText.length) {
         return q.correctText.join(' / ');
     }
@@ -1175,7 +1282,7 @@ function getAnswerExplanationHtml(q, isCorrect, userAns) {
             text = q.answerExpCorrect || '';
         } else {
             var map = q.answerExpIncorrect || {};
-            if (q.type === 'radio' || q.type === 'select') {
+            if (q.type === 'radio' || q.type === 'select' || q.type === 'true-false') {
                 var n = parseInt(userAns, 10);
                 if (!isNaN(n) && (map[n] != null || map[String(n)] != null)) {
                     text = map[n] != null ? map[n] : map[String(n)];
@@ -1364,7 +1471,7 @@ function calculateResults() {
         maxPossibleScore++;
         let isCorrect = false;
 
-        if (q.type === 'radio' || q.type === 'select') {
+        if (q.type === 'radio' || q.type === 'select' || q.type === 'true-false') {
             var ansNum = (userAns === '' || userAns === undefined || userAns === null) ? null : parseInt(userAns, 10);
             if (q.correctChoices && ansNum !== null && !isNaN(ansNum) && q.correctChoices.map(Number).includes(ansNum)) isCorrect = true;
         } else if (q.type === 'checkbox') {
@@ -1373,15 +1480,27 @@ function calculateResults() {
                 var ua = userAns.map(Number).slice().sort();
                 if (cc.length === ua.length && cc.every(function(v, i) { return v === ua[i]; })) isCorrect = true;
             }
+        } else if (q.type === 'true-false') {
+            var ansNumTf = parseInt(userAns, 10);
+            if (q.correctChoices && !isNaN(ansNumTf) && q.correctChoices.map(Number).includes(ansNumTf)) isCorrect = true;
+        } else if (q.type === 'fill-blank') {
+            if (isFillBlankCorrect(q, userAns)) isCorrect = true;
         } else if (q.type === 'text') {
             if (q.correctText && q.correctText.some(t => t.toLowerCase().trim() === String(userAns || '').toLowerCase().trim())) isCorrect = true;
         } else if (q.type === 'puzzle-drag') {
             if (Array.isArray(userAns) && q.correctChoices && JSON.stringify(userAns) === JSON.stringify(q.correctChoices)) isCorrect = true;
         }
 
-        const displayTitle = q.title.includes('[input]')
-            ? q.title.replace('[input]', '<u>' + escapeHtml(String(userAns || '...')) + '</u>')
-            : escapeHtml(q.title || '');
+        var displayTitle;
+        if (q.type === 'fill-blank') {
+            displayTitle = escapeHtml(String(q.fillBlankTemplate || q.title || '')).replace(/\[([^\]]+)\]/g, '<u>___</u>');
+        } else if ((q.title || '').includes('[input]')) {
+            displayTitle = escapeHtml(q.title || '').replace(/\[input\]/g, '<u>' + escapeHtml(String(userAns || '...')) + '</u>');
+            // fallback if escape broke the token
+            if (displayTitle.indexOf('[input]') >= 0) displayTitle = displayTitle.replace('[input]', '<u>' + escapeHtml(String(userAns || '...')) + '</u>');
+        } else {
+            displayTitle = escapeHtml(q.title || '');
+        }
 
         var expHtml = getAnswerExplanationHtml(q, isCorrect, userAns);
 
@@ -1403,13 +1522,15 @@ function calculateResults() {
         } else {
             var shown = userAns;
             if (shown === undefined || shown === null || shown === '') shown = 'пусто';
-            else if ((q.type === 'radio' || q.type === 'select') && q.options) {
+            else if ((q.type === 'radio' || q.type === 'select' || q.type === 'true-false') && q.options) {
                 var n = parseInt(shown, 10);
                 shown = (!isNaN(n) && q.options[n] != null) ? q.options[n] : shown;
             } else if (q.type === 'checkbox' && Array.isArray(shown) && q.options) {
                 shown = shown.map(function(i) { return q.options[i]; }).filter(Boolean).join(', ') || 'пусто';
             } else if (q.type === 'puzzle-drag' && Array.isArray(shown) && q.options) {
                 shown = shown.map(function(i) { return q.options[i]; }).filter(Boolean).join(' → ') || 'пусто';
+            } else if (q.type === 'fill-blank' && Array.isArray(shown)) {
+                shown = shown.map(function(s) { return s == null || s === '' ? '…' : s; }).join(' · ');
             }
             var correctLine = '';
             if (showCorrect) {
@@ -1618,13 +1739,97 @@ function toggleAddQuestionForm() {
     }
 }
 
+
+function formatQuestionTypeLabel(type) {
+    var map = {
+        'radio': 'Radio',
+        'checkbox': 'Checkbox',
+        'select': 'Select',
+        'text': 'Текст',
+        'true-false': 'Верно/Неверно ★',
+        'fill-blank': 'Пропуски ★',
+        'puzzle-drag': 'Пазл',
+        'info-slide': 'Инфо',
+        'flashcard': 'Флешкарта'
+    };
+    return map[type] || type;
+}
+
 function toggleAdminFields() {
     const type = document.getElementById('new-type').value;
     
     document.getElementById('admin-choices-fields').classList.toggle('hidden', !['radio', 'checkbox', 'select', 'puzzle-drag'].includes(type));
     document.getElementById('admin-text-fields').classList.toggle('hidden', type !== 'text');
+    var tfBox = document.getElementById('admin-truefalse-fields');
+    if (tfBox) tfBox.classList.toggle('hidden', type !== 'true-false');
+    var fbBox = document.getElementById('admin-fillblank-fields');
+    if (fbBox) fbBox.classList.toggle('hidden', type !== 'fill-blank');
     document.getElementById('flashcard-answer-box').classList.toggle('hidden', type !== 'flashcard');
     document.getElementById('media-upload-box').classList.toggle('hidden', type !== 'info-slide');
+
+    // Заголовок всегда виден; для fill-blank — опциональный
+    var titleField = document.getElementById('new-title');
+    var titleWrap = titleField ? titleField.closest('.admin-field') : null;
+    if (titleWrap) titleWrap.classList.remove('hidden');
+    if (titleField) {
+        if (type === 'fill-blank') {
+            titleField.placeholder = 'Заголовок (необязательно)…';
+            var lab = titleWrap ? titleWrap.querySelector('label') : null;
+            if (lab) lab.innerHTML = 'Заголовок вопроса <span style="color:var(--text-muted);font-weight:400;">(необязательно)</span>:';
+        } else {
+            titleField.placeholder = 'Введите заголовок...';
+            var lab2 = titleWrap ? titleWrap.querySelector('label') : null;
+            if (lab2) lab2.textContent = 'Заголовок вопроса:';
+        }
+    }
+    if (type === 'true-false') updateTrueFalsePreview();
+    if (type === 'fill-blank') {
+        var ta = document.getElementById('new-fillblank-text');
+        if (ta && !ta._fbBound) {
+            ta.addEventListener('input', updateFillBlankAdminPreview);
+            ta._fbBound = true;
+        }
+        updateFillBlankAdminPreview();
+    }
+}
+
+function updateTrueFalsePreview() {
+    var en = document.getElementById('tf-use-en');
+    var useEn = en && en.checked;
+    var t = document.getElementById('tf-label-true-preview');
+    var f = document.getElementById('tf-label-false-preview');
+    if (t) t.textContent = useEn ? 'True' : 'Верно';
+    if (f) f.textContent = useEn ? 'False' : 'Неверно';
+}
+
+function parseFillBlankTemplate(text) {
+    // [answer] or [a|b|c]
+    var blanks = [];
+    var re = /\[([^\]]+)\]/g;
+    var m;
+    var src = String(text || '');
+    while ((m = re.exec(src)) !== null) {
+        var raw = m[1].trim();
+        var alts = raw.split('|').map(function(s) { return s.trim(); }).filter(Boolean);
+        blanks.push({ raw: raw, answers: alts.length ? alts : [raw] });
+    }
+    return blanks;
+}
+
+function updateFillBlankAdminPreview() {
+    var ta = document.getElementById('new-fillblank-text');
+    var prev = document.getElementById('fillblank-preview');
+    if (!ta || !prev) return;
+    var text = ta.value || '';
+    var blanks = parseFillBlankTemplate(text);
+    if (!text.trim()) {
+        prev.innerHTML = '';
+        return;
+    }
+    var html = escapeHtml(text).replace(/\[([^\]]+)\]/g, function(_, inner) {
+        return '<span class="fb-tag">' + escapeHtml(inner) + '</span>';
+    });
+    prev.innerHTML = '<div style="margin-bottom:4px;font-size:11px;font-weight:700;color:var(--text-muted);">Превью · пропусков: ' + blanks.length + '</div>' + html;
 }
 
 function toggleTextInputs(source) {
@@ -1652,10 +1857,19 @@ function handleMediaUploadPreview(input) {
 
 function addQuestion() {
     const type = document.getElementById('new-type').value;
-    const title = document.getElementById('new-title').value.trim();
+    let title = document.getElementById('new-title').value.trim();
     const useInlineEl = document.getElementById('new-inline-input');
     const useInline = (type === 'text' && useInlineEl) ? useInlineEl.checked : false;
 
+    if (type === 'fill-blank') {
+        var fbRaw = ((document.getElementById('new-fillblank-text') || {}).value || '').trim();
+        if (!fbRaw) {
+            showAlert('Введите текст с пропусками, например: Столица — [Париж]', 'warning');
+            return;
+        }
+        // заголовок опционален; в title кладём шаблон (для списка/результатов)
+        if (!title) title = fbRaw.length > 60 ? (fbRaw.slice(0, 57) + '…') : fbRaw;
+    }
     if (!title) {
         showAlert('Введите текст вопроса!', 'warning');
         return;
@@ -1702,6 +1916,36 @@ function processSaveQuestion(type, title, useInline) {
         const correct = document.getElementById('new-correct-choices').value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
         newQ.options = opts;
         newQ.correctChoices = correct;
+    } else if (type === 'true-false') {
+        var useEn = !!(document.getElementById('tf-use-en') && document.getElementById('tf-use-en').checked);
+        newQ.options = useEn ? ['True', 'False'] : ['Верно', 'Неверно'];
+        var corrEl = document.querySelector('input[name="tf-correct"]:checked');
+        var corrIdx = corrEl ? parseInt(corrEl.value, 10) : 0;
+        if (isNaN(corrIdx)) corrIdx = 0;
+        newQ.correctChoices = [corrIdx];
+        newQ.tfUseEn = useEn;
+        newQ.tfBigButtons = !!(document.getElementById('tf-big-buttons') && document.getElementById('tf-big-buttons').checked);
+    } else if (type === 'fill-blank') {
+        var fbText = (document.getElementById('new-fillblank-text') || {}).value || '';
+        fbText = String(fbText).trim();
+        if (!fbText) {
+            showAlert('Введите текст с пропусками [ответ]', 'warning');
+            return;
+        }
+        var blanks = parseFillBlankTemplate(fbText);
+        if (!blanks.length) {
+            showAlert('Добавьте хотя бы один пропуск: [правильный ответ]', 'warning');
+            return;
+        }
+        // title — короткий заголовок (если ввели), иначе кусок шаблона
+        var heading = (document.getElementById('new-title') || {}).value || '';
+        heading = String(heading).trim();
+        newQ.fillBlankTemplate = fbText;
+        newQ.title = heading || (fbText.length > 60 ? fbText.slice(0, 57) + '…' : fbText);
+        newQ.blanks = blanks.map(function(b) { return b.answers; });
+        newQ.fbCaseSensitive = !!(document.getElementById('fb-case-sensitive') && document.getElementById('fb-case-sensitive').checked);
+        newQ.fbTrimSpaces = !(document.getElementById('fb-trim-spaces') && !document.getElementById('fb-trim-spaces').checked);
+        newQ.fbAcceptAlts = !(document.getElementById('fb-accept-alts') && !document.getElementById('fb-accept-alts').checked);
     } else if (type === 'text') {
         newQ.correctText = document.getElementById('new-correct-text').value.split(',').map(s => s.trim()).filter(Boolean);
         if (useInline) newQ.useInlineInput = true;
@@ -1899,6 +2143,30 @@ function editQuestion(idx) {
     if (['radio', 'checkbox', 'select', 'puzzle-drag'].includes(q.type)) {
         document.getElementById('new-options').value = (q.options || []).join(', ');
         document.getElementById('new-correct-choices').value = (q.correctChoices || []).join(', ');
+    } else if (q.type === 'true-false') {
+        var useEn = !!q.tfUseEn;
+        var enEl = document.getElementById('tf-use-en');
+        if (enEl) enEl.checked = useEn;
+        var bigEl = document.getElementById('tf-big-buttons');
+        if (bigEl) bigEl.checked = !!q.tfBigButtons;
+        updateTrueFalsePreview();
+        var ci = (q.correctChoices && q.correctChoices[0] != null) ? Number(q.correctChoices[0]) : 0;
+        var r0 = document.getElementById('tf-correct-true');
+        var r1 = document.getElementById('tf-correct-false');
+        if (r0 && r1) {
+            r0.checked = ci === 0;
+            r1.checked = ci === 1;
+        }
+    } else if (q.type === 'fill-blank') {
+        var fbt = document.getElementById('new-fillblank-text');
+        if (fbt) fbt.value = q.fillBlankTemplate || q.title || '';
+        var cs = document.getElementById('fb-case-sensitive');
+        if (cs) cs.checked = !!q.fbCaseSensitive;
+        var tr = document.getElementById('fb-trim-spaces');
+        if (tr) tr.checked = q.fbTrimSpaces !== false;
+        var aa = document.getElementById('fb-accept-alts');
+        if (aa) aa.checked = q.fbAcceptAlts !== false;
+        updateFillBlankAdminPreview();
     } else if (q.type === 'text') {
         document.getElementById('new-correct-text').value = (q.correctText || []).join(', ');
         const inlineCheck = document.getElementById('new-inline-input');
@@ -1983,6 +2251,8 @@ function cancelEditQuestion() {
     document.getElementById('new-options').value = '';
     document.getElementById('new-correct-choices').value = '';
     document.getElementById('new-correct-text').value = '';
+    var _fbt = document.getElementById('new-fillblank-text'); if (_fbt) _fbt.value = '';
+    var _fbp = document.getElementById('fillblank-preview'); if (_fbp) _fbp.innerHTML = '';
     document.getElementById('new-flashcard-answer').value = '';
     document.getElementById('new-hint-text').value = '';
     // По умолчанию из настроек формы «Помечать новые вопросы обязательными»
@@ -2134,7 +2404,7 @@ function renderAdminQuestionsList() {
                     <strong>${idx + 1}. ${q.title}</strong>
                     ${q.description ? `<span style="font-size:12px; color:var(--text-muted); display:block; font-style: italic;">${q.description}</span>` : ''}
                     <span style="font-size:11px; color:var(--accent-color); display:block; margin-top:2px;">
-                        Тип: ${q.type} ${q.useInlineInput ? '(Inline)' : ''} ${q.hasExplanation ? '(с Объяснением)' : ''}
+                        Тип: ${formatQuestionTypeLabel(q.type)} ${q.useInlineInput ? '(Inline)' : ''} ${q.hasExplanation ? '(с Объяснением)' : ''}
                     </span>
                 </div>
                 <div class="admin-q-card-actions">
@@ -2559,6 +2829,16 @@ function showAnswerExplanation(selectedIdx) {
             var inp = lab.querySelector('input');
             if (!inp) return;
             var v = parseInt(inp.value, 10);
+            if (correctSet.indexOf(v) >= 0) lab.classList.add('correct-highlight');
+            else if (v === selectedIdx) lab.classList.add('incorrect-highlight');
+        });
+    } else if (q.type === 'true-false') {
+        document.querySelectorAll('#question-body .tf-choice').forEach(function(lab) {
+            lab.classList.remove('correct-highlight', 'incorrect-highlight', 'selected');
+            var inp = lab.querySelector('input');
+            if (!inp) return;
+            var v = parseInt(inp.value, 10);
+            if (v === selectedIdx) lab.classList.add('selected');
             if (correctSet.indexOf(v) >= 0) lab.classList.add('correct-highlight');
             else if (v === selectedIdx) lab.classList.add('incorrect-highlight');
         });
