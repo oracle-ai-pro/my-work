@@ -3,7 +3,7 @@ const STATE = {
   theme: localStorage.getItem('wg_theme') || 'dark',
   apiKey: localStorage.getItem('wg_api_key') || '',
   provider: localStorage.getItem('wg_provider') || 'gemini',
-  geminiModel: localStorage.getItem('wg_gemini_model') || 'gemini-3.6-flash',
+  geminiModel: localStorage.getItem('wg_gemini_model') || 'gemini-3.8-flash',
   model: 'plan',
   limit: parseInt(localStorage.getItem('wg_limit'), 10) || 100,
   lastReset: parseInt(localStorage.getItem('wg_last_reset'), 10) || Date.now(),
@@ -21,10 +21,10 @@ const STATE = {
   activeGenService: 'document'
 };
 
-const SYSTEM_PROMPT = `Ты — WorkGens AI, ассистент экосистемы My Work (Document, Forms, Slides, Keeps; Spreadsheets временно недоступны).
+const SYSTEM_PROMPT = `Ты — WorkGens AI, ассистент экосистемы My Work (Document, Forms, Spreadsheets, Slides, Keeps).
 Отвечай на русском, четко и по делу.
-Если пользователь просит документ/форму/слайды/заметки — дай полезный готовый контент.
-ВАЖНО: сервис «Таблицы» (My Spreadsheets) сейчас на техническом обслуживании (примерно 2–3 дня). Данные пользователей не теряются. Не предлагай открывать или импортировать таблицы. Если просят таблицу — кратко объясни, что сервис на ТО, предложи альтернативу (форма, документ или заметка) или общую структуру «на будущее», без экспорта в Spreadsheets.`;
+Если пользователь просит документ, форму, таблицу, слайды или заметки — дай полезный готовый контент.
+Для структурированных проектов (форма/документ/слайды/заметки/таблица) по возможности отдавай валидный JSON под формат WorkGens Studio.`;
 
 const PLAN_SYSTEM_PROMPT = `Ты планировщик WorkGens. Составь только краткий пошаговый план (1, 2, 3...). Без готовых статей и кода.`;
 
@@ -41,16 +41,21 @@ htmlContent — HTML с заголовками и абзацами. 2-4 блок
   keeps: `Сгенерируй заметки. Ответь ТОЛЬКО валидным JSON:
 {"type":"keeps","notes":[{"title":"...","content":"<p>...</p>","pinned":false}]}
 3-5 заметок, content может быть HTML.`,
-  spreadsheets: `Сервис My Spreadsheets сейчас на техническом обслуживании. НЕ генерируй JSON таблиц для импорта.
-Ответь обычным текстом на русском: что таблицы временно недоступны (2–3 дня), данные сохранятся, извините за неудобства.
-По желанию предложи структуру таблицы «на будущее» простым текстом (колонки, пример строк) без JSON и без экспорта.`
+  spreadsheets: `Сгенерируй таблицу. Ответь ТОЛЬКО валидным JSON без markdown-обёрток:
+{"type":"spreadsheets","title":"...","headers":["Колонка1","Колонка2","Колонка3"],"rows":[["a","b","c"],["d","e","f"]],"notes":"краткая подсказка"}
+3-6 колонок, 4-10 строк с реалистичными данными.`
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-  // migrate deprecated Gemini models
-  if (!STATE.geminiModel || STATE.geminiModel === 'gemini-2.0-flash') {
-    STATE.geminiModel = 'gemini-3.6-flash';
-    localStorage.setItem('wg_gemini_model', 'gemini-3.6-flash');
+  // migrate shut-down Gemini model ids
+  const DEAD_MODELS = [
+    'gemini-2.0-flash', 'gemini-2.0-flash-001',
+    'gemini-2.0-flash-lite', 'gemini-2.0-flash-lite-001',
+    'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.5-flash-latest', 'gemini-1.5-pro-latest'
+  ];
+  if (!STATE.geminiModel || DEAD_MODELS.includes(STATE.geminiModel)) {
+    STATE.geminiModel = 'gemini-3.8-flash';
+    localStorage.setItem('wg_gemini_model', STATE.geminiModel);
   }
   initTheme();
   initLimitsTimer();
@@ -60,7 +65,39 @@ document.addEventListener('DOMContentLoaded', () => {
   setupContextMenu();
   checkApiKeyOnStart();
   enhanceAllSelects();
+  bootFromQueryParams();
 });
+
+function bootFromQueryParams() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get('q') || params.get('prompt') || '';
+    const autosend = params.get('autosend') === '1' || params.get('send') === '1';
+    if (!q) return;
+    const input = document.getElementById('promptInput');
+    if (input) input.value = q;
+    // clean URL without reload
+    try {
+      const clean = window.location.pathname + window.location.hash;
+      window.history.replaceState({}, '', clean);
+    } catch (e) {}
+    if (autosend) {
+      // wait a tick so listeners & key UI are ready
+      setTimeout(() => {
+        if (typeof sendMessage === 'function') {
+          // prefer agent mode for direct asks from hub
+          STATE.model = 'agent';
+          document.querySelectorAll('.model-chip').forEach(c => c.classList.remove('active'));
+          document.querySelector('.model-chip[data-model="agent"]')?.classList.add('active');
+          sendMessage(q);
+          if (input) input.value = '';
+        }
+      }, 400);
+    }
+  } catch (err) {
+    console.warn('bootFromQueryParams', err);
+  }
+}
 
 function checkApiKeyOnStart() {
   const el = document.getElementById('onboardingModal');
@@ -289,12 +326,25 @@ function sendToStudio(content, structured) {
 function renderStudioPreview() {
   const preview = document.getElementById('studioPreview');
   const slideNav = document.getElementById('studioSlideNav');
+  if (!preview) return;
+
+  if (STATE.isGenerating) {
+    if (slideNav) slideNav.classList.add('hidden');
+    preview.innerHTML =
+      '<div class="studio-generating">' +
+      '<span class="material-symbols-rounded spin-slow">psychology</span>' +
+      '<p>Генерация проекта…</p>' +
+      '<div class="thinking-pulser"><div class="pulse-line"></div></div>' +
+      '</div>';
+    return;
+  }
+
   const data = STATE.studioStructured;
 
   if (!data) {
-    slideNav.classList.add('hidden');
+    if (slideNav) slideNav.classList.add('hidden');
     if (window.marked && STATE.studioContent) {
-      preview.innerHTML = marked.parse(STATE.studioContent);
+      preview.innerHTML = '<div class="pv-doc-readable">' + marked.parse(STATE.studioContent) + '</div>';
     } else {
       preview.innerHTML = '<pre style="white-space:pre-wrap;font-size:13px;">' + escapeHtml(STATE.studioContent || '') + '</pre>';
     }
@@ -302,69 +352,118 @@ function renderStudioPreview() {
   }
 
   if (data.type === 'slides' && Array.isArray(data.slides)) {
-    slideNav.classList.remove('hidden');
+    if (slideNav) slideNav.classList.remove('hidden');
     const slides = data.slides;
-    if (STATE.studioSlideIndex >= slides.length) STATE.studioSlideIndex = slides.length - 1;
+    if (STATE.studioSlideIndex >= slides.length) STATE.studioSlideIndex = Math.max(0, slides.length - 1);
     if (STATE.studioSlideIndex < 0) STATE.studioSlideIndex = 0;
     const s = slides[STATE.studioSlideIndex] || {};
-    document.getElementById('studioSlideCounter').innerText = (STATE.studioSlideIndex + 1) + ' / ' + slides.length;
+    const counter = document.getElementById('studioSlideCounter');
+    if (counter) counter.innerText = (STATE.studioSlideIndex + 1) + ' / ' + slides.length;
     let body = '';
-    if (s.type === 'title-slide' || !s.bullets) {
+    if (s.type === 'title-slide' || (!s.bullets && s.subtitle !== undefined)) {
       body = '<div class="pv-slide title"><h1>' + escapeHtml(s.title || '') + '</h1><p>' + escapeHtml(s.subtitle || '') + '</p></div>';
     } else {
       const bullets = (s.bullets || '').split('\n').filter(Boolean).map(b => '<li>' + escapeHtml(b) + '</li>').join('');
       body = '<div class="pv-slide"><h2>' + escapeHtml(s.title || '') + '</h2><ul>' + bullets + '</ul></div>';
     }
-    if (s.notes) body += '<div class="pv-notes"><b>Заметки:</b> ' + escapeHtml(s.notes) + '</div>';
+    if (s.notes) body += '<div class="pv-notes"><b>Заметки докладчика:</b> ' + escapeHtml(s.notes) + '</div>';
     preview.innerHTML = body;
     return;
   }
 
-  slideNav.classList.add('hidden');
+  if (slideNav) slideNav.classList.add('hidden');
 
   if (data.type === 'document') {
     const blocks = data.blocks || [];
-    preview.innerHTML = '<h2 class="pv-title">' + escapeHtml(data.title || 'Документ') + '</h2>' +
-      blocks.map(b => '<div class="pv-block"><h3>' + escapeHtml(b.title || '') + '</h3><div class="pv-html">' + (b.htmlContent || b.description || '') + '</div></div>').join('');
+    preview.innerHTML = '<div class="pv-doc-readable"><h2 class="pv-title">' + escapeHtml(data.title || 'Документ') + '</h2>' +
+      blocks.map(b => '<article class="pv-block"><h3>' + escapeHtml(b.title || '') + '</h3><div class="pv-html">' + (b.htmlContent || b.description || '') + '</div></article>').join('') +
+      '</div>';
     return;
   }
 
   if (data.type === 'forms') {
     const qs = data.questions || [];
-    preview.innerHTML = '<h2 class="pv-title">' + escapeHtml(data.title || 'Форма') + '</h2>' +
+    preview.innerHTML = '<div class="pv-forms-interactive"><h2 class="pv-title">' + escapeHtml(data.title || 'Форма') + '</h2>' +
       qs.map((q, i) => {
+        const qid = 'pv-q-' + i;
         let opts = '';
-        if (q.options) opts = '<ul>' + q.options.map((o, j) => {
-          const ok = (q.correctChoices || []).includes(j);
-          return '<li' + (ok ? ' class="pv-correct"' : '') + '>' + escapeHtml(o) + (ok ? ' ✓' : '') + '</li>';
-        }).join('') + '</ul>';
-        if (q.type === 'text' && q.correctText) opts = '<p class="pv-muted">Ответ: ' + escapeHtml((q.correctText || []).join(', ')) + '</p>';
-        return '<div class="pv-q"><b>' + (i + 1) + '. ' + escapeHtml(q.title || '') + '</b>' + opts + '</div>';
-      }).join('');
+        if (q.type === 'checkbox' && Array.isArray(q.options)) {
+          opts = '<div class="pv-options">' + q.options.map((o, j) => {
+            const ok = (q.correctChoices || []).includes(j);
+            return '<label class="pv-opt"><input type="checkbox" name="' + qid + '" data-correct="' + (ok ? '1' : '0') + '"> <span>' + escapeHtml(o) + '</span></label>';
+          }).join('') + '</div>';
+        } else if (Array.isArray(q.options)) {
+          opts = '<div class="pv-options">' + q.options.map((o, j) => {
+            const ok = (q.correctChoices || []).includes(j);
+            return '<label class="pv-opt"><input type="radio" name="' + qid + '" data-correct="' + (ok ? '1' : '0') + '"> <span>' + escapeHtml(o) + '</span></label>';
+          }).join('') + '</div>';
+        } else if (q.type === 'truefalse' || q.type === 'true-false') {
+          opts = '<div class="pv-options">' +
+            '<label class="pv-opt"><input type="radio" name="' + qid + '"> <span>Верно</span></label>' +
+            '<label class="pv-opt"><input type="radio" name="' + qid + '"> <span>Неверно</span></label></div>';
+        } else {
+          opts = '<input type="text" class="pv-text-input" placeholder="Ваш ответ…">';
+          if (q.correctText) opts += '<p class="pv-muted">Эталон: ' + escapeHtml((q.correctText || []).join(', ')) + '</p>';
+        }
+        return '<div class="pv-q" data-qi="' + i + '"><b>' + (i + 1) + '. ' + escapeHtml(q.title || '') + '</b>' + opts + '</div>';
+      }).join('') +
+      '<button type="button" class="secondary-btn ripple pv-check-btn" id="pvCheckAnswersBtn"><span class="material-symbols-rounded">check</span> Проверить ответы</button></div>';
+    setTimeout(() => {
+      const btn = document.getElementById('pvCheckAnswersBtn');
+      if (btn) btn.onclick = checkStudioFormAnswers;
+    }, 0);
     return;
   }
 
   if (data.type === 'keeps') {
     const notes = data.notes || [];
-    preview.innerHTML = notes.map(n =>
-      '<div class="pv-note"><h3>' + escapeHtml(n.title || '') + '</h3><div>' + (n.content || '') + '</div></div>'
-    ).join('') || '<p class="studio-placeholder">Нет заметок</p>';
+    preview.innerHTML = '<div class="pv-keeps">' + (notes.map(n =>
+      '<div class="pv-note"><h3>' + escapeHtml(n.title || '') + '</h3><div class="pv-note-body">' + (n.content || '') + '</div></div>'
+    ).join('') || '<p class="studio-placeholder">Нет заметок</p>') + '</div>';
     return;
   }
 
   if (data.type === 'spreadsheets') {
     const headers = data.headers || [];
     const rows = data.rows || [];
-    let table = '<table class="pv-table"><thead><tr>' + headers.map(h => '<th>' + escapeHtml(h) + '</th>').join('') + '</tr></thead><tbody>';
-    rows.forEach(r => { table += '<tr>' + (r || []).map(c => '<td>' + escapeHtml(String(c)) + '</td>').join('') + '</tr>'; });
-    table += '</tbody></table>';
-    preview.innerHTML = '<h2 class="pv-title">' + escapeHtml(data.title || 'Таблица') + '</h2>' + table +
-      (data.notes ? '<p class="pv-muted">' + escapeHtml(data.notes) + '</p>' : '');
+    let html = '<div class="pv-sheet"><h2 class="pv-title">' + escapeHtml(data.title || 'Таблица') + '</h2>';
+    html += '<div class="pv-grid-wrap"><table class="pv-grid"><thead><tr><th class="pv-corner"></th>';
+    headers.forEach((h, i) => {
+      html += '<th>' + escapeHtml(String.fromCharCode(65 + i)) + '<div class="pv-col-label">' + escapeHtml(h) + '</div></th>';
+    });
+    html += '</tr></thead><tbody>';
+    rows.forEach((r, ri) => {
+      html += '<tr><th>' + (ri + 1) + '</th>';
+      headers.forEach((_, ci) => {
+        const val = (r && r[ci] != null) ? r[ci] : '';
+        html += '<td contenteditable="true" spellcheck="false">' + escapeHtml(String(val)) + '</td>';
+      });
+      html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+    if (data.notes) html += '<p class="pv-muted">' + escapeHtml(data.notes) + '</p>';
+    html += '</div>';
+    preview.innerHTML = html;
     return;
   }
 
   if (window.marked) preview.innerHTML = marked.parse(STATE.studioContent || JSON.stringify(data, null, 2));
   else preview.innerText = STATE.studioContent;
+}
+
+function checkStudioFormAnswers() {
+  const preview = document.getElementById('studioPreview');
+  if (!preview) return;
+  preview.querySelectorAll('.pv-opt').forEach(lab => {
+    lab.classList.remove('pv-right', 'pv-wrong');
+    const inp = lab.querySelector('input');
+    if (!inp) return;
+    const correct = inp.getAttribute('data-correct') === '1';
+    if (inp.checked && correct) lab.classList.add('pv-right');
+    else if (inp.checked && !correct) lab.classList.add('pv-wrong');
+    else if (!inp.checked && correct) lab.classList.add('pv-right');
+  });
+  showToast('Ответы подсвечены (✓ зелёный, ✗ красный)', 'info');
 }
 
 function exportToService() {
@@ -459,14 +558,48 @@ function exportToService() {
           content: n.content || '',
           bgColor: null,
           pinned: !!n.pinned,
+          archived: false,
           reminder: null
         });
       });
       localStorage.setItem('keeps_notes', JSON.stringify(notes));
       showToast('Импортировано в My Keeps', 'success');
     } else if (service === 'spreadsheets') {
-      showToast('Таблицы на обслуживании. Импорт недоступен 2–3 дня, данные не потеряются.', 'error');
-      return;
+      // Unified spreadsheet storage used by My Spreadsheets
+      const raw = localStorage.getItem('my_spreadsheets_data') || localStorage.getItem('prestige_spreadsheets') || '[]';
+      let books = [];
+      try { books = JSON.parse(raw); } catch (e) { books = []; }
+      if (!Array.isArray(books)) books = [];
+      const headers = data.headers || ['A', 'B', 'C'];
+      const rows = data.rows || [];
+      const colCount = Math.max(headers.length, 8);
+      const rowCount = Math.max(rows.length + 5, 40);
+      const cells = {};
+      headers.forEach((h, ci) => {
+        cells['0_' + ci] = { value: String(h), format: {} };
+      });
+      rows.forEach((r, ri) => {
+        (r || []).forEach((v, ci) => {
+          cells[(ri + 1) + '_' + ci] = { value: String(v), format: {} };
+        });
+      });
+      const sheet = {
+        id: 'sheet_' + Date.now(),
+        name: 'Лист 1',
+        rows: rowCount,
+        cols: colCount,
+        cells: cells
+      };
+      const book = {
+        id: 'book_wg_' + Date.now(),
+        title: data.title || 'Таблица WorkGens',
+        sheets: [sheet],
+        activeSheetId: sheet.id
+      };
+      books.push(book);
+      localStorage.setItem('my_spreadsheets_data', JSON.stringify(books));
+      localStorage.setItem('prestige_spreadsheets', JSON.stringify(books));
+      showToast('Импортировано в My Spreadsheets', 'success');
     } else {
       showToast('Неизвестный сервис', 'error');
     }
@@ -631,6 +764,10 @@ async function sendMessage(overrideText = null, isStudioGen = false, studioSyste
   if (!text && STATE.attachedFile) text = 'Что на этом изображении / в файле?';
   if (!text) return;
 
+  if (!navigator.onLine) {
+    showToast('Нужен интернет для WorkGens AI', 'error');
+    return;
+  }
   if (STATE.limit <= 0) {
     showToast('Лимит исчерпан. Дождитесь сброса.', 'error');
     return;
@@ -734,17 +871,34 @@ function setGenerationState(isGenerating) {
   STATE.isGenerating = isGenerating;
   const sendBtn = document.getElementById('sendBtn');
   const thinkingBlock = document.getElementById('thinkingBlock');
-  if (!sendBtn) return;
-  if (isGenerating) {
-    sendBtn.classList.add('stop-mode');
-    sendBtn.title = 'Остановить';
-    sendBtn.innerHTML = '<span class="material-symbols-rounded">stop</span><span>Стоп</span>';
-    thinkingBlock?.classList.remove('hidden');
-  } else {
-    sendBtn.classList.remove('stop-mode');
-    sendBtn.title = 'Отправить';
-    sendBtn.innerHTML = '<span class="material-symbols-rounded" id="sendBtnIcon">arrow_upward</span>';
-    thinkingBlock?.classList.add('hidden');
+  if (sendBtn) {
+    if (isGenerating) {
+      sendBtn.classList.add('stop-mode');
+      sendBtn.title = 'Остановить';
+      sendBtn.innerHTML = '<span class="material-symbols-rounded">stop</span><span>Стоп</span>';
+      thinkingBlock?.classList.remove('hidden');
+    } else {
+      sendBtn.classList.remove('stop-mode');
+      sendBtn.title = 'Отправить';
+      sendBtn.innerHTML = '<span class="material-symbols-rounded" id="sendBtnIcon">arrow_upward</span>';
+      thinkingBlock?.classList.add('hidden');
+    }
+  }
+  // Studio generating indicator
+  const studio = document.getElementById('studioSidebar');
+  if (isGenerating && studio) {
+    studio.classList.remove('hidden');
+    const badge = document.getElementById('studioTypeBadge');
+    if (badge) badge.innerText = 'Тип: генерация…';
+    renderStudioPreview();
+  } else if (!isGenerating && STATE.studioStructured) {
+    renderStudioPreview();
+  } else if (!isGenerating) {
+    // clear generating placeholder if no data yet
+    const preview = document.getElementById('studioPreview');
+    if (preview && preview.querySelector('.studio-generating') && !STATE.studioStructured && !STATE.studioContent) {
+      preview.innerHTML = '<p class="studio-placeholder">Здесь появится сгенерированный проект.</p>';
+    }
   }
 }
 
@@ -778,7 +932,7 @@ async function fetchGeminiResponse(userPrompt, fileData, signal, isPlanMode, stu
     throw new Error('Нет API Key. Добавьте ключ в настройках.');
   }
 
-  const model = STATE.geminiModel || 'gemini-3.6-flash';
+  const model = STATE.geminiModel || 'gemini-3.8-flash';
   const endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + encodeURIComponent(apiKey);
 
   const parts = [];
