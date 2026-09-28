@@ -42,9 +42,12 @@ let confirmModalCallback = null;
 // ТАЙМЕР И РЕЖИМ ДОКЛАДЧИКА
 let presenterTimerInterval = null;
 let presenterSeconds = 0;
+let presenterSlideSeconds = 0;
 let isTimerPaused = false;
 let presenterNotesFontSize = 16;
 let currentMuteMode = null; // 'black', 'white' или null
+let presenterNotesSaveTimer = null;
+let lastPresenterSlideIndex = -1;
 
 /* ==========================================================================
    СОБЫТИЕ ЗАГРУЗКИ СТРАНИЦЫ И ГЛОБАЛЬНЫЕ СЛУШАТЕЛИ
@@ -67,6 +70,9 @@ document.addEventListener('DOMContentLoaded', () => {
     initSlideTouchAndClick();
     initPresentationContextMenu();
     if (typeof enhanceAllSelects === 'function') enhanceAllSelects();
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js').catch(function() {});
+    }
 
     // Закрытие выпадающего меню инструментов при клике снаружи
     document.addEventListener('click', (e) => {
@@ -79,9 +85,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Клавиатурная навигация и горячие клавиши
     document.addEventListener('keydown', (e) => {
-        if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
-        
-        // Горячие клавиши для A/V Mute (B = Black, W = White)
+        const tag = document.activeElement && document.activeElement.tagName;
+        const typing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' ||
+            (document.activeElement && document.activeElement.isContentEditable);
+
+        // Esc: mute off, then close presenter, then exit present
+        if (e.key === 'Escape') {
+            if (currentMuteMode !== null) { toggleScreenMute(null); return; }
+            if (typeof isPresenterOpen === 'function' && isPresenterOpen()) {
+                const hint = document.getElementById('presenter-hotkeys-hint');
+                if (hint && !hint.classList.contains('hidden')) {
+                    togglePresenterHotkeysHint(false);
+                    return;
+                }
+                closePresenterMode();
+                return;
+            }
+        }
+
+        if (typing) return;
+
+        // A/V Mute
         if (e.key === 'b' || e.key === 'B' || e.key === 'и' || e.key === 'И') {
             toggleScreenMute('black');
             return;
@@ -91,20 +115,31 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Выход из затемнения экрана по Esc или любой клавише
         if (currentMuteMode !== null) {
             toggleScreenMute(null);
             return;
         }
 
-        // Переключение слайдов
-        if (e.key === 'ArrowRight' || e.key === 'Space' || e.key === 'PageDown') {
+        // Grid
+        if (e.key === 'g' || e.key === 'G' || e.key === 'п' || e.key === 'П') {
+            e.preventDefault();
+            openSlideGridModal();
+            return;
+        }
+
+        // N / next
+        if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Space' || e.key === 'PageDown' ||
+            e.key === 'n' || e.key === 'N' || e.key === 'т' || e.key === 'Т') {
             e.preventDefault();
             nextSlide();
+            return;
         }
-        if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        // P / prev
+        if (e.key === 'ArrowLeft' || e.key === 'PageUp' ||
+            e.key === 'p' || e.key === 'P' || e.key === 'з' || e.key === 'З') {
             e.preventDefault();
             prevSlide();
+            return;
         }
     });
 
@@ -121,11 +156,35 @@ document.addEventListener('scroll', hideTabContextMenu, true);
 function initTheme() {
     const savedTheme = localStorage.getItem('prestige_theme') || 'light';
     setTheme(savedTheme);
+    setRadius(localStorage.getItem('app_radius') || 'rounded');
+    const liquid = localStorage.getItem('liquid_glass_mode') === 'true';
+    document.body.classList.toggle('liquid-glass', liquid);
+    const uiScale = localStorage.getItem('slides_ui_scale') === 'true';
+    document.body.classList.toggle('ui-scale-up', uiScale);
+    // settings checkboxes when opened
 }
 
 function setTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
+    document.body.classList.toggle('dark-theme', theme === 'dark');
     localStorage.setItem('prestige_theme', theme);
+}
+function setRadius(name) {
+    document.body.setAttribute('data-radius', name || 'rounded');
+    localStorage.setItem('app_radius', name || 'rounded');
+    var sel = document.getElementById('settings-radius-select');
+    if (sel) {
+        sel.value = name;
+        if (typeof refreshEnhancedSelect === 'function') refreshEnhancedSelect(sel);
+    }
+}
+function toggleLiquidGlass(on) {
+    localStorage.setItem('liquid_glass_mode', on ? 'true' : 'false');
+    document.body.classList.toggle('liquid-glass', !!on);
+}
+function toggleUiScale(on) {
+    localStorage.setItem('slides_ui_scale', on ? 'true' : 'false');
+    document.body.classList.toggle('ui-scale-up', !!on);
 }
 
 function toggleToolsMenu() {
@@ -139,15 +198,8 @@ function toggleSpeakerNotes() {
 }
 
 function toggleDeckLayout(isCompact) {
-    const select = document.getElementById('slides-tabs-select');
-    const tabsList = document.getElementById('slides-tabs-list');
-    if (isCompact) {
-        select.classList.remove('hidden');
-        tabsList.classList.add('hidden');
-    } else {
-        select.classList.add('hidden');
-        tabsList.classList.remove('hidden');
-    }
+    localStorage.setItem('slides_compact', isCompact ? 'true' : 'false');
+    renderTabsAndSelect();
 }
 
 /* ==========================================================================
@@ -274,6 +326,7 @@ function getCurrentDeck() {
 function renderTabsAndSelect() {
     const tabsList = document.getElementById('slides-tabs-list');
     const select = document.getElementById('slides-tabs-select');
+    const selectWrap = document.getElementById('slides-select-wrap');
     
     if (!tabsList || !select) return;
 
@@ -282,20 +335,40 @@ function renderTabsAndSelect() {
 
     decks.forEach(deck => {
         const tab = document.createElement('button');
-        tab.className = `tab-btn ${deck.id === currentDeckId ? 'active' : ''}`;
-        tab.innerText = deck.title;
+        tab.type = 'button';
+        tab.className = 'tab-btn' + (deck.id === currentDeckId ? ' active' : '');
+        tab.textContent = deck.title;
         tab.onclick = () => switchDeck(deck.id);
         tab.oncontextmenu = (e) => showTabContextMenu(e, deck.id);
-
         tabsList.appendChild(tab);
 
         const option = document.createElement('option');
         option.value = deck.id;
-        option.innerText = deck.title;
+        option.textContent = deck.title;
         if (deck.id === currentDeckId) option.selected = true;
         select.appendChild(option);
     });
+
+    // exclusive: compact setting OR mobile width
+    const compact = localStorage.getItem('slides_compact') === 'true';
+    const mobile = window.innerWidth < 600;
+    if (compact || mobile) {
+        tabsList.classList.add('hidden');
+        if (selectWrap) selectWrap.classList.remove('hidden');
+        document.body.classList.toggle('force-compact', compact && !mobile);
+        if (typeof enhanceNativeSelect === 'function') {
+            if (select.dataset.cselectEnhanced === '1' && select._cselectRebuild) select._cselectRebuild();
+            else enhanceNativeSelect(select);
+        }
+    } else {
+        tabsList.classList.remove('hidden');
+        if (selectWrap) selectWrap.classList.add('hidden');
+        document.body.classList.remove('force-compact');
+    }
 }
+window.addEventListener('resize', function() {
+    if (typeof renderTabsAndSelect === 'function') renderTabsAndSelect();
+});
 
 function switchDeck(id) {
     currentDeckId = id;
@@ -394,6 +467,69 @@ function generateSlideHTML(slide, opts) {
                     <h2>${escapeHtml(slide.title || '')}</h2>
                     <pre class="slide-code-block"><code>${escapeHtml(slide.bullets || '')}</code></pre>
                 </div>`;
+            break;
+
+        
+        case 'section':
+            inner = '<div class="slide-section-layout"><div class="section-line"></div><h1>' +
+                escapeHtml(slide.title || '') + '</h1>' +
+                (slide.subtitle ? '<p style="margin-top:12px;color:var(--text-muted);">' + escapeHtml(slide.subtitle) + '</p>' : '') +
+                '</div>';
+            break;
+
+        case 'stats': {
+            var stats = (slide.bullets || '').split('\n').filter(function(l) { return l.trim(); });
+            var statsHtml = stats.map(function(line) {
+                var parts = line.split('|');
+                var val = (parts[0] || '').trim();
+                var lab = (parts[1] || '').trim() || '';
+                return '<div class="slide-stat-card"><div class="stat-value">' + escapeHtml(val) +
+                    '</div><div class="stat-label">' + escapeHtml(lab) + '</div></div>';
+            }).join('');
+            inner = '<div class="slide-content-layout"><h2>' + escapeHtml(slide.title || '') + '</h2>' +
+                (slide.subtitle ? '<p style="color:var(--text-muted);">' + escapeHtml(slide.subtitle) + '</p>' : '') +
+                '<div class="slide-stats-grid">' + statsHtml + '</div></div>';
+            break;
+        }
+
+        case 'timeline': {
+            var items = (slide.bullets || '').split('\n').filter(function(l) { return l.trim(); });
+            var tl = items.map(function(line) {
+                var parts = line.split('|');
+                var t = (parts[0] || '').trim();
+                var d = (parts[1] || '').trim();
+                return '<div class="slide-timeline-item"><strong>' + escapeHtml(t) + '</strong>' +
+                    (d ? '<span>' + escapeHtml(d) + '</span>' : '') + '</div>';
+            }).join('');
+            inner = '<div class="slide-content-layout"><h2>' + escapeHtml(slide.title || '') + '</h2>' +
+                '<div class="slide-timeline">' + tl + '</div></div>';
+            break;
+        }
+
+        case 'comparison': {
+            var left = (slide.bullets || '').split('\n').filter(function(l) { return l.trim(); })
+                .map(function(l) { return '<li>' + escapeHtml(l) + '</li>'; }).join('');
+            var right = (slide.col2 || '').split('\n').filter(function(l) { return l.trim(); })
+                .map(function(l) { return '<li>' + escapeHtml(l) + '</li>'; }).join('');
+            inner = '<div class="slide-content-layout"><h2>' + escapeHtml(slide.title || '') + '</h2>' +
+                '<div class="slide-compare">' +
+                '<div class="slide-compare-col"><h3>' + escapeHtml(slide.subtitle || 'Вариант A') + '</h3><ul class="slide-bullets">' + left + '</ul></div>' +
+                '<div class="slide-compare-col"><h3>' + escapeHtml(slide.quoteAuthor || 'Вариант B') + '</h3><ul class="slide-bullets">' + right + '</ul></div>' +
+                '</div></div>';
+            break;
+        }
+
+        case 'checklist': {
+            var checks = (slide.bullets || '').split('\n').filter(function(l) { return l.trim(); })
+                .map(function(l) { return '<li>' + escapeHtml(l) + '</li>'; }).join('');
+            inner = '<div class="slide-content-layout"><h2>' + escapeHtml(slide.title || '') + '</h2>' +
+                (slide.subtitle ? '<p style="color:var(--text-muted);">' + escapeHtml(slide.subtitle) + '</p>' : '') +
+                '<ul class="slide-checklist">' + checks + '</ul></div>';
+            break;
+        }
+
+        case 'blank':
+            inner = '<div class="slide-blank-layout">' + escapeHtml(slide.title || slide.subtitle || 'Пустой слайд') + '</div>';
             break;
 
         default:
@@ -603,19 +739,38 @@ document.addEventListener('webkitfullscreenchange', () => {
 /* ==========================================================================
    РЕЖИМ ДОКЛАДЧИКА (PRESENTER VIEW)
    ========================================================================== */
+function isPresenterOpen() {
+    const modal = document.getElementById('presenter-view-modal');
+    return modal && !modal.classList.contains('hidden');
+}
+
 function openPresenterMode() {
     const modal = document.getElementById('presenter-view-modal');
     if (!modal) return;
     modal.classList.remove('hidden');
-
+    lastPresenterSlideIndex = -1;
+    presenterSlideSeconds = 0;
     startPresenterTimer();
     updatePresenterModeUI();
+    // focus notes not forced — keep keyboard nav
 }
 
 function closePresenterMode() {
     const modal = document.getElementById('presenter-view-modal');
     if (modal) modal.classList.add('hidden');
-    if (presenterTimerInterval) clearInterval(presenterTimerInterval);
+    if (presenterTimerInterval) {
+        clearInterval(presenterTimerInterval);
+        presenterTimerInterval = null;
+    }
+    savePresenterNotesNow();
+    const hint = document.getElementById('presenter-hotkeys-hint');
+    if (hint) hint.classList.add('hidden');
+}
+
+function formatSlideTimer(sec) {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return m + ':' + String(s).padStart(2, '0');
 }
 
 function updatePresenterModeUI() {
@@ -626,14 +781,21 @@ function updatePresenterModeUI() {
     const slides = deck ? deck.slides || [] : [];
     if (slides.length === 0) return;
 
+    // reset per-slide timer when slide changes
+    if (lastPresenterSlideIndex !== currentSlideIndex) {
+        savePresenterNotesNow();
+        presenterSlideSeconds = 0;
+        lastPresenterSlideIndex = currentSlideIndex;
+        const st = document.getElementById('presenter-slide-timer-display');
+        if (st) st.innerText = '0:00';
+    }
+
     const currentSlide = slides[currentSlideIndex];
     const nextSlide = slides[currentSlideIndex + 1];
 
-    // Отрисовка текущего слайда
     const curBody = document.getElementById('presenter-current-slide-body');
     if (curBody) curBody.innerHTML = generateSlideHTML(currentSlide);
 
-    // Отрисовка превью следующего слайда
     const nextBody = document.getElementById('presenter-next-slide-body');
     if (nextBody) {
         if (nextSlide) {
@@ -643,51 +805,115 @@ function updatePresenterModeUI() {
         }
     }
 
-    // Заметки
-    const notesText = document.getElementById('presenter-notes-text');
-    if (notesText) {
-        notesText.innerText = currentSlide.notes || 'Щелкните, чтобы добавить заметки';
-        notesText.style.fontSize = `${presenterNotesFontSize}px`;
+    // Editable notes
+    const notesEl = document.getElementById('presenter-notes-text');
+    if (notesEl && document.activeElement !== notesEl) {
+        notesEl.value = currentSlide.notes || '';
+        notesEl.style.fontSize = presenterNotesFontSize + 'px';
+        if (!notesEl._presenterBound) {
+            notesEl._presenterBound = true;
+            notesEl.addEventListener('input', onPresenterNotesInput);
+            notesEl.addEventListener('blur', savePresenterNotesNow);
+        }
     }
 
-    // Счетчики
     const curNum = document.getElementById('presenter-cur-num');
     const totNum = document.getElementById('presenter-tot-num');
     const prevBtn = document.getElementById('presenter-prev-btn');
     const nextBtn = document.getElementById('presenter-next-btn');
-
     if (curNum) curNum.innerText = currentSlideIndex + 1;
     if (totNum) totNum.innerText = slides.length;
-    if (prevBtn) prevBtn.disabled = currentSlideIndex === 0;
-    if (nextBtn) nextBtn.disabled = currentSlideIndex === slides.length - 1;
+    if (prevBtn) prevBtn.disabled = currentSlideIndex <= 0;
+    if (nextBtn) nextBtn.disabled = currentSlideIndex >= slides.length - 1;
+
+    renderPresenterThumbs();
+}
+
+function renderPresenterThumbs() {
+    const list = document.getElementById('presenter-thumbs-list');
+    if (!list) return;
+    const deck = getCurrentDeck();
+    const slides = deck ? deck.slides || [] : [];
+    list.innerHTML = '';
+    slides.forEach(function(slide, idx) {
+        const el = document.createElement('div');
+        el.className = 'presenter-thumb' + (idx === currentSlideIndex ? ' active' : '');
+        el.onclick = function() { goToSlide(idx); };
+        var title = slide.title || slide.subtitle || ('Слайд ' + (idx + 1));
+        el.innerHTML = '<span class="thumb-num">' + (idx + 1) + '</span>' +
+            '<div class="thumb-preview">' + escapeHtml(title) + '</div>';
+        list.appendChild(el);
+    });
+    // scroll active into view
+    var active = list.querySelector('.presenter-thumb.active');
+    if (active && active.scrollIntoView) {
+        try { active.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' }); } catch (e) {}
+    }
+}
+
+function onPresenterNotesInput() {
+    const badge = document.getElementById('presenter-notes-saved');
+    if (badge) badge.classList.add('hidden');
+    if (presenterNotesSaveTimer) clearTimeout(presenterNotesSaveTimer);
+    presenterNotesSaveTimer = setTimeout(savePresenterNotesNow, 450);
+}
+
+function savePresenterNotesNow() {
+    if (presenterNotesSaveTimer) {
+        clearTimeout(presenterNotesSaveTimer);
+        presenterNotesSaveTimer = null;
+    }
+    const notesEl = document.getElementById('presenter-notes-text');
+    if (!notesEl || !isPresenterOpen()) return;
+    const deck = getCurrentDeck();
+    if (!deck || !deck.slides || !deck.slides[currentSlideIndex]) return;
+    const val = notesEl.value;
+    if ((deck.slides[currentSlideIndex].notes || '') === val) return;
+    deck.slides[currentSlideIndex].notes = val;
+    saveDecks();
+    // also update main speaker notes strip
+    const speakerText = document.getElementById('speaker-notes-text');
+    if (speakerText) speakerText.innerText = val || 'Нет заметок к этому слайду.';
+    const badge = document.getElementById('presenter-notes-saved');
+    if (badge) {
+        badge.classList.remove('hidden');
+        setTimeout(function() { badge.classList.add('hidden'); }, 1200);
+    }
 }
 
 function startPresenterTimer() {
     if (presenterTimerInterval) clearInterval(presenterTimerInterval);
-    presenterTimerInterval = setInterval(() => {
-        if (!isTimerPaused) {
-            presenterSeconds++;
-            const display = document.getElementById('presenter-timer-display');
-            if (display) {
-                const h = Math.floor(presenterSeconds / 3600);
-                const m = Math.floor((presenterSeconds % 3600) / 60);
-                const s = presenterSeconds % 60;
-                display.innerText = `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-            }
+    presenterTimerInterval = setInterval(function() {
+        if (isTimerPaused) return;
+        presenterSeconds++;
+        presenterSlideSeconds++;
+        const display = document.getElementById('presenter-timer-display');
+        if (display) {
+            const h = Math.floor(presenterSeconds / 3600);
+            const m = Math.floor((presenterSeconds % 3600) / 60);
+            const s = presenterSeconds % 60;
+            display.innerText = h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
         }
+        const st = document.getElementById('presenter-slide-timer-display');
+        if (st) st.innerText = formatSlideTimer(presenterSlideSeconds);
     }, 1000);
 }
 
 function togglePresenterTimer() {
     isTimerPaused = !isTimerPaused;
     const btn = document.getElementById('presenter-pause-btn');
-    if (btn) btn.innerHTML = isTimerPaused ? '<span class="material-symbols-rounded">play_arrow</span>' : '<span class="material-symbols-rounded">pause</span>';
+    if (btn) btn.innerHTML = isTimerPaused
+        ? '<span class="material-symbols-rounded">play_arrow</span>'
+        : '<span class="material-symbols-rounded">pause</span>';
 }
 
 function resetPresenterTimer() {
     presenterSeconds = 0;
+    presenterSlideSeconds = 0;
     const display = document.getElementById('presenter-timer-display');
     if (display) display.innerText = '0:00:00';
+    const st = document.getElementById('presenter-slide-timer-display');
+    if (st) st.innerText = '0:00';
 }
 
 function updatePresenterClock() {
@@ -701,7 +927,21 @@ function updatePresenterClock() {
 function changePresenterNotesFont(delta) {
     presenterNotesFontSize = Math.max(12, Math.min(32, presenterNotesFontSize + delta));
     const notesText = document.getElementById('presenter-notes-text');
-    if (notesText) notesText.style.fontSize = `${presenterNotesFontSize}px`;
+    if (notesText) notesText.style.fontSize = presenterNotesFontSize + 'px';
+}
+
+function togglePresenterHotkeysHint(force) {
+    const hint = document.getElementById('presenter-hotkeys-hint');
+    if (!hint) return;
+    if (force === false) {
+        hint.classList.add('hidden');
+        return;
+    }
+    if (force === true) {
+        hint.classList.remove('hidden');
+        return;
+    }
+    hint.classList.toggle('hidden');
 }
 
 /* ==========================================================================
@@ -788,14 +1028,40 @@ function toggleAdminSlideFields() {
     const col2Box = document.getElementById('admin-second-column-box');
     const quoteBox = document.getElementById('admin-quote-author-box');
     const mediaBox = document.getElementById('media-upload-box');
+    const contentBox = document.getElementById('admin-content-fields');
+    const bullets = document.getElementById('new-slide-bullets');
 
     col2Box.classList.add('hidden');
     quoteBox.classList.add('hidden');
     mediaBox.classList.add('hidden');
+    if (contentBox) contentBox.classList.remove('hidden');
 
-    if (type === 'two-column') col2Box.classList.remove('hidden');
+    if (type === 'two-column' || type === 'comparison') {
+        col2Box.classList.remove('hidden');
+        var col2Label = col2Box.querySelector('label');
+        if (col2Label) col2Label.textContent = type === 'comparison' ? 'Правая колонка (пункты):' : 'Текст второй колонки:';
+    }
     if (type === 'quote') quoteBox.classList.remove('hidden');
     if (type === 'media') mediaBox.classList.remove('hidden');
+    if (type === 'comparison') {
+        quoteBox.classList.remove('hidden');
+        var ql = quoteBox.querySelector('label');
+        if (ql) ql.textContent = 'Заголовок правой колонки:';
+        var sub = document.querySelector('label[for="new-slide-subtitle"]');
+        // subtitle used as left header
+    }
+    if (type === 'stats' && bullets) {
+        bullets.placeholder = 'Число|Подпись (каждая строка)\n42|Пользователи\n98%|Удовлетворённость';
+    } else if (type === 'timeline' && bullets) {
+        bullets.placeholder = 'Этап|Описание\n2024|Запуск\n2025|Масштаб';
+    } else if (type === 'checklist' && bullets) {
+        bullets.placeholder = 'Пункт 1\nПункт 2\nПункт 3';
+    } else if (bullets) {
+        bullets.placeholder = 'Пункт 1\nПункт 2\nПункт 3';
+    }
+    if (type === 'section' || type === 'blank' || type === 'title-slide') {
+        if (contentBox && type !== 'title-slide') contentBox.classList.add('hidden');
+    }
 }
 
 function handleBgImageUpload(input) {
@@ -1395,7 +1661,20 @@ function sendAiChatMessage() {
    НАСТРОЙКИ И ЯЗЫК
    ========================================================================== */
 function openSettingsModal() {
-    document.getElementById('settings-modal').classList.add('active');
+    var m = document.getElementById('settings-modal');
+    var compact = document.getElementById('toggle-compact-forms');
+    if (compact) compact.checked = localStorage.getItem('slides_compact') === 'true';
+    var liquid = document.getElementById('toggle-liquid-glass');
+    if (liquid) liquid.checked = localStorage.getItem('liquid_glass_mode') === 'true';
+    var ui = document.getElementById('toggle-ui-scale');
+    if (ui) ui.checked = localStorage.getItem('slides_ui_scale') === 'true';
+    var rad = document.getElementById('settings-radius-select');
+    if (rad) {
+        rad.value = localStorage.getItem('app_radius') || 'rounded';
+        if (typeof refreshEnhancedSelect === 'function') refreshEnhancedSelect(rad);
+    }
+    if (typeof enhanceAllSelects === 'function') enhanceAllSelects(m);
+    m.classList.add('active');
 }
 
 function closeSettingsModal() {
