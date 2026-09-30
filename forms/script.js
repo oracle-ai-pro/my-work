@@ -391,11 +391,21 @@ function switchFormFromSelect(index) { switchForm(index); }
    ========================================== */
 function getFormMode(form) {
     if (previewMode) return 'learn';
-    return (form && form.mode) ? form.mode : 'test';
+    var mode = (form && form.mode) ? form.mode : 'test';
+    // Test недоступен офлайн — временно Learn (в storage mode не трогаем)
+    if (mode === 'test' && typeof isOnline === 'function' && !isOnline()) {
+        return 'learn';
+    }
+    return mode;
 }
 
 function setFormMode(index, mode) {
     if (!allForms[index]) return;
+    if (mode === 'test' && typeof isOnline === 'function' && !isOnline()) {
+        hideFormContextMenu();
+        showAlert('Режим Test недоступен без интернета. Используйте Learn или FlashCards.', 'wifi_off');
+        return;
+    }
     allForms[index].mode = mode;
     saveFormsToStorage();
     renderAllFormsUI();
@@ -411,21 +421,34 @@ function showFormContextMenu(e, formIndex) {
     menu.id = 'form-context-menu';
     menu.className = 'form-context-menu';
     const currentMode = getFormMode(allForms[formIndex]);
-    menu.innerHTML = `
-        <div class="ctx-title">Режим формы</div>
-        <div class="ctx-item ${currentMode === 'test' ? 'active' : ''}" onclick="setFormMode(${formIndex}, 'test')">
-            <span class="material-symbols-rounded">quiz</span> Test
-            <small>Обычный тест (по умолчанию)</small>
-        </div>
-        <div class="ctx-item ${currentMode === 'learn' ? 'active' : ''}" onclick="setFormMode(${formIndex}, 'learn')">
-            <span class="material-symbols-rounded">school</span> Learn
-            <small>Сразу показывать верный/неверный</small>
-        </div>
-        <div class="ctx-item ${currentMode === 'flashcards' ? 'active' : ''}" onclick="setFormMode(${formIndex}, 'flashcards')">
-            <span class="material-symbols-rounded">style</span> FlashCards
-            <small>Карточки: знаю / не знаю</small>
-        </div>
-    `;
+    const offline = (typeof isOnline === 'function' && !isOnline());
+
+    function item(mode, icon, title, small, enabled) {
+        var active = currentMode === mode && (mode !== 'test' || !offline);
+        var cls = 'ctx-item' + (active ? ' active' : '') + (!enabled ? ' ctx-item-disabled' : '');
+        var el = document.createElement('div');
+        el.className = cls;
+        el.innerHTML = '<span class="material-symbols-rounded">' + icon + '</span> ' + title +
+            '<small>' + small + '</small>';
+        el.addEventListener('click', function(ev) {
+            ev.stopPropagation();
+            if (!enabled) {
+                showAlert('Test только онлайн', 'wifi_off');
+                return;
+            }
+            setFormMode(formIndex, mode);
+        });
+        return el;
+    }
+
+    var title = document.createElement('div');
+    title.className = 'ctx-title';
+    title.innerHTML = 'Режим формы' + (offline ? ' <span style="font-weight:500;text-transform:none;opacity:.8;">(офлайн)</span>' : '');
+    menu.appendChild(title);
+    menu.appendChild(item('test', 'quiz', 'Test', offline ? 'Нужен интернет' : 'Обычный тест (по умолчанию)', !offline));
+    menu.appendChild(item('learn', 'school', 'Learn', 'Сразу показывать верный/неверный', true));
+    menu.appendChild(item('flashcards', 'style', 'FlashCards', 'Карточки: знаю / не знаю', true));
+
     document.body.appendChild(menu);
     const x = Math.min(e.clientX, window.innerWidth - 240);
     const y = Math.min(e.clientY, window.innerHeight - 220);
@@ -1573,6 +1596,13 @@ function calculateResults() {
             '📧 Отправить результаты преподавателю</a>';
     }
 
+    if (!previewMode) {
+        emailBlock +=
+            '<button type="button" class="btn" style="width:100%;margin-top:12px;background:transparent;color:var(--text-color);border:1px solid var(--border-color);" onclick="exportStudentResultsJSON()">' +
+            '<span class="material-symbols-rounded" style="font-size:18px;vertical-align:middle;">download</span> ' +
+            'Скачать ответы (.json) <span class="novelty-badge">НОВИНКА</span></button>';
+    }
+
     document.getElementById('review-box').innerHTML = emailBlock + reviewHTML;
 
     if (previewMode) {
@@ -1636,6 +1666,16 @@ function triggerImportForm() {
     el.click();
 }
 
+function isStudentResultsPayload(data) {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
+    if (data.kind === 'myform-student-results' || data.type === 'student-results') return true;
+    // heuristic: answers map + no form questions array
+    if (data.answers && typeof data.answers === 'object' && !Array.isArray(data.answers)) {
+        if (!Array.isArray(data.questions)) return true;
+    }
+    return false;
+}
+
 function importFormFromJSON(input) {
     const file = input.files[0];
     if (!file) return;
@@ -1644,12 +1684,21 @@ function importFormFromJSON(input) {
     reader.onload = function(e) {
         try {
             const importedData = JSON.parse(e.target.result);
+
+            // ===== Ветка: результаты ученика → сверка =====
+            if (isStudentResultsPayload(importedData)) {
+                openStudentResultsReview(importedData, file.name);
+                input.value = '';
+                return;
+            }
+
+            // ===== Обычная форма =====
             if (importedData && importedData.questions && Array.isArray(importedData.questions)) {
                 allForms.push(importedData);
             } else if (Array.isArray(importedData)) {
                 allForms.push(...importedData);
             } else {
-                throw new Error('Файл не содержит корректных вопросов.');
+                throw new Error('Файл не содержит форму и не похож на результаты ученика.');
             }
 
             saveFormsToStorage();
@@ -1667,6 +1716,247 @@ function importFormFromJSON(input) {
     };
     reader.readAsText(file);
 }
+
+/** Экспорт ответов ученика после прохождения (новинка) */
+function exportStudentResultsJSON() {
+    const form = allForms[currentFormIndex];
+    if (!form) return showAlert('Нет формы', 'error');
+    const questions = form.questions || [];
+    if (!questions.length) return showAlert('Нет вопросов', 'error');
+
+    // пересчёт score так же, как в showResults (упрощённо через уже отрисованный final-score)
+    let score = 0, maxPossibleScore = 0;
+    questions.forEach(function(q, idx) {
+        if (q.type === 'flashcard' || q.type === 'info-slide') return;
+        maxPossibleScore++;
+        const userAns = userAnswers[idx];
+        let isCorrect = false;
+        if (q.type === 'radio' || q.type === 'select' || q.type === 'true-false') {
+            var ansNum = (userAns === '' || userAns === undefined || userAns === null) ? null : parseInt(userAns, 10);
+            if (q.correctChoices && ansNum !== null && !isNaN(ansNum) && q.correctChoices.map(Number).includes(ansNum)) isCorrect = true;
+        } else if (q.type === 'checkbox') {
+            if (Array.isArray(userAns) && q.correctChoices) {
+                var cc = q.correctChoices.map(Number).slice().sort();
+                var ua = userAns.map(Number).slice().sort();
+                if (cc.length === ua.length && cc.every(function(v, i) { return v === ua[i]; })) isCorrect = true;
+            }
+        } else if (q.type === 'fill-blank') {
+            if (typeof isFillBlankCorrect === 'function' && isFillBlankCorrect(q, userAns)) isCorrect = true;
+        } else if (q.type === 'text') {
+            if (q.correctText && userAns != null) {
+                isCorrect = q.correctText.some(function(t) {
+                    return String(t).toLowerCase().trim() === String(userAns).toLowerCase().trim();
+                });
+            }
+        } else if (q.type === 'puzzle-drag') {
+            if (Array.isArray(userAns) && q.correctChoices) {
+                var cc2 = q.correctChoices.map(Number);
+                if (cc2.length === userAns.length && cc2.every(function(v, i) { return v === Number(userAns[i]); })) isCorrect = true;
+            }
+        }
+        if (isCorrect) score++;
+    });
+
+    // снимок вопросов без admin-only секретов не нужен — ключи нужны для сверки офлайн
+    var snapshotQuestions = questions.map(function(q) {
+        return {
+            type: q.type,
+            title: q.title,
+            description: q.description,
+            options: q.options,
+            correctChoices: q.correctChoices,
+            correctText: q.correctText,
+            flashcardAnswer: q.flashcardAnswer,
+            fillBlankText: q.fillBlankText,
+            themeId: q.themeId,
+            hasExplanation: q.hasExplanation,
+            explanationTitle: q.explanationTitle,
+            explanationText: q.explanationText,
+            hasAnswerExplanations: q.hasAnswerExplanations,
+            answerExpCorrect: q.answerExpCorrect,
+            answerExpIncorrect: q.answerExpIncorrect
+        };
+    });
+
+    var payload = {
+        kind: 'myform-student-results',
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        formTitle: form.title || 'Форма',
+        formId: form.id || null,
+        studentEmail: userEmail || '',
+        mode: getFormMode(form),
+        score: score,
+        maxScore: maxPossibleScore,
+        answers: userAnswers || {},
+        snapshot: { questions: snapshotQuestions }
+    };
+
+    var dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(payload, null, 2));
+    var a = document.createElement('a');
+    a.setAttribute('href', dataStr);
+    var safeName = String(form.title || 'results').replace(/[^\wа-яА-ЯёЁ\- ]+/g, '').trim() || 'results';
+    a.setAttribute('download', safeName + '_answers.json');
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    showAlert('Ответы сохранены в JSON. Передайте файл преподавателю.', 'check_circle');
+}
+
+function triggerStudentResultsImport() {
+    var el = document.getElementById('import-student-results-file');
+    if (!el) {
+        el = document.createElement('input');
+        el.type = 'file';
+        el.id = 'import-student-results-file';
+        el.accept = '.json,application/json';
+        el.style.display = 'none';
+        el.onchange = function() { importFormFromJSON(el); };
+        document.body.appendChild(el);
+    }
+    el.value = '';
+    el.click();
+}
+
+/** Сверка загруженных ответов ученика с эталоном */
+function openStudentResultsReview(data, fileName) {
+    var answers = data.answers || {};
+    var snapQs = (data.snapshot && Array.isArray(data.snapshot.questions)) ? data.snapshot.questions : null;
+    var form = allForms[currentFormIndex];
+    var liveQs = (form && form.questions) ? form.questions : null;
+
+    // предпочитаем текущую форму, если число вопросов совпадает; иначе snapshot
+    var questions = null;
+    var sourceLabel = '';
+    if (liveQs && snapQs && liveQs.length === snapQs.length) {
+        questions = liveQs;
+        sourceLabel = 'текущая форма «' + (form.title || '') + '»';
+    } else if (liveQs && !snapQs) {
+        questions = liveQs;
+        sourceLabel = 'текущая форма «' + (form.title || '') + '»';
+    } else if (snapQs) {
+        questions = snapQs;
+        sourceLabel = 'снимок из файла ученика';
+    } else if (liveQs) {
+        questions = liveQs;
+        sourceLabel = 'текущая форма (структура может не совпадать)';
+    } else {
+        showAlert('Не с чем сверить: нет вопросов в форме и нет снимка в файле', 'warning');
+        return;
+    }
+
+    var score = 0, maxPossibleScore = 0;
+    var rows = '';
+
+    questions.forEach(function(q, idx) {
+        var userAns = answers[idx];
+        if (userAns === undefined) userAns = answers[String(idx)];
+
+        if (q.type === 'flashcard' || q.type === 'info-slide') {
+            rows += '<div class="review-item grey-item"><strong>' + escapeHtml(q.title || '') +
+                '</strong><p style="color:var(--text-muted);font-size:13px;margin-top:4px;">Материал (без оценки)</p></div>';
+            return;
+        }
+
+        maxPossibleScore++;
+        var isCorrect = false;
+        if (q.type === 'radio' || q.type === 'select' || q.type === 'true-false') {
+            var ansNum = (userAns === '' || userAns === undefined || userAns === null) ? null : parseInt(userAns, 10);
+            if (q.correctChoices && ansNum !== null && !isNaN(ansNum) && q.correctChoices.map(Number).includes(ansNum)) isCorrect = true;
+        } else if (q.type === 'checkbox') {
+            if (Array.isArray(userAns) && q.correctChoices) {
+                var cc = q.correctChoices.map(Number).slice().sort();
+                var ua = userAns.map(Number).slice().sort();
+                if (cc.length === ua.length && cc.every(function(v, i) { return v === ua[i]; })) isCorrect = true;
+            }
+        } else if (q.type === 'fill-blank') {
+            if (typeof isFillBlankCorrect === 'function' && isFillBlankCorrect(q, userAns)) isCorrect = true;
+        } else if (q.type === 'text') {
+            if (q.correctText && userAns != null) {
+                isCorrect = q.correctText.some(function(t) {
+                    return String(t).toLowerCase().trim() === String(userAns).toLowerCase().trim();
+                });
+            }
+        } else if (q.type === 'puzzle-drag') {
+            if (Array.isArray(userAns) && q.correctChoices) {
+                var cc2 = q.correctChoices.map(Number);
+                if (cc2.length === userAns.length && cc2.every(function(v, i) { return v === Number(userAns[i]); })) isCorrect = true;
+            }
+        }
+        if (isCorrect) score++;
+
+        var shown = userAns;
+        if (shown === undefined || shown === null || shown === '') shown = 'пусто';
+        else if ((q.type === 'radio' || q.type === 'select' || q.type === 'true-false') && q.options) {
+            var n = parseInt(shown, 10);
+            shown = (!isNaN(n) && q.options[n] != null) ? q.options[n] : shown;
+        } else if (q.type === 'checkbox' && Array.isArray(shown) && q.options) {
+            shown = shown.map(function(i) { return q.options[i]; }).filter(Boolean).join(', ') || 'пусто';
+        } else if (q.type === 'puzzle-drag' && Array.isArray(shown) && q.options) {
+            shown = shown.map(function(i) { return q.options[i]; }).filter(Boolean).join(' → ') || 'пусто';
+        } else if (q.type === 'fill-blank' && Array.isArray(shown)) {
+            shown = shown.map(function(s) { return s == null || s === '' ? '…' : s; }).join(' · ');
+        }
+
+        var correctDisp = (typeof getCorrectAnswerDisplay === 'function')
+            ? getCorrectAnswerDisplay(q)
+            : (q.correctChoices && q.options
+                ? q.correctChoices.map(function(i) { return q.options[i]; }).join(', ')
+                : (q.correctText || []).join(' / '));
+
+        if (isCorrect) {
+            rows += '<div class="review-item correct-item"><strong>' + escapeHtml(q.title || '') +
+                '</strong><p class="text-success" style="font-size:13px;margin-top:4px;">✓ Верно — «' +
+                escapeHtml(String(shown)) + '»</p></div>';
+        } else {
+            rows += '<div class="review-item incorrect-item"><strong>' + escapeHtml(q.title || '') +
+                '</strong><p class="text-danger" style="font-size:13px;margin-top:4px;">✗ Ответ ученика: «' +
+                escapeHtml(String(shown)) + '»</p>' +
+                '<p class="text-success" style="font-size:13px;margin-top:2px;">✓ Эталон: ' +
+                escapeHtml(String(correctDisp || '—')) + '</p></div>';
+        }
+    });
+
+    var modal = document.getElementById('student-results-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'student-results-modal';
+        modal.className = 'custom-alert-overlay active';
+        modal.onclick = function(ev) { if (ev.target === modal) closeStudentResultsModal(); };
+        document.body.appendChild(modal);
+    }
+    modal.classList.add('active');
+    modal.innerHTML =
+        '<div class="custom-alert-card student-results-card" style="max-width:560px;text-align:left;max-height:85vh;overflow:auto;">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;">' +
+                '<h3 style="margin:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+                    '<span class="material-symbols-rounded" style="color:var(--accent-color);">grading</span>' +
+                    'Сверка ответов <span class="novelty-badge">НОВИНКА</span>' +
+                '</h3>' +
+                '<button type="button" onclick="closeStudentResultsModal()" style="background:transparent;border:none;cursor:pointer;color:var(--text-color);display:flex;">' +
+                    '<span class="material-symbols-rounded">close</span></button>' +
+            '</div>' +
+            '<p style="font-size:13px;color:var(--text-muted);margin:0 0 8px;line-height:1.45;">' +
+                'Файл: <b>' + escapeHtml(fileName || 'results.json') + '</b><br>' +
+                'Форма в файле: <b>' + escapeHtml(data.formTitle || '—') + '</b><br>' +
+                'Ученик: <b>' + escapeHtml(data.studentEmail || 'не указан') + '</b><br>' +
+                'Сверка по: ' + escapeHtml(sourceLabel) +
+            '</p>' +
+            '<div style="font-size:1.4rem;font-weight:700;text-align:center;margin:12px 0;">' +
+                score + ' / ' + maxPossibleScore +
+                (data.score != null ? ' <span style="font-size:12px;font-weight:500;color:var(--text-muted);">(в файле: ' +
+                    escapeHtml(String(data.score)) + '/' + escapeHtml(String(data.maxScore != null ? data.maxScore : '—')) + ')</span>' : '') +
+            '</div>' +
+            '<div class="student-results-list">' + rows + '</div>' +
+            '<button type="button" class="btn" style="width:100%;margin-top:16px;" onclick="closeStudentResultsModal()">Закрыть</button>' +
+        '</div>';
+}
+
+function closeStudentResultsModal() {
+    var modal = document.getElementById('student-results-modal');
+    if (modal) modal.classList.remove('active');
+}
+
 
 /* ==========================================
    7. ПАНЕЛЬ АДМИНИСТРАТОРА (СОЗДАНИЕ & РЕДАКТИРОВАНИЕ)
@@ -3865,6 +4155,7 @@ function initOfflineManager() {
 
 function updateOnlineUI() {
     var online = isOnline();
+    var wasOffline = document.body.classList.contains('is-offline');
     document.body.classList.toggle('is-offline', !online);
     var btn = document.getElementById('offline-status-btn');
     if (btn) {
@@ -3877,8 +4168,20 @@ function updateOnlineUI() {
         if (icon) icon.textContent = !online ? 'cloud_off' : 'sync_problem';
     }
     if (typeof renderAllFormsUI === 'function') {
-        // refresh dots on tabs without full reload if possible
         try { refreshOfflineDotsOnTabs(); } catch (e) {}
+        try { renderAllFormsUI(); } catch (e) {}
+    }
+    // ушли в офлайн: Test → фактически Learn
+    if (!online && !wasOffline) {
+        var f = allForms[currentFormIndex];
+        if (f && (f.mode === 'test' || !f.mode)) {
+            try { if (typeof loadCurrentForm === 'function') loadCurrentForm(); } catch (e) {}
+            showAlert('Офлайн: режим Test недоступен. Форма работает как Learn.', 'wifi_off');
+        }
+    }
+    // вернулись онлайн — обновить бейджи режимов
+    if (online && wasOffline) {
+        try { if (typeof loadCurrentForm === 'function') loadCurrentForm(); } catch (e) {}
     }
 }
 
