@@ -29,6 +29,8 @@
             --iw-slides-fg: #f59e0b;
             --iw-forms-bg: #2a153c;
             --iw-forms-fg: #a855f7;
+            --iw-forms-lite-bg: #1a2e3c;
+            --iw-forms-lite-fg: #38bdf8;
             --iw-sheets-bg: #072d20;
             --iw-sheets-fg: #10b981;
             --iw-keeps-bg: #391124;
@@ -38,6 +40,9 @@
             --maint-bg: rgba(245, 158, 11, 0.12);
             --maint-border: rgba(245, 158, 11, 0.45);
             --maint-text: #fbbf24;
+            --new-bg: rgba(239, 68, 68, 0.18);
+            --new-border: rgba(239, 68, 68, 0.55);
+            --new-text: #f87171;
         }
         body.light-theme {
             --bg-color: #f8fafc;
@@ -55,6 +60,8 @@
             --iw-slides-fg: #d97706;
             --iw-forms-bg: #f3e8ff;
             --iw-forms-fg: #9333ea;
+            --iw-forms-lite-bg: #e0f2fe;
+            --iw-forms-lite-fg: #0284c7;
             --iw-sheets-bg: #d1fae5;
             --iw-sheets-fg: #059669;
             --iw-keeps-bg: #fce7f3;
@@ -64,6 +71,9 @@
             --maint-bg: rgba(245, 158, 11, 0.1);
             --maint-border: rgba(217, 119, 6, 0.4);
             --maint-text: #b45309;
+            --new-bg: rgba(239, 68, 68, 0.12);
+            --new-border: rgba(220, 38, 38, 0.4);
+            --new-text: #dc2626;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
         body {
@@ -128,25 +138,6 @@
             border-radius: 6px;
         }
         .notice-close-btn:hover { color: var(--text-color); }
-        .maint-banner {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 12px;
-            background: var(--maint-bg);
-            border: 1px solid var(--maint-border);
-            border-radius: 12px;
-            padding: 12px 18px;
-            margin-bottom: 24px;
-            text-align: left;
-            font-size: 0.9rem;
-            line-height: 1.45;
-            animation: fadeIn 0.3s ease;
-        }
-        .maint-banner.hidden { display: none; }
-        .maint-banner .material-symbols-rounded { color: var(--maint-text); font-size: 22px; flex-shrink: 0; }
-        .maint-banner strong { color: var(--maint-text); }
-        .maint-countdown { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
         .header { margin-bottom: 40px; }
         .badge {
             display: inline-flex;
@@ -190,39 +181,24 @@
             box-shadow: 0 12px 24px -10px var(--accent-glow);
             border-color: var(--accent-color);
         }
-        .service-card.disabled {
-            cursor: not-allowed;
-            opacity: 0.72;
-            filter: grayscale(0.35);
-        }
-        .service-card.disabled:hover {
-            transform: none;
-            box-shadow: none;
-            border-color: var(--border-color);
-        }
-        .service-card.disabled .card-action {
-            opacity: 1 !important;
-            transform: none !important;
-            color: var(--maint-text);
-        }
-        .lock-badge {
+        .new-badge {
             position: absolute;
             top: 12px;
             right: 12px;
             display: inline-flex;
             align-items: center;
             gap: 4px;
-            font-size: 0.7rem;
-            font-weight: 700;
+            font-size: 0.68rem;
+            font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 0.3px;
+            letter-spacing: 0.4px;
             padding: 4px 8px;
             border-radius: 8px;
-            background: var(--maint-bg);
-            color: var(--maint-text);
-            border: 1px solid var(--maint-border);
+            background: var(--new-bg);
+            color: var(--new-text);
+            border: 1px solid var(--new-border);
+            z-index: 1;
         }
-        .lock-badge .material-symbols-rounded { font-size: 14px; }
         .icon-wrapper {
             padding: 10px 16px;
             border-radius: 14px;
@@ -239,9 +215,9 @@
         .card-doc .icon-wrapper { background: var(--iw-doc-bg); color: var(--iw-doc-fg); }
         .card-slides .icon-wrapper { background: var(--iw-slides-bg); color: var(--iw-slides-fg); }
         .card-forms .icon-wrapper { background: var(--iw-forms-bg); color: var(--iw-forms-fg); }
+        .card-forms-lite .icon-wrapper { background: var(--iw-forms-lite-bg); color: var(--iw-forms-lite-fg); }
         .card-sheets .icon-wrapper { background: var(--iw-sheets-bg); color: var(--iw-sheets-fg); }
         .card-keeps .icon-wrapper { background: var(--iw-keeps-bg); color: var(--iw-keeps-fg); }
-        .card-workgens .icon-wrapper { background: var(--iw-wg-bg); color: var(--iw-wg-fg); }
         .service-card h2 { font-size: 1.15rem; font-weight: 600; margin-bottom: 8px; }
         .service-card p { font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; }
         .card-action {
@@ -444,8 +420,6 @@
             .header h1 { font-size: 1.6rem; }
             .theme-buttons { grid-template-columns: 1fr; }
         }
-
-        /* WorkGens floating assistant */
         .wg-fab-root {
             position: fixed;
             right: 20px;
@@ -544,7 +518,6 @@
             .wg-fab { justify-content: flex-start; max-width: none; }
             .wg-fab-panel { width: 100%; }
         }
-
     </style>
 </head>
 <body>
@@ -600,7 +573,19 @@
                     <span class="material-symbols-rounded">assignment</span>
                 </div>
                 <h2>Формы</h2>
-                <p>Конструктор опросов, тестов и сбора ответов.</p>
+                <p>Полный конструктор: темы, превью, Share, FlashCards.</p>
+                <div class="card-action">
+                    Открыть <span class="material-symbols-rounded" style="font-size:16px;">arrow_forward</span>
+                </div>
+            </a>
+            <a href="./forms-lite/" class="service-card card-forms-lite" onclick="navigateWithAnimation(event, './forms-lite/', 'Формы Lite', 'speed', '#38bdf8')">
+                <span class="new-badge">НОВИНКА</span>
+                <div class="icon-wrapper">
+                    <img src="forms.png" alt="" class="custom-card-icon" onerror="this.style.display='none'">
+                    <span class="material-symbols-rounded">speed</span>
+                </div>
+                <h2>Формы Lite</h2>
+                <p>Лёгкая версия для слабых устройств. Без ИИ и тяжёлых эффектов.</p>
                 <div class="card-action">
                     Открыть <span class="material-symbols-rounded" style="font-size:16px;">arrow_forward</span>
                 </div>
@@ -649,7 +634,6 @@
             </div>
         </div>
     </div>
-
     <div id="transition-overlay" class="transition-overlay">
         <div id="loader-preview" class="loader-card-preview">
             <span id="loader-icon" class="material-symbols-rounded">article</span>
@@ -741,7 +725,6 @@
             'WorkGens рядом',
             'Задайте вопрос…'
         ];
-
         document.addEventListener('DOMContentLoaded', () => {
             const isNoticeDismissed = localStorage.getItem('repo_rename_notice_dismissed');
             if (!isNoticeDismissed) {
@@ -751,7 +734,6 @@
             initTheme();
             initWorkGensFab();
         });
-
         function dismissNotice() {
             localStorage.setItem('repo_rename_notice_dismissed', 'true');
             const n = document.getElementById('repo-notice');
@@ -818,8 +800,6 @@
                 }
             });
         }
-
-        /* ===== WorkGens floating FAB ===== */
         function initWorkGensFab() {
             const root = document.getElementById('wg-fab-root');
             const btn = document.getElementById('wg-fab-btn');
@@ -828,9 +808,7 @@
             const send = document.getElementById('wg-fab-send');
             const label = document.getElementById('wg-fab-label');
             if (!root || !btn) return;
-
             label.textContent = WG_HINTS[Math.floor(Math.random() * WG_HINTS.length)];
-
             function expand() {
                 root.classList.add('expanded');
                 setTimeout(() => input && input.focus(), 50);
@@ -849,7 +827,6 @@
                 const url = './WorkGens/index.html?q=' + encodeURIComponent(q) + '&autosend=1';
                 window.location.href = url;
             }
-
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 expand();
@@ -868,13 +845,12 @@
             });
             input.addEventListener('click', (e) => e.stopPropagation());
             panel.addEventListener('click', (e) => e.stopPropagation());
-
             document.addEventListener('click', () => {
                 if (!root.classList.contains('expanded')) return;
-                if (input && input.value.trim()) return; // keep open if typing
+                if (input && input.value.trim()) return;
                 collapse();
             });
         }
-    </script></script>
+    </script>
 </body>
 </html>
