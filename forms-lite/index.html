@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Form Lite | Prestige HQ</title>
+    <!-- Иконки Material Symbols Rounded -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="container">
+        <!-- ВЕРХНЯЯ ПАНЕЛЬ С ВКЛАДКАМИ И МЕНЮ -->
+        <div class="forms-toolbar-container">
+            <!-- 1. Компактный выбор форм (Select) -->
+            <select id="forms-tabs-select" class="forms-select hidden" onchange="switchFormFromSelect(this.value)"></select>
+
+            <!-- 2. Классические вкладки -->
+            <div class="forms-tabs-list" id="forms-tabs-list"></div>
+
+            <button class="add-form-btn" onclick="createNewFormPrompt()" title="Создать новую форму">
+                <span class="material-symbols-rounded">add</span>
+            </button>
+
+            <!-- КНОПКА ОТКРЫТИЯ ОКНА ЯЗЫКОВ -->
+            <button class="tools-btn" onclick="openLanguageModal()" title="Выбор языка">
+                <span class="material-symbols-rounded">language</span>
+            </button>
+
+            <!-- Выпадающее меню опций -->
+            <div class="tools-dropdown">
+                <button class="tools-btn" onclick="toggleToolsMenu()" title="Меню">
+                    <span class="material-symbols-rounded">more_vert</span>
+                </button>
+                <div id="tools-menu" class="tools-menu hidden">
+                    <div class="tools-item" onclick="generateShareLink(); toggleToolsMenu();">
+                        <span class="material-symbols-rounded">link</span> <span data-i18n="share_link">Скопировать ссылку</span>
+                    </div>
+                    <div class="tools-item" onclick="printCurrentForm(); toggleToolsMenu();">
+                        <span class="material-symbols-rounded">print</span> <span data-i18n="print">Распечатать</span>
+                    </div>
+                    <div class="tools-item" onclick="openLoginModal(); toggleToolsMenu();">
+                        <span class="material-symbols-rounded">admin_panel_settings</span> <span data-i18n="admin_panel">Панель админа</span>
+                    </div>
+                    <hr style="border:none; border-top:1px solid var(--border-color); margin: 4px 0;">
+                    <div class="tools-item" onclick="window.location.href='index_old.html'; toggleToolsMenu();">
+                        <span class="material-symbols-rounded">history</span> <span data-i18n="legacy">Загрузить Legacy</span>
+                    </div>
+                    <hr style="border:none; border-top:1px solid var(--border-color); margin: 4px 0;">
+                    <div class="tools-item" onclick="openSettingsModal(); toggleToolsMenu();">
+                        <span class="material-symbols-rounded">settings</span> <span data-i18n="settings">Настройки</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ПОДСКАЗКА -->
+        <div id="hint-box" class="hint-box hidden" style="width:100%; box-sizing:border-box; margin-bottom:15px;">
+            <span class="material-symbols-rounded">lightbulb</span>
+            <span id="hint-text"></span>
+        </div>
+
+        <!-- 1. ЭКРАН ТЕСТИРОВАНИЯ (QUIZ SCREEN) -->
+        <div id="quiz-screen" class="quiz-container">
+            <div id="quiz-box" class="gcard">
+                <div class="quiz-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <div class="step-info" style="display:flex; align-items:center; gap:8px;">
+                        Вопрос <span id="current-number">1</span> из <span id="total-number">1</span>
+                        <button id="hint-btn" class="hint-btn hidden tools-icon-btn" onclick="toggleHintModal()" title="Показать подсказку">
+                            <span class="material-symbols-rounded" style="font-size:18px;">help_outline</span>
+                        </button>
+                    </div>
+                    <div id="timer-display" class="timer-box hidden">
+                        <span class="material-symbols-rounded" style="font-size:18px;">timer</span>
+                        <span id="timer-seconds">0</span>s
+                    </div>
+                </div>
+
+                <div class="progress-bar">
+                    <div id="progress" class="progress-fill"></div>
+                </div>
+
+                <!-- ТЕЛО ВОПРОСА -->
+                <div id="question-body" style="margin-top:20px;"></div>
+
+                <button id="next-btn" class="btn" onclick="nextStep()" style="margin-top:20px; width:100%;" data-i18n="next_btn">Далее</button>
+            </div>
+
+            <!-- РЕЗУЛЬТАТЫ -->
+            <div id="result-box" class="result-card gcard hidden">
+                <h2 style="display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <span class="material-symbols-rounded" style="color:var(--accent-color); font-size:32px;">emoji_events</span> 
+                    Тест завершён!
+                </h2>
+                <p style="color:var(--text-muted); margin:10px 0 5px 0; text-align:center;">Ваш результат:</p>
+                <div id="final-score" class="score" style="font-size:2rem; font-weight:700; margin-bottom:20px; text-align:center;">0 / 0</div>
+                <div id="bonus-text" style="text-align:center; color:var(--text-muted); margin-bottom:15px; font-weight:500;"></div>
+                
+                <div id="review-box" class="review-container"></div>
+
+                <button class="btn" onclick="restartQuiz()" style="margin-top:20px; width:100%;">Пройти заново</button>
+            </div>
+        </div>
+
+        <!-- 3. ПАНЕЛЬ АДМИНИСТРАТОРА (ADMIN SCREEN) -->
+        <div id="admin-screen" class="admin-box hidden">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2 style="margin:0;">Редактор вопросов</h2>
+                <button onclick="logout()" class="btn" style="width:auto; padding:8px 16px; margin:0; background:transparent; color:var(--text-color); border:1px solid var(--border-color);">Выйти</button>
+            </div>
+
+            <div style="display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
+                <button onclick="toggleAddQuestionForm()" class="btn" style="width:auto; flex-grow:1;" title="Добавить"><span class="material-symbols-rounded" style="font-size:18px;">add</span></button>
+                <button onclick="exportFormToJSON()" class="btn" style="width:auto; background:transparent; color:var(--text-color); border:1px solid var(--border-color);" title="Экспорт формы"><span class="material-symbols-rounded" style="font-size:18px;">upload</span></button>
+                <button onclick="document.getElementById('import-file').click()" class="btn" style="width:auto; background:transparent; color:var(--text-color); border:1px solid var(--border-color);" title="Импорт формы / ответов"><span class="material-symbols-rounded" style="font-size:18px;">download</span></button>
+                <button type="button" onclick="triggerStudentResultsImport()" class="btn" style="width:auto; background:transparent; color:var(--text-color); border:1px solid var(--border-color);" title="Сверить ответы ученика"><span class="material-symbols-rounded" style="font-size:18px;">grading</span></button>
+                <input type="file" id="import-file" style="display:none;" onchange="importFormFromJSON(this)" accept=".json">
+            </div>
+            <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
+                <button type="button" onclick="openLiteFormSettings()" class="btn" style="width:auto; flex:1; background:transparent; color:var(--text-color); border:1px solid var(--border-color);">
+                    <span class="material-symbols-rounded" style="font-size:18px;vertical-align:middle;">tune</span> Настройки формы
+                </button>
+                <button type="button" onclick="openAuthModalLite()" class="btn" style="width:auto; flex:1; background:transparent; color:var(--text-color); border:1px solid var(--border-color);">
+                    <span class="material-symbols-rounded" style="font-size:18px;vertical-align:middle;">key</span> Логин / пароль
+                </button>
+            </div>
+
+            <!-- ФОРМА СОЗДАНИЯ / РЕДАКТИРОВАНИЯ ВОПРОСА -->
+            <div id="admin-add-form" class="gcard hidden" style="margin-bottom:20px;">
+                <h3 id="admin-form-title" style="margin-top:0; margin-bottom:15px;">Новый элемент</h3>
+                
+                <label style="font-size:13px; color:var(--text-muted);">Тип элемента:</label>
+                <select id="new-type" class="admin-input" onchange="toggleAdminFields()">
+                    <option value="radio">Один из списка (Radio)</option>
+                    <option value="checkbox">Несколько из списка (Checkbox)</option>
+                    <option value="select">Выпадающий список (Select)</option>
+                    <option value="text">Текстовый ответ</option>
+                    <option value="true-false">Верно / Неверно ★</option>
+                    <option value="fill-blank">Заполнение пропусков ★ NEW</option>
+                    <option value="puzzle-drag">Пазл (Drag & Drop)</option>
+                    <option value="info-slide">Инфо-слайд (Картинка/Видео/Аудио)</option>
+                    <option value="flashcard">Флешкарта (Карточка для запоминания)</option>
+                </select>
+                
+
+                
+                
+
+<!-- Поле для названия вопроса -->
+                <div class="admin-field">
+                    <label for="new-title">Заголовок вопроса:</label>
+                    <input type="text" id="new-title" class="admin-input" placeholder="Введите заголовок...">
+                </div>
+
+                <!-- Поле для описания -->
+                <div class="admin-field" style="margin-top: 10px;">
+                    <label for="new-description">Описание вопроса (опционально):</label>
+                    <input type="text" id="new-description" class="admin-input" placeholder="Введите описание...">
+                </div>
+
+                
+
+                <div id="admin-truefalse-fields" class="hidden" style="margin-top:8px;">
+                    <label style="font-size:13px;color:var(--text-muted);">Правильный ответ:</label>
+                    <select id="new-tf-correct" class="admin-input">
+                        <option value="0">Верно</option>
+                        <option value="1">Неверно</option>
+                    </select>
+                </div>
+
+                <div id="admin-fillblank-fields" class="hidden" style="margin-top:10px;">
+                    <div style="display:inline-flex;align-items:center;gap:6px;margin-bottom:8px;">
+                        <span class="novelty-badge">NEW</span>
+                        <strong style="font-size:13px;">Заполнение пропусков</strong>
+                    </div>
+                    <p style="font-size:12.5px; color:var(--text-muted); line-height:1.45; margin-bottom:10px;">
+                        Пишите текст в <b>большом поле</b>. Пропуск = <code>[правильный ответ]</code>.<br>
+                        Пример: <code>Столица Франции — [Париж], а Италии — [Рим].</code>
+                    </p>
+                    <label style="font-size:13px; color:var(--text-muted); display:block; margin-bottom:4px;">Текст с пропусками:</label>
+                    <textarea id="new-fillblank-text" class="admin-input" rows="5" placeholder="Например: Вода кипит при [100] градусах Цельсия." style="min-height:110px; font-family:inherit;" oninput="updateFillBlankAdminPreview()"></textarea>
+                    <div id="fillblank-preview" class="fillblank-admin-preview"></div>
+                    <label class="switch-label" style="margin-top:12px; margin-bottom:10px;">
+                        <span class="switch"><input type="checkbox" id="fb-case-sensitive"><span class="slider"></span></span>
+                        Учитывать регистр (A ≠ a)
+                    </label>
+                    <label class="switch-label" style="margin-bottom:10px;">
+                        <span class="switch"><input type="checkbox" id="fb-trim-spaces" checked><span class="slider"></span></span>
+                        Игнорировать лишние пробелы
+                    </label>
+                    <label class="switch-label" style="margin-bottom:10px;">
+                        <span class="switch"><input type="checkbox" id="fb-accept-alts" checked><span class="slider"></span></span>
+                        Несколько вариантов: [ответ1|ответ2]
+                    </label>
+                </div>
+
+                <!-- Варианты ответов -->
+                <div id="admin-choices-fields">
+                    <label style="font-size:13px; color:var(--text-muted);">Варианты ответов (через запятую):</label>
+                    <input type="text" id="new-options" class="admin-input" placeholder="Вариант 1, Вариант 2, Вариант 3">
+                    <label style="font-size:13px; color:var(--text-muted);">Индексы правильных ответов (с 0, через запятую):</label>
+                    <input type="text" id="new-correct-choices" class="admin-input" placeholder="0">
+                </div>
+
+                <!-- Текстовые ответы -->
+                <div id="admin-text-fields" class="hidden">
+                    <label style="font-size:13px; color:var(--text-muted);">Правильные варианты текстового ответа (через запятую):</label>
+                    <input type="text" id="new-correct-text" class="admin-input" placeholder="ответ1, ответ2">
+                    
+                    <label class="switch-label" style="margin-top: 8px; margin-bottom: 12px;">
+                        <span class="switch">
+                            <input type="checkbox" id="new-inline-input">
+                            <span class="slider"></span>
+                        </span>
+                        Поле Input вместо нижнего текстового поля
+                    </label>
+                </div>
+
+                <!-- Ответ для карточек -->
+                <div id="flashcard-answer-box" class="hidden">
+                    <label style="font-size:13px; color:var(--text-muted);">Перевод / Оборотная сторона:</label>
+                    <input type="text" id="new-flashcard-answer" class="admin-input" placeholder="Перевод или пояснение...">
+                </div>
+
+                <!-- Загрузка Медиа -->
+                <div id="media-upload-box" class="hidden">
+                    <label style="font-size:13px; color:var(--text-muted);">Прикрепить медиафайл:</label>
+                    <input type="file" id="new-media-file" class="admin-input" accept="image/*,video/*,audio/*" onchange="handleMediaUploadPreview(this)">
+                    <div id="media-preview-container"></div>
+                </div>
+
+                <!-- Настройки вопроса -->
+                <label class="switch-label" style="margin-bottom: 12px;">
+                    <span class="switch"><input type="checkbox" id="new-required"><span class="slider"></span></span>
+                    Обязательный вопрос
+                </label>
+
+                <label class="switch-label" style="margin-bottom: 12px;">
+                    <span class="switch"><input type="checkbox" id="toggle-timer-input" onchange="document.getElementById('timer-config').classList.toggle('hidden', !this.checked)"><span class="slider"></span></span>
+                    Ограничить время
+                </label>
+                <div id="timer-config" class="hidden">
+                    <input type="number" id="new-timer" class="admin-input" placeholder="Время в секундах (напр. 20)" value="20">
+                </div>
+
+                <div class="admin-explanation-settings">
+                    <label class="switch-label" style="margin-bottom: 12px;">
+                        <span class="switch"><input type="checkbox" id="questionHasExplanation" onchange="toggleExplanationFields(this)"><span class="slider"></span></span>
+                        Добавить блок Объяснения после ответа
+                    </label>
+
+                    <div id="explanationFieldsContainer" style="display: none; margin-top: 15px;">
+                        <label style="font-size:13px; color:var(--text-muted);">Заголовок объяснения (необязательно):</label>
+                        <input type="text" id="questionExplanationTitle" class="admin-input" placeholder="Например: А вы знали?">
+
+                        <label style="font-size:13px; color:var(--text-muted); margin-top: 10px; display: block;">Текст объяснения / Описание:</label>
+                        <textarea id="questionExplanationText" class="admin-input" style="height:70px; resize:vertical;" placeholder="Подробный разбор правильного ответа..."></textarea>
+
+                        <label style="font-size:13px; color:var(--text-muted); margin-top: 10px; display: block;">Удерживать кнопку 'Продолжить' (таймер в сек, 0 — без удержания):</label>
+                        <input type="number" id="questionHoldTimer" class="admin-input" value="0" min="0">
+                    </div>
+                </div>
+
+                <label class="switch-label" style="margin-bottom: 12px;">
+                    <span class="switch"><input type="checkbox" id="toggle-hint-input" onchange="document.getElementById('hint-config').classList.toggle('hidden', !this.checked)"><span class="slider"></span></span>
+                    Добавить подсказку
+                </label>
+                <div id="hint-config" class="hidden">
+                    <input type="text" id="new-hint-text" class="admin-input" placeholder="Текст подсказки...">
+                </div>
+
+                <div style="display:flex; gap:10px; margin-top:15px;">
+                    <button class="btn" id="save-question-btn" onclick="addQuestion()" style="flex:1;">Сохранить вопрос</button>
+                    <button class="btn hidden" id="cancel-edit-btn" onclick="cancelEditQuestion()" style="background:transparent; color:var(--text-color); border:1px solid var(--border-color);">Отмена</button>
+                </div>
+            </div>
+
+            <!-- СПИСОК ВОПРОСОВ -->
+            <div id="admin-questions-list"></div>
+        </div>
+
+        <!-- МОДАЛЬНОЕ ОКНО ЛОГИНА -->
+        <div id="login-modal" class="custom-alert-overlay">
+            <div class="custom-alert-card" style="max-width:340px; text-align:left;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                    <h3 style="margin:0; display:flex; align-items:center; gap:8px;">
+                        <span class="material-symbols-rounded" style="color:var(--accent-color);">lock</span> Вход
+                    </h3>
+                    <button onclick="closeLoginModal()" style="background:transparent; border:none; cursor:pointer; color:var(--text-color); display:flex;">
+                        <span class="material-symbols-rounded">close</span>
+                    </button>
+                </div>
+                <input type="text" id="login-user" class="admin-input" placeholder="Логин (admin)" style="margin-bottom:10px;">
+                <input type="password" id="login-pass" class="admin-input" placeholder="Пароль (1234)" style="margin-bottom:15px;">
+                <button class="btn" onclick="tryLogin()" style="width:100%;" id="login-submit-btn">Войти в Панель</button>
+            </div>
+        </div>
+
+        <!-- МОДАЛЬНОЕ ОКНО ДЕТАЛЬНОГО ПРОСМОТРА ВОПРОСА -->
+        <div id="question-details-modal" class="custom-alert-overlay">
+            <div class="custom-alert-card" style="max-width:480px; text-align:left;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                    <h3 style="margin:0; display:flex; align-items:center; gap:8px;">
+                        <span class="material-symbols-rounded" style="color:var(--accent-color);">visibility</span> Детали вопроса
+                    </h3>
+                    <button onclick="closeDetailsModal()" style="background:transparent; border:none; cursor:pointer; color:var(--text-color); display:flex;">
+                        <span class="material-symbols-rounded">close</span>
+                    </button>
+                </div>
+                <div id="question-details-content" style="font-size:14px; line-height:1.6; max-height:60vh; overflow-y:auto; padding-right:4px;"></div>
+                <button class="btn" onclick="closeDetailsModal()" style="width:100%; margin-top:20px;">Понятно</button>
+            </div>
+        </div>
+
+        <!-- МОДАЛЬНОЕ ОКНО НАСТРОЕК -->
+        <div id="settings-modal" class="custom-alert-overlay">
+            <div class="custom-alert-card" style="max-width:420px; text-align:left;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                    <h3 style="margin:0; display:flex; align-items:center; gap:8px;">
+                        <span class="material-symbols-rounded" style="color:var(--accent-color);">settings</span> <span data-i18n="settings">Настройки</span>
+                    </h3>
+                    <button onclick="closeSettingsModal()" style="background:transparent; border:none; cursor:pointer; color:var(--text-color); display:flex;">
+                        <span class="material-symbols-rounded">close</span>
+                    </button>
+                </div>
+
+                <label style="font-size:12px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:8px;">Тема оформления</label>
+                <div style="display:flex; gap:10px; margin-bottom:20px;">
+                    <button class="btn" onclick="setTheme('light')" style="flex:1; padding:8px; font-size:13px; background:var(--card-bg); color:var(--text-color); border:1px solid var(--border-color); display:flex; align-items:center; justify-content:center; gap:6px;">
+                        <span class="material-symbols-rounded" style="font-size:18px;">light_mode</span> Светлая
+                    </button>
+                    <button class="btn" onclick="setTheme('dark')" style="flex:1; padding:8px; font-size:13px; background:var(--card-bg); color:var(--text-color); border:1px solid var(--border-color); display:flex; align-items:center; justify-content:center; gap:6px;">
+                        <span class="material-symbols-rounded" style="font-size:18px;">dark_mode</span> Тёмная
+                    </button>
+                </div>
+
+                <label style="font-size:12px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:8px;">Скругление (лёгкое)</label>
+                <div style="display:flex; gap:8px; margin-bottom:20px;">
+                    <button type="button" class="btn" onclick="setRadiusLite('sharp')" style="flex:1;padding:8px;font-size:12px;background:var(--card-bg);color:var(--text-color);border:1px solid var(--border-color);">Острые</button>
+                    <button type="button" class="btn" onclick="setRadiusLite('rounded')" style="flex:1;padding:8px;font-size:12px;background:var(--card-bg);color:var(--text-color);border:1px solid var(--border-color);">Скругл.</button>
+                    <button type="button" class="btn" onclick="setRadiusLite('full')" style="flex:1;padding:8px;font-size:12px;background:var(--card-bg);color:var(--text-color);border:1px solid var(--border-color);">Мягкие</button>
+                </div>
+
+                <label style="font-size:12px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:8px;">Интерфейс</label>
+                <p style="font-size:12px;color:var(--text-muted);margin:0 0 12px;">My Form Lite — без ИИ, без превью, без расширенного «Поделиться». Ссылки из полной My Form открываются.</p>
+                <label class="switch-label" style="justify-content:space-between; margin-bottom:12px; cursor:pointer;">
+                    <span style="font-size:14px; display:flex; align-items:center; gap:8px;">
+                        <span class="material-symbols-rounded" style="font-size:18px;">view_compact</span> Компактный вид форм
+                    </span>
+                    <span class="switch">
+                        <input type="checkbox" id="toggle-compact-forms" onchange="toggleFormsLayout(this.checked)">
+                        <span class="slider"></span>
+                    </span>
+                </label>
+
+                <button class="btn" onclick="closeSettingsModal()" style="width:100%; margin-top:15px;">Готово</button>
+            </div>
+        </div>
+
+        <!-- КАСТОМНОЕ МОДАЛЬНОЕ ОКНО PROMPT -->
+        <div id="custom-prompt" class="custom-alert-overlay">
+            <div class="custom-alert-card">
+                <h3 id="custom-prompt-title" style="margin-top:0; margin-bottom:12px; font-size:1.1rem; text-align:left;">Введите значение</h3>
+                <input type="text" id="custom-prompt-input" class="admin-input" style="margin-bottom:16px;" placeholder="Введите название...">
+                <div style="display:flex; gap:10px; justify-content:flex-end;">
+                    <button class="btn" onclick="closePrompt(false)" style="background:transparent; color:var(--text-color); border:1px solid var(--border-color); flex:1;">Отмена</button>
+                    <button class="btn" id="custom-prompt-confirm-btn" onclick="closePrompt(true)" style="flex:1;">Сохранить</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- КАСТОМНОЕ МОДАЛЬНОЕ ОКНО ALERT -->
+        <div id="custom-alert" class="custom-alert-overlay">
+            <div class="custom-alert-card">
+                <span class="material-symbols-rounded custom-alert-icon" id="custom-alert-icon" style="font-size:48px; color:var(--accent-color); margin-bottom:12px;">info</span>
+                <div class="custom-alert-message" id="custom-alert-msg" style="margin-bottom:20px; font-weight:500;">Сообщение</div>
+                <button class="btn" onclick="closeAlert()" style="width:100%;">Понятно</button>
+            </div>
+        </div>
+
+        <!-- ПОДВАЛ -->
+        <div class="footer-nav" id="footer-link" style="text-align:center; margin-top:30px;">
+            <a onclick="openLoginModal()" style="cursor:pointer; color:var(--text-muted); font-size:14px; text-decoration:none; display:inline-flex; align-items:center; gap:4px;">
+                <span class="material-symbols-rounded" style="font-size:16px;">lock</span> Вход для администратора
+            </a>
+        </div>
+    </div>
+
+    <!-- Модальное окно миграции со старой версии -->
+    <div id="migrationModal" class="custom-alert-overlay" style="display: none;">
+        <div class="custom-alert-card">
+            <h3><span class="material-symbols-rounded">snowing</span> Обнаружены данные старой версии!</h3>
+            <p style="font-size:14px; color:var(--text-muted); margin:10px 0;">Мы нашли ваши сохраненные формы из предыдущей версии приложения. Хотите автоматически импортировать их в новый формат?</p>
+            <div id="migrationFormsList" class="migration-list" style="margin: 15px 0; max-height: 150px; overflow-y: auto; text-align: left; font-size: 14px; opacity: 0.9;"></div>
+            <div class="modal-buttons" style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button onclick="closeMigrationModal()" class="btn" style="background:transparent; color:var(--text-color); border:1px solid var(--border-color);">Позже</button>
+                <button onclick="performMigration()" class="btn">Импортировать всё</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО ВЫБОРА ЯЗЫКА -->
+    <div id="language-modal" class="custom-alert-overlay">
+        <div class="custom-alert-card" style="max-width:320px; text-align:left;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <h3 style="margin:0; display:flex; align-items:center; gap:8px;">
+                    <span class="material-symbols-rounded" style="color:var(--accent-color);">language</span> 
+                    <span data-i18n="select_language">Выберите язык</span>
+                </h3>
+                <button onclick="closeLanguageModal()" style="background:transparent; border:none; cursor:pointer; color:var(--text-color); display:flex;">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+            
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <button class="btn" onclick="setLanguage('ru')" style="text-align:left; background:var(--card-bg); color:var(--text-color); border:1px solid var(--border-color);">🇷🇺 Русский (RU)</button>
+                <button class="btn" onclick="setLanguage('en')" style="text-align:left; background:var(--card-bg); color:var(--text-color); border:1px solid var(--border-color);">🇬🇧 English (EN)</button>
+                <button class="btn" onclick="setLanguage('de')" style="text-align:left; background:var(--card-bg); color:var(--text-color); border:1px solid var(--border-color);">🇩🇪 Deutsch (DE)</button>
+                <button class="btn" onclick="setLanguage('es')" style="text-align:left; background:var(--card-bg); color:var(--text-color); border:1px solid var(--border-color);">🇪🇸 Español (ES)</button>
+                <button class="btn" onclick="setLanguage('fr')" style="text-align:left; background:var(--card-bg); color:var(--text-color); border:1px solid var(--border-color);">🇫🇷 Français (FR)</button>
+                <button class="btn" onclick="setLanguage('zh')" style="text-align:left; background:var(--card-bg); color:var(--text-color); border:1px solid var(--border-color);">🇨🇳 中文 (ZH)</button>
+            </div>
+        </div>
+    </div>
+    
+    
+    <!-- Lite: настройки формы -->
+    <div id="lite-form-settings-modal" class="custom-alert-overlay">
+        <div class="custom-alert-card" style="max-width:420px;text-align:left;max-height:90vh;overflow-y:auto;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                <h3 style="margin:0;">Настройки формы</h3>
+                <button type="button" onclick="closeLiteFormSettings()" style="background:transparent;border:none;cursor:pointer;color:var(--text-color);"><span class="material-symbols-rounded">close</span></button>
+            </div>
+
+            <label style="font-size:12px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:8px;">Режим формы</label>
+            <div style="display:flex;gap:8px;margin-bottom:10px;">
+                <label class="option" style="flex:1;margin:0;"><input type="radio" name="lite-mode" id="lite-mode-test" value="test" checked> Test</label>
+                <label class="option" style="flex:1;margin:0;"><input type="radio" name="lite-mode" id="lite-mode-learn" value="learn"> Learn</label>
+            </div>
+            <p style="font-size:12px;color:var(--text-muted);margin:0 0 14px;">Test — ответы только в конце. Learn — сразу верно/неверно. FlashCards только в полной My Form.</p>
+
+            <label style="font-size:12px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:8px;">Результаты</label>
+            <label class="switch-label" style="margin-bottom:10px;">
+                <span class="switch"><input type="checkbox" id="lite-show-correct" checked><span class="slider"></span></span>
+                Показывать правильный ответ
+            </label>
+            <label class="switch-label" style="margin-bottom:14px;">
+                <span class="switch"><input type="checkbox" id="lite-show-wrong" checked><span class="slider"></span></span>
+                Показывать неверные ответы
+            </label>
+
+            <label style="font-size:12px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:8px;">Прогресс</label>
+            <label class="switch-label" style="margin-bottom:8px;">
+                <span class="switch"><input type="checkbox" id="lite-save-progress" checked onchange="toggleLiteSaveProgressWarning()"><span class="slider"></span></span>
+                Сохранять ответы и прогресс
+            </label>
+            <div id="lite-save-progress-warning" class="hidden" style="display:none;font-size:12px;color:#b71c1c;background:rgba(211,47,47,0.1);border:1px solid rgba(211,47,47,0.35);border-radius:8px;padding:10px;margin-bottom:12px;">
+                При выключении прогресс пропадёт после выхода. Нужно пройти форму за один заход.
+            </div>
+
+            <label style="font-size:12px;font-weight:600;color:var(--text-muted);display:block;margin:8px 0;">Новые вопросы</label>
+            <label class="switch-label" style="margin-bottom:14px;">
+                <span class="switch"><input type="checkbox" id="lite-default-required"><span class="slider"></span></span>
+                Помечать новые вопросы обязательными
+            </label>
+
+            <label style="font-size:12px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:6px;">Email преподавателя (опционально)</label>
+            <input type="email" id="lite-teacher-email" class="admin-input" placeholder="teacher@example.com" style="margin-bottom:16px;">
+
+            <p style="font-size:11px;color:var(--text-muted);margin:0 0 12px;">В Lite нет: темы-уроки, баллы, превью, расширенный Share, FlashCards-режим.</p>
+            <button class="btn" style="width:100%;" onclick="saveLiteFormSettings()">Сохранить</button>
+        </div>
+    </div>
+    <div id="lite-auth-modal" class="custom-alert-overlay">
+        <div class="custom-alert-card" style="max-width:360px;text-align:left;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                <h3 style="margin:0;">Логин / пароль формы</h3>
+                <button type="button" onclick="closeAuthModalLite()" style="background:transparent;border:none;cursor:pointer;color:var(--text-color);"><span class="material-symbols-rounded">close</span></button>
+            </div>
+            <p style="font-size:12px;color:var(--text-muted);margin:0 0 10px;">Только для этой формы. В JSON при экспорте сохраняются.</p>
+            <input type="text" id="lite-admin-login" class="admin-input" placeholder="Логин">
+            <input type="password" id="lite-admin-pass" class="admin-input" placeholder="Пароль">
+            <button class="btn" style="width:100%;" onclick="saveAuthLite()">Сохранить</button>
+        </div>
+    </div>
+
+    <script src="language-library.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
