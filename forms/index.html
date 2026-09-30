@@ -114,7 +114,11 @@
                         <span class="material-symbols-rounded">auto_awesome</span> <span>Mini WorkGens (формы)</span>
                     </div>
                     <div class="tools-item" onclick="triggerImportForm(); toggleToolsMenu();">
-                        <span class="material-symbols-rounded">download</span> <span>Импортировать форму</span>
+                        <span class="material-symbols-rounded">download</span> <span>Импорт формы / ответов</span>
+                    </div>
+                    <div class="tools-item" onclick="triggerStudentResultsImport(); toggleToolsMenu();">
+                        <span class="material-symbols-rounded">grading</span> <span>Сверить ответы ученика</span>
+                        <span class="novelty-badge">NEW</span>
                     </div>
                     <div class="tools-item tools-online-only" data-online-only="1" onclick="goOnlineFeature('../WorkGens/index.html')">
                         <img src="../document/ai.png" alt="AI" style="width:18px; height:18px; object-fit:contain;" onerror="this.remove()"> <span>WorkGens AI (полный)</span>
@@ -229,17 +233,28 @@
                 </button>
             </div>
 
-            <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
-                <button onclick="toggleAddQuestionForm()" class="btn" style="width:auto; flex-grow:1;"><span class="material-symbols-rounded" style="font-size:32px;">add</span></button>
+            <!-- Основные действия -->
+            <div class="admin-actions-primary" style="display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
+                <button onclick="toggleAddQuestionForm()" class="btn" style="width:auto; flex-grow:1;" title="Добавить вопрос"><span class="material-symbols-rounded" style="font-size:32px;">add</span></button>
                 <button onclick="exportFormToJSON()" class="btn" style="width:auto; background:transparent; color:var(--text-color); border:1px solid var(--border-color);" title="Экспорт формы"><span class="material-symbols-rounded" style="color:var(--accent-color); font-size:32px;">upload</span></button>
-                <button onclick="document.getElementById('import-file').click()" class="btn" style="width:auto; background:transparent; color:var(--text-color); border:1px solid var(--border-color);" title="Импорт формы"><span class="material-symbols-rounded" style="color:var(--accent-color); font-size:32px;">download</span></button>
-                <button onclick="openFormPreview()" class="btn preview-form-btn" style="width:auto; background:transparent; color:var(--text-color); border:1px solid var(--border-color); position:relative;" title="Протестировать всю форму">
-                    <span class="material-symbols-rounded" style="color:var(--accent-color); font-size:32px;">play_circle</span>
+                <button onclick="document.getElementById('import-file').click()" class="btn" style="width:auto; background:transparent; color:var(--text-color); border:1px solid var(--border-color);" title="Импорт формы или ответов ученика"><span class="material-symbols-rounded" style="color:var(--accent-color); font-size:32px;">download</span></button>
+                <button type="button" onclick="triggerStudentResultsImport()" class="btn" style="width:auto; background:transparent; color:var(--text-color); border:1px solid var(--border-color); position:relative;" title="Сверить ответы ученика (.json)">
+                    <span class="material-symbols-rounded" style="color:var(--accent-color); font-size:32px;">grading</span>
                     <span class="novelty-badge novelty-badge-abs">NEW</span>
                 </button>
-                <!-- Добавленная кнопка "Настройка Форм" -->
-                <button onclick="openFormSettings()" class="btn" style="width:auto; background:transparent; color:var(--text-color); border:1px solid var(--border-color);" title="Настройки формы"><span class="material-symbols-rounded" style="color:var(--accent-color); font-size:32px;">tune</span></button>
                 <input type="file" id="import-file" style="display:none;" onchange="importFormFromJSON(this)" accept=".json">
+            </div>
+            <!-- Дополнительно: превью и настройки -->
+            <div class="admin-actions-secondary" style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
+                <button onclick="openFormPreview()" class="btn preview-form-btn" style="width:auto; flex:1; min-width:140px; background:transparent; color:var(--text-color); border:1px solid var(--border-color); position:relative;" title="Протестировать всю форму">
+                    <span class="material-symbols-rounded" style="color:var(--accent-color); font-size:22px; vertical-align:middle;">play_circle</span>
+                    <span style="font-size:13px; margin-left:4px;">Тест формы</span>
+                    <span class="novelty-badge" style="margin-left:4px;">NEW</span>
+                </button>
+                <button onclick="openFormSettings()" class="btn" style="width:auto; flex:1; min-width:140px; background:transparent; color:var(--text-color); border:1px solid var(--border-color);" title="Настройки формы">
+                    <span class="material-symbols-rounded" style="color:var(--accent-color); font-size:22px; vertical-align:middle;">tune</span>
+                    <span style="font-size:13px; margin-left:4px;">Настройки формы</span>
+                </button>
             </div>
 
             <div class="admin-top-actions" style="margin-bottom: 20px;">
