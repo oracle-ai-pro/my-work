@@ -2162,3 +2162,30 @@ body.liquid-glass .btn:active {
 .fillblank-input {
     transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
 }
+
+
+/* Student results review modal */
+.student-results-card .student-results-list {
+    max-height: 50vh;
+    overflow-y: auto;
+    margin-top: 8px;
+}
+.student-results-card .review-item {
+    margin-bottom: 8px;
+}
+
+
+/* Test mode offline */
+.form-context-menu .ctx-item-disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+.form-context-menu .ctx-item-disabled:hover {
+    background: transparent;
+}
+body.is-offline .mode-badge.mode-test {
+    opacity: 0.5;
+}
+.admin-actions-secondary {
+    opacity: 0.95;
+}
