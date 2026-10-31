@@ -35,6 +35,8 @@
             --iw-sheets-fg: #10b981;
             --iw-keeps-bg: #391124;
             --iw-keeps-fg: #ec4899;
+            --iw-mindmap-bg: #1a1e36;
+            --iw-mindmap-fg: #818cf8;
             --iw-wg-bg: #182232;
             --iw-wg-fg: #6366f1;
             --maint-bg: rgba(245, 158, 11, 0.12);
@@ -66,6 +68,8 @@
             --iw-sheets-fg: #059669;
             --iw-keeps-bg: #fce7f3;
             --iw-keeps-fg: #db2777;
+            --iw-mindmap-bg: #e0e7ff;
+            --iw-mindmap-fg: #6366f1;
             --iw-wg-bg: #e0e7ff;
             --iw-wg-fg: #4f46e5;
             --maint-bg: rgba(245, 158, 11, 0.1);
@@ -218,6 +222,7 @@
         .card-forms-lite .icon-wrapper { background: var(--iw-forms-lite-bg); color: var(--iw-forms-lite-fg); }
         .card-sheets .icon-wrapper { background: var(--iw-sheets-bg); color: var(--iw-sheets-fg); }
         .card-keeps .icon-wrapper { background: var(--iw-keeps-bg); color: var(--iw-keeps-fg); }
+        .card-mindmap .icon-wrapper { background: var(--iw-mindmap-bg); color: var(--iw-mindmap-fg); }
         .service-card h2 { font-size: 1.15rem; font-weight: 600; margin-bottom: 8px; }
         .service-card p { font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; }
         .card-action {
@@ -513,6 +518,134 @@
             flex-shrink: 0;
         }
         .wg-fab-send:hover { filter: brightness(1.08); }
+
+        /* Migration prep modal */
+        .mig-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 18px;
+        }
+        .mig-btn-primary {
+            width: 100%;
+            background: var(--accent-color);
+            color: #fff;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .mig-btn-primary:hover { filter: brightness(1.08); }
+        .mig-btn-primary:disabled { opacity: 0.55; cursor: not-allowed; filter: none; }
+        .mig-btn-secondary {
+            width: 100%;
+            background: transparent;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 11px 16px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .mig-btn-secondary:hover { border-color: var(--accent-color); color: var(--accent-color); }
+        .mig-btn-ghost {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+        .mig-btn-ghost:hover { color: var(--text-color); }
+        .mig-status {
+            margin-top: 12px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            line-height: 1.45;
+            display: none;
+        }
+        .mig-status.show { display: block; }
+        .mig-status.ok {
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #34d399;
+        }
+        body.light-theme .mig-status.ok { color: #059669; }
+        .mig-status.err {
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #f87171;
+        }
+        body.light-theme .mig-status.err { color: #dc2626; }
+        .mig-detail-section {
+            margin-bottom: 14px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .mig-detail-section:last-child { border-bottom: none; margin-bottom: 0; }
+        .mig-detail-section h4 {
+            font-size: 0.95rem;
+            margin-bottom: 6px;
+            color: var(--accent-color);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .mig-detail-section p {
+            font-size: 0.88rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin: 0;
+        }
+        .mig-banner {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            background: rgba(245, 158, 11, 0.12);
+            border: 1px solid rgba(245, 158, 11, 0.45);
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            text-align: left;
+            font-size: 0.88rem;
+            line-height: 1.45;
+        }
+        body.light-theme .mig-banner {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: rgba(217, 119, 6, 0.4);
+        }
+        .mig-banner .material-symbols-rounded { color: #fbbf24; flex-shrink: 0; }
+        body.light-theme .mig-banner .material-symbols-rounded { color: #b45309; }
+        .mig-banner-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+        .mig-banner-actions button {
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            color: var(--text-color);
+        }
+        .mig-banner-actions button.primary {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+            color: #fff;
+        }
+
         @media (max-width: 600px) {
             .wg-fab-root { right: 12px; bottom: 12px; left: 12px; align-items: stretch; }
             .wg-fab { justify-content: flex-start; max-width: none; }
@@ -535,6 +668,19 @@
             <button class="notice-close-btn" type="button" onclick="dismissNotice()" title="Закрыть">
                 <span class="material-symbols-rounded">close</span>
             </button>
+        </div>
+
+        <div id="migration-banner" class="mig-banner hidden">
+            <span class="material-symbols-rounded">cloud_sync</span>
+            <div style="flex:1;">
+                <strong>Подготовка к общему хранилищу</strong><br>
+                До конца недели скопируйте проекты в скрытый резервный ключ — данные останутся на месте, это только страховка.
+                <div class="mig-banner-actions">
+                    <button type="button" class="primary" onclick="openMigrationModal()">Перенести сейчас</button>
+                    <button type="button" onclick="openMigrationDetails()">Подробнее…</button>
+                    <button type="button" onclick="dismissMigrationBanner()">Скрыть</button>
+                </div>
+            </div>
         </div>
         <header class="header">
             <div class="badge">
@@ -613,6 +759,17 @@
                     Открыть <span class="material-symbols-rounded" style="font-size:16px;">arrow_forward</span>
                 </div>
             </a>
+            <a href="./mindmap/" class="service-card card-mindmap" onclick="navigateWithAnimation(event, './mindmap/', 'Ментальные карты', 'account_tree', '#818cf8')">
+                <span class="new-badge">НОВИНКА</span>
+                <div class="icon-wrapper">
+                    <span class="material-symbols-rounded">account_tree</span>
+                </div>
+                <h2>Ментальные карты</h2>
+                <p>Интерактивные схемы, ветви и визуализация идей.</p>
+                <div class="card-action">
+                    Открыть <span class="material-symbols-rounded" style="font-size:16px;">arrow_forward</span>
+                </div>
+            </a>
         </div>
         <footer class="footer">
             &copy; Prestige HQ Hub. Все права защищены.
@@ -641,6 +798,89 @@
         </div>
         <div id="loader-text" class="loader-text">Открываем сервис...</div>
     </div>
+
+    <!-- Migration prep warning -->
+    <div id="migration-modal" class="modal-overlay">
+        <div class="modal-card" style="max-width:520px;">
+            <div class="modal-header">
+                <h3>
+                    <span class="material-symbols-rounded" style="color:#fbbf24;">shield</span>
+                    Подготовьте проекты к переносу
+                </h3>
+                <button class="modal-close" type="button" onclick="closeModal('migration-modal')">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+            <p style="font-size:0.95rem; line-height:1.55; color:var(--text-color); margin-bottom:10px;">
+                В ближайшее время My Work перейдёт на <strong>один общий ключ хранения</strong> для всех сервисов
+                (Формы, Документы, Слайды, Таблицы, Keeps). Это нужно для единого списка проектов на главной —
+                как файлы в OneDrive.
+            </p>
+            <p style="font-size:0.9rem; line-height:1.5; color:var(--text-muted); margin-bottom:4px;">
+                Займите <strong>минуту до конца этой недели</strong>: нажмите кнопку ниже — мы <em>скопируем</em>
+                ваши проекты в скрытый резервный ключ. Старые данные <strong>не удаляются</strong>.
+                Новый интерфейс включим постепенно после 3 ноября, не резко.
+            </p>
+            <div class="mig-actions">
+                <button type="button" class="mig-btn-primary" id="mig-run-btn" onclick="runMigrationBackup()">
+                    <span class="material-symbols-rounded" style="font-size:20px;">cloud_upload</span>
+                    Перенести сейчас (резервная копия)
+                </button>
+                <button type="button" class="mig-btn-secondary" onclick="openMigrationDetails()">
+                    <span class="material-symbols-rounded" style="font-size:20px;">info</span>
+                    Подробнее…
+                </button>
+                <button type="button" class="mig-btn-ghost" onclick="dismissMigrationModal(false)">Позже</button>
+            </div>
+            <div id="mig-status" class="mig-status" role="status"></div>
+        </div>
+    </div>
+
+    <div id="migration-details-modal" class="modal-overlay">
+        <div class="modal-card" style="max-width:600px;">
+            <div class="modal-header">
+                <h3>
+                    <span class="material-symbols-rounded" style="color:var(--accent-color);">map</span>
+                    План переноса My Work
+                </h3>
+                <button class="modal-close" type="button" onclick="closeModal('migration-details-modal')">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+            <div class="mig-detail-section">
+                <h4><span class="material-symbols-rounded" style="font-size:18px;">flag</span> Зачем</h4>
+                <p>Сейчас каждый сервис хранит проекты отдельно. Мы собираем их в общий реестр, чтобы на главной были недавние файлы, корзина, папки и быстрый переход — без потери данных.</p>
+            </div>
+            <div class="mig-detail-section">
+                <h4><span class="material-symbols-rounded" style="font-size:18px;">schedule</span> Как переносим</h4>
+                <p><strong>«Медленный безопасный перенос»</strong>: по одному сервису, с подтверждением. Сначала резервная копия в скрытый ключ, потом постепенное подключение. Новый вид главной — <strong>после 3 ноября, постепенно</strong>, не одним рывком.</p>
+            </div>
+            <div class="mig-detail-section">
+                <h4><span class="material-symbols-rounded" style="font-size:18px;">folder_copy</span> Что делает «Перенести сейчас»</h4>
+                <p>Читает известные ключи браузера (формы, документы, слайды, таблицы, keeps…) и пишет снимок в <span class="code-inline">mywork_migration_backup_v1</span>. Исходные данные не трогаем. Это страховка на случай сбоя при будущей миграции.</p>
+            </div>
+            <div class="mig-detail-section">
+                <h4><span class="material-symbols-rounded" style="font-size:18px;">share</span> Поделиться</h4>
+                <p>Позже единый «Поделиться» для всех сервисов, не только для Форм.</p>
+            </div>
+            <div class="mig-detail-section">
+                <h4><span class="material-symbols-rounded" style="font-size:18px;">install_desktop</span> PWA</h4>
+                <p>В будущем достаточно одного PWA <strong>My Work</strong>. Предупреждение об этом появится только внутри My Form — не на главной, чтобы не было путаницы.</p>
+            </div>
+            <div class="mig-detail-section">
+                <h4><span class="material-symbols-rounded" style="font-size:18px;">cloud_off</span> Офлайн и облако</h4>
+                <p>Локальные проекты доступны без сети. Облако и внешние хранилища — только при интернете; без сети они не показываются или недоступны.</p>
+            </div>
+            <div class="mig-detail-section">
+                <h4><span class="material-symbols-rounded" style="font-size:18px;">inventory_2</span> Корзина</h4>
+                <p>Удаление проектов будет мягким: 30 дней в корзине, затем окончательно.</p>
+            </div>
+            <button type="button" class="mig-btn-primary" style="margin-top:8px;" onclick="closeModal('migration-details-modal'); openMigrationModal();">
+                Понятно, к резервной копии
+            </button>
+        </div>
+    </div>
+
     <div id="settings-modal" class="modal-overlay">
         <div class="modal-card">
             <div class="modal-header">
@@ -716,6 +956,128 @@
         </div>
     </div>
     <script>
+
+        /* ===== Migration prep: safe backup to hidden key ===== */
+        const MIG_BACKUP_KEY = 'mywork_migration_backup_v1';
+        const MIG_DONE_KEY = 'mywork_migration_backup_done_v1';
+        const MIG_BANNER_DISMISS = 'mywork_migration_banner_dismissed_v1';
+        const MIG_MODAL_DISMISS = 'mywork_migration_modal_dismissed_v1';
+        const MIG_SOURCE_KEYS = [
+            'my_forms_data', 'forms', 'quiz_data_old',
+            'my_documents_data', 'documents_data', 'prestige_docs',
+            'my_slides_data', 'slides_data', 'prestige_slides',
+            'my_spreadsheets_data', 'spreadsheets_data', 'prestige_sheets',
+            'my_keeps_data', 'keeps_data', 'keeps_notes', 'prestige_keeps'
+        ];
+        function openMigrationModal() {
+            openModal('migration-modal');
+            var st = document.getElementById('mig-status');
+            if (st) { st.className = 'mig-status'; st.textContent = ''; }
+            if (localStorage.getItem(MIG_DONE_KEY)) {
+                var btn = document.getElementById('mig-run-btn');
+                if (btn) btn.innerHTML = '<span class="material-symbols-rounded" style="font-size:20px;">check_circle</span> Копия уже создана — обновить';
+            }
+        }
+        function openMigrationDetails() {
+            openModal('migration-details-modal');
+        }
+        function dismissMigrationModal(permanent) {
+            closeModal('migration-modal');
+            localStorage.setItem(MIG_MODAL_DISMISS, permanent ? '1' : String(Date.now()));
+        }
+        function dismissMigrationBanner() {
+            localStorage.setItem(MIG_BANNER_DISMISS, '1');
+            var b = document.getElementById('migration-banner');
+            if (b) b.classList.add('hidden');
+        }
+        function showMigStatus(ok, text) {
+            var st = document.getElementById('mig-status');
+            if (!st) return;
+            st.className = 'mig-status show ' + (ok ? 'ok' : 'err');
+            st.textContent = text;
+        }
+        function runMigrationBackup() {
+            var btn = document.getElementById('mig-run-btn');
+            if (btn) { btn.disabled = true; btn.textContent = 'Копируем…'; }
+            try {
+                var snapshot = {
+                    version: 1,
+                    createdAt: new Date().toISOString(),
+                    userAgent: navigator.userAgent,
+                    keys: {},
+                    summary: []
+                };
+                var found = 0;
+                MIG_SOURCE_KEYS.forEach(function(k) {
+                    try {
+                        var raw = localStorage.getItem(k);
+                        if (raw != null && raw !== '') {
+                            snapshot.keys[k] = raw;
+                            var approx = 0;
+                            try {
+                                var parsed = JSON.parse(raw);
+                                if (Array.isArray(parsed)) approx = parsed.length;
+                                else if (parsed && typeof parsed === 'object') approx = Object.keys(parsed).length;
+                            } catch (e2) { approx = 1; }
+                            snapshot.summary.push({ key: k, bytes: raw.length, itemsApprox: approx });
+                            found++;
+                        }
+                    } catch (e) {}
+                });
+                try {
+                    for (var i = 0; i < localStorage.length; i++) {
+                        var key = localStorage.key(i);
+                        if (!key || snapshot.keys[key]) continue;
+                        if (/^(my_|prestige_|mywork_|forms|keeps|slides|docs)/i.test(key) && key !== MIG_BACKUP_KEY && key.indexOf('migration') === -1) {
+                            var r = localStorage.getItem(key);
+                            if (r) {
+                                snapshot.keys[key] = r;
+                                snapshot.summary.push({ key: key, bytes: r.length, itemsApprox: 0 });
+                                found++;
+                            }
+                        }
+                    }
+                } catch (e3) {}
+                localStorage.setItem(MIG_BACKUP_KEY, JSON.stringify(snapshot));
+                localStorage.setItem(MIG_DONE_KEY, new Date().toISOString());
+                localStorage.setItem(MIG_BANNER_DISMISS, '1');
+                var b = document.getElementById('migration-banner');
+                if (b) b.classList.add('hidden');
+                var lines = snapshot.summary.slice(0, 8).map(function(s) {
+                    return s.key + ' (~' + Math.round(s.bytes / 1024) + ' КБ)';
+                }).join(', ');
+                showMigStatus(true,
+                    'Готово. Скопировано ключей: ' + found + '. ' +
+                    (lines ? ('В том числе: ' + lines + (snapshot.summary.length > 8 ? '…' : '')) : 'Явных проектов не найдено — пустой снимок сохранён.') +
+                    ' Старые данные не удалялись.'
+                );
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<span class="material-symbols-rounded" style="font-size:20px;">check_circle</span> Обновить копию';
+                }
+            } catch (err) {
+                showMigStatus(false, 'Не удалось сохранить копию: ' + (err && err.message ? err.message : String(err)) +
+                    '. Возможно, localStorage переполнен — экспортируйте JSON вручную из сервисов.');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<span class="material-symbols-rounded" style="font-size:20px;">cloud_upload</span> Перенести сейчас (резервная копия)';
+                }
+            }
+        }
+        function initMigrationPrep() {
+            var done = localStorage.getItem(MIG_DONE_KEY);
+            var modalDismiss = localStorage.getItem(MIG_MODAL_DISMISS);
+            var bannerDismiss = localStorage.getItem(MIG_BANNER_DISMISS);
+            if (!done && !modalDismiss) {
+                setTimeout(function() { openMigrationModal(); }, 600);
+            }
+            if (!done && !bannerDismiss) {
+                var ban = document.getElementById('migration-banner');
+                if (ban) ban.classList.remove('hidden');
+            }
+        }
+
+
         const WG_HINTS = [
             'Need help?',
             'Спросить ИИ?',
