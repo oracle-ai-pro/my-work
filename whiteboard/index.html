@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>My Whiteboard · BETA | Prestige HQ</title>
+<link rel="icon" type="image/png" href="../My Work.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+<style>
+:root {
+  --ui-bg: #f4f6f8;
+  --ui-card: #ffffff;
+  --ui-text: #1f2937;
+  --ui-muted: #6b7280;
+  --ui-border: #e5e7eb;
+  --accent: #1a73e8;
+  --board-bg: #ffffff;
+  --grid: #e8eaed;
+}
+/* UI follows system/My Work only for chrome — board stays white by default */
+body.ui-dark {
+  --ui-bg: #0f1115;
+  --ui-card: #171a21;
+  --ui-text: #e5e7eb;
+  --ui-muted: #9ca3af;
+  --ui-border: #2a2f3a;
+}
+body.ui-dark.board-dark {
+  --board-bg: #1a1d24;
+  --grid: #2c3140;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: Inter, system-ui, sans-serif;
+  background: var(--ui-bg);
+  color: var(--ui-text);
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.topbar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  background: var(--ui-card);
+  border-bottom: 1px solid var(--ui-border);
+  flex-shrink: 0;
+  z-index: 20;
+}
+.topbar a, .icon-btn {
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 12px; border: 1px solid var(--ui-border);
+  background: var(--ui-bg); color: var(--ui-text); text-decoration: none; cursor: pointer;
+}
+.topbar a:hover, .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+.title-wrap { flex: 1; min-width: 0; }
+.title-wrap input {
+  width: 100%; border: none; background: transparent; font-size: 1rem; font-weight: 600;
+  color: var(--ui-text); outline: none; padding: 6px 4px; border-radius: 8px;
+}
+.title-wrap input:focus { background: var(--ui-bg); }
+.badge {
+  font-size: 10px; font-weight: 800; letter-spacing: .04em;
+  color: #b45309; background: #fef3c7; border: 1px solid #fcd34d;
+  padding: 3px 8px; border-radius: 6px; flex-shrink: 0;
+}
+body.ui-dark .badge { color: #fbbf24; background: rgba(245,158,11,.15); border-color: rgba(245,158,11,.4); }
+.save-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: #22c55e; flex-shrink: 0;
+  opacity: 0; transition: opacity .2s;
+}
+.save-dot.on { opacity: 1; }
+
+.workspace {
+  flex: 1; min-height: 0; position: relative;
+  display: flex; flex-direction: column;
+}
+.board-stage {
+  flex: 1; min-height: 0; position: relative;
+  overflow: hidden;
+  background: var(--board-bg);
+  /* board ALWAYS light by default — pattern drawn on canvas */
+}
+#board {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  touch-action: none;
+  cursor: crosshair;
+  display: block;
+}
+.texts-layer {
+  position: absolute; inset: 0; pointer-events: none; z-index: 5;
+}
+.board-text {
+  position: absolute; pointer-events: auto;
+  min-width: 80px; min-height: 28px;
+  padding: 6px 10px;
+  border: 1px dashed transparent;
+  border-radius: 8px;
+  font-size: 16px; line-height: 1.35;
+  color: #111; background: transparent;
+  outline: none; resize: both; overflow: auto;
+  max-width: 60%;
+}
+.board-text:focus, .board-text:hover {
+  border-color: var(--accent);
+  background: rgba(255,255,255,.9);
+  box-shadow: 0 4px 16px rgba(0,0,0,.08);
+}
+body.board-dark .board-text { color: #f1f5f9; }
+body.board-dark .board-text:focus { background: rgba(0,0,0,.4); }
+
+.toolbar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  background: var(--ui-card);
+  border-top: 1px solid var(--ui-border);
+  flex-shrink: 0;
+  z-index: 20;
+}
+.tool-group {
+  display: flex; align-items: center; gap: 4px;
+  padding: 4px; border-radius: 14px;
+  background: var(--ui-bg); border: 1px solid var(--ui-border);
+}
+.tool-btn {
+  width: 40px; height: 40px; border: none; border-radius: 12px;
+  background: transparent; color: var(--ui-muted); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.tool-btn:hover { color: var(--ui-text); background: var(--ui-card); }
+.tool-btn.active { background: var(--accent); color: #fff; }
+.tool-btn .material-symbols-rounded { font-size: 22px; }
+
+.sep { width: 1px; height: 28px; background: var(--ui-border); margin: 0 4px; }
+
+.colors { display: flex; gap: 6px; align-items: center; padding: 0 4px; }
+.swatch {
+  width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent;
+  cursor: pointer; padding: 0;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.12);
+}
+.swatch.active { border-color: var(--accent); box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--accent); }
+
+.size-wrap { display: flex; align-items: center; gap: 8px; padding: 0 8px; min-width: 120px; }
+.size-wrap input[type=range] { flex: 1; accent-color: var(--accent); }
+.size-label { font-size: 12px; color: var(--ui-muted); min-width: 28px; }
+
+.pattern-select, .board-theme-select {
+  border: 1px solid var(--ui-border); background: var(--ui-bg); color: var(--ui-text);
+  border-radius: 12px; padding: 8px 10px; font-size: 13px; font-weight: 500; cursor: pointer;
+}
+
+.hint {
+  font-size: 11px; color: var(--ui-muted); margin-left: auto; white-space: nowrap;
+}
+@media (max-width: 720px) {
+  .hint { display: none; }
+  .title-wrap input { font-size: 0.92rem; }
+}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a href="../index.html" title="На главную My Work"><span class="material-symbols-rounded">arrow_back</span></a>
+  <div class="title-wrap">
+    <input id="board-title" type="text" value="Белая доска" maxlength="80" aria-label="Название">
+  </div>
+  <span class="save-dot" id="save-dot" title="Сохранено"></span>
+  <span class="badge">BETA</span>
+  <button type="button" class="icon-btn" id="btn-clear" title="Очистить доску"><span class="material-symbols-rounded">delete</span></button>
+</div>
+
+<div class="workspace">
+  <div class="board-stage" id="stage">
+    <canvas id="board"></canvas>
+    <div class="texts-layer" id="texts"></div>
+  </div>
+</div>
+
+<div class="toolbar">
+  <div class="tool-group">
+    <button type="button" class="tool-btn active" data-tool="pen" title="Карандаш"><span class="material-symbols-rounded">edit</span></button>
+    <button type="button" class="tool-btn" data-tool="marker" title="Маркер"><span class="material-symbols-rounded">ink_highlighter</span></button>
+    <button type="button" class="tool-btn" data-tool="erase" title="Ластик"><span class="material-symbols-rounded">ink_eraser</span></button>
+    <button type="button" class="tool-btn" data-tool="text" title="Текстовое поле"><span class="material-symbols-rounded">text_fields</span></button>
+  </div>
+
+  <div class="colors" id="colors">
+    <button type="button" class="swatch active" data-color="#111111" style="background:#111" title="Чёрный"></button>
+    <button type="button" class="swatch" data-color="#1a73e8" style="background:#1a73e8" title="Синий"></button>
+    <button type="button" class="swatch" data-color="#ea4335" style="background:#ea4335" title="Красный"></button>
+    <button type="button" class="swatch" data-color="#34a853" style="background:#34a853" title="Зелёный"></button>
+    <button type="button" class="swatch" data-color="#fbbc04" style="background:#fbbc04" title="Жёлтый"></button>
+    <button type="button" class="swatch" data-color="#9c27b0" style="background:#9c27b0" title="Фиолетовый"></button>
+    <button type="button" class="swatch" data-color="#ffffff" style="background:#fff;box-shadow:inset 0 0 0 1px #ccc" title="Белый"></button>
+  </div>
+
+  <div class="size-wrap" title="Размер">
+    <span class="material-symbols-rounded" style="font-size:18px;color:var(--ui-muted)">line_weight</span>
+    <input type="range" id="pen-size" min="1" max="48" value="3">
+    <span class="size-label" id="size-val">3</span>
+  </div>
+
+  <select id="pattern" class="pattern-select" title="Тип доски">
+    <option value="blank">Чистая</option>
+    <option value="grid">Клетки</option>
+    <option value="lines">Линии</option>
+    <option value="dots">Точечная</option>
+  </select>
+
+  <select id="board-theme" class="board-theme-select" title="Цвет доски">
+    <option value="white">Белая доска</option>
+    <option value="dark">Тёмная доска</option>
+  </select>
+
+  <span class="hint">Автосохранение · BETA</span>
+</div>
+
+<script>
+(function () {
+  const STORAGE_KEY = 'mywork_whiteboard_state_v1';
+  const canvas = document.getElementById('board');
+  const ctx = canvas.getContext('2d');
+  const stage = document.getElementById('stage');
+  const textsEl = document.getElementById('texts');
+  const titleInput = document.getElementById('board-title');
+  const sizeInput = document.getElementById('pen-size');
+  const sizeVal = document.getElementById('size-val');
+  const patternSel = document.getElementById('pattern');
+  const boardThemeSel = document.getElementById('board-theme');
+  const saveDot = document.getElementById('save-dot');
+
+  let tool = 'pen';
+  let color = '#111111';
+  let size = 3;
+  let pattern = 'blank';
+  let boardTheme = 'white';
+  let drawing = false;
+  let last = null;
+  let strokes = []; // {tool,color,size,points:[{x,y}]}
+  let currentStroke = null;
+  let texts = []; // {id,x,y,w,h,text}
+  let dpr = 1;
+  let saveTimer = null;
+
+  // UI chrome theme from My Work — does NOT force board dark
+  function applyUiChrome() {
+    try {
+      var t = 'system';
+      try {
+        var s = JSON.parse(localStorage.getItem('mywork_settings_v1') || '{}');
+        if (s && s.theme) t = s.theme;
+      } catch (e) {}
+      var dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      var light = t === 'light' || (t === 'system' && !dark);
+      document.body.classList.toggle('ui-dark', !light);
+    } catch (e) {}
+  }
+
+  function boardId() {
+    try {
+      var q = new URLSearchParams(location.search);
+      return q.get('board') || 'default';
+    } catch (e) { return 'default'; }
+  }
+
+  function storageKey() { return STORAGE_KEY + ':' + boardId(); }
+
+  function cssSize() {
+    return { w: stage.clientWidth, h: stage.clientHeight };
+  }
+
+  function resize() {
+    var s = cssSize();
+    dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.max(1, Math.floor(s.w * dpr));
+    canvas.height = Math.max(1, Math.floor(s.h * dpr));
+    canvas.style.width = s.w + 'px';
+    canvas.style.height = s.h + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    redraw();
+  }
+
+  function fillBoardBg() {
+    var s = cssSize();
+    ctx.save();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = boardTheme === 'dark' ? '#1a1d24' : '#ffffff';
+    ctx.fillRect(0, 0, s.w, s.h);
+    drawPattern(s.w, s.h);
+    ctx.restore();
+  }
+
+  function drawPattern(w, h) {
+    var g = boardTheme === 'dark' ? '#2c3140' : '#e8eaed';
+    ctx.strokeStyle = g;
+    ctx.fillStyle = g;
+    ctx.lineWidth = 1;
+    if (pattern === 'grid') {
+      var step = 24;
+      ctx.beginPath();
+      for (var x = step; x < w; x += step) { ctx.moveTo(x + 0.5, 0); ctx.lineTo(x + 0.5, h); }
+      for (var y = step; y < h; y += step) { ctx.moveTo(0, y + 0.5); ctx.lineTo(w, y + 0.5); }
+      ctx.stroke();
+    } else if (pattern === 'lines') {
+      var step = 28;
+      ctx.beginPath();
+      for (var y = step; y < h; y += step) { ctx.moveTo(0, y + 0.5); ctx.lineTo(w, y + 0.5); }
+      ctx.stroke();
+    } else if (pattern === 'dots') {
+      var step = 22;
+      for (var y = step; y < h; y += step) {
+        for (var x = step; x < w; x += step) {
+          ctx.beginPath();
+          ctx.arc(x, y, 1.1, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+  }
+
+  function drawStroke(st) {
+    if (!st.points || st.points.length < 1) return;
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    if (st.tool === 'erase') {
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.strokeStyle = 'rgba(0,0,0,1)';
+      ctx.lineWidth = st.size * 3;
+    } else if (st.tool === 'marker') {
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.strokeStyle = st.color;
+      ctx.globalAlpha = 0.35;
+      ctx.lineWidth = st.size * 2.2;
+    } else {
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.strokeStyle = st.color;
+      ctx.globalAlpha = 1;
+      ctx.lineWidth = st.size;
+    }
+    ctx.beginPath();
+    ctx.moveTo(st.points[0].x, st.points[0].y);
+    for (var i = 1; i < st.points.length; i++) ctx.lineTo(st.points[i].x, st.points[i].y);
+    if (st.points.length === 1) {
+      ctx.lineTo(st.points[0].x + 0.01, st.points[0].y);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function redraw() {
+    fillBoardBg();
+    // strokes need to be on top of pattern: redraw pattern then strokes with source-over
+    // erase uses destination-out so must composite on white layer
+    // Approach: draw pattern, then strokes
+    for (var i = 0; i < strokes.length; i++) drawStroke(strokes[i]);
+    if (currentStroke) drawStroke(currentStroke);
+  }
+
+  function pos(e) {
+    var r = canvas.getBoundingClientRect();
+    var t = e.touches ? e.touches[0] : e;
+    return { x: t.clientX - r.left, y: t.clientY - r.top };
+  }
+
+  function startDraw(e) {
+    if (tool === 'text') {
+      addTextAt(pos(e));
+      return;
+    }
+    drawing = true;
+    last = pos(e);
+    currentStroke = { tool: tool, color: color, size: size, points: [last] };
+    e.preventDefault();
+  }
+  function moveDraw(e) {
+    if (!drawing || !currentStroke) return;
+    var p = pos(e);
+    currentStroke.points.push(p);
+    // incremental draw
+    redraw();
+    e.preventDefault();
+  }
+  function endDraw() {
+    if (!drawing) return;
+    drawing = false;
+    if (currentStroke && currentStroke.points.length) {
+      strokes.push(currentStroke);
+    }
+    currentStroke = null;
+    scheduleSave();
+  }
+
+  function addTextAt(p) {
+    var id = 't_' + Date.now();
+    var item = { id: id, x: p.x, y: p.y, text: '' };
+    texts.push(item);
+    mountText(item, true);
+    scheduleSave();
+  }
+
+  function mountText(item, focus) {
+    var el = document.createElement('div');
+    el.className = 'board-text';
+    el.contentEditable = 'true';
+    el.dataset.id = item.id;
+    el.style.left = item.x + 'px';
+    el.style.top = item.y + 'px';
+    el.textContent = item.text || '';
+    el.addEventListener('input', function () {
+      item.text = el.textContent || '';
+      scheduleSave();
+    });
+    el.addEventListener('blur', function () {
+      item.text = el.textContent || '';
+      if (!item.text.trim()) {
+        texts = texts.filter(function (t) { return t.id !== item.id; });
+        el.remove();
+      }
+      scheduleSave();
+    });
+    // simple drag by holding Alt+pointer - skip for beta, position fixed at create
+    textsEl.appendChild(el);
+    if (focus) setTimeout(function () { el.focus(); }, 10);
+  }
+
+  function remountTexts() {
+    textsEl.innerHTML = '';
+    texts.forEach(function (t) { mountText(t, false); });
+  }
+
+  function scheduleSave() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveState, 400);
+  }
+
+  function saveState() {
+    var data = {
+      title: titleInput.value || 'Белая доска',
+      boardTheme: boardTheme,
+      pattern: pattern,
+      strokes: strokes,
+      texts: texts,
+      updatedAt: Date.now()
+    };
+    try {
+      localStorage.setItem(storageKey(), JSON.stringify(data));
+      saveDot.classList.add('on');
+      setTimeout(function () { saveDot.classList.remove('on'); }, 800);
+    } catch (e) {}
+  }
+
+  function loadState() {
+    try {
+      var raw = localStorage.getItem(storageKey());
+      if (!raw) return;
+      var data = JSON.parse(raw);
+      if (data.title) titleInput.value = data.title;
+      if (data.boardTheme) {
+        boardTheme = data.boardTheme;
+        boardThemeSel.value = boardTheme;
+      }
+      if (data.pattern) {
+        pattern = data.pattern;
+        patternSel.value = pattern;
+      }
+      strokes = Array.isArray(data.strokes) ? data.strokes : [];
+      texts = Array.isArray(data.texts) ? data.texts : [];
+      document.body.classList.toggle('board-dark', boardTheme === 'dark');
+    } catch (e) {}
+  }
+
+  // tools
+  document.querySelectorAll('[data-tool]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      tool = btn.getAttribute('data-tool');
+      document.querySelectorAll('[data-tool]').forEach(function (b) {
+        b.classList.toggle('active', b === btn);
+      });
+      canvas.style.cursor = tool === 'text' ? 'text' : (tool === 'erase' ? 'cell' : 'crosshair');
+    });
+  });
+  document.querySelectorAll('.swatch').forEach(function (s) {
+    s.addEventListener('click', function () {
+      color = s.getAttribute('data-color');
+      document.querySelectorAll('.swatch').forEach(function (x) { x.classList.toggle('active', x === s); });
+    });
+  });
+  sizeInput.addEventListener('input', function () {
+    size = parseInt(sizeInput.value, 10) || 3;
+    sizeVal.textContent = String(size);
+  });
+  patternSel.addEventListener('change', function () {
+    pattern = patternSel.value;
+    redraw();
+    scheduleSave();
+  });
+  boardThemeSel.addEventListener('change', function () {
+    boardTheme = boardThemeSel.value;
+    document.body.classList.toggle('board-dark', boardTheme === 'dark');
+    // default pen color contrast
+    if (boardTheme === 'dark' && color === '#111111') {
+      color = '#ffffff';
+      document.querySelectorAll('.swatch').forEach(function (x) {
+        x.classList.toggle('active', x.getAttribute('data-color') === '#ffffff');
+      });
+    }
+    if (boardTheme === 'white' && color === '#ffffff') {
+      color = '#111111';
+      document.querySelectorAll('.swatch').forEach(function (x) {
+        x.classList.toggle('active', x.getAttribute('data-color') === '#111111');
+      });
+    }
+    redraw();
+    scheduleSave();
+  });
+  titleInput.addEventListener('input', scheduleSave);
+  document.getElementById('btn-clear').addEventListener('click', function () {
+    if (!confirm('Очистить доску?')) return;
+    strokes = [];
+    texts = [];
+    textsEl.innerHTML = '';
+    redraw();
+    scheduleSave();
+  });
+
+  canvas.addEventListener('pointerdown', startDraw);
+  canvas.addEventListener('pointermove', moveDraw);
+  canvas.addEventListener('pointerup', endDraw);
+  canvas.addEventListener('pointercancel', endDraw);
+  canvas.addEventListener('pointerleave', endDraw);
+
+  window.addEventListener('resize', function () {
+    resize();
+    remountTexts();
+  });
+
+  applyUiChrome();
+  loadState();
+  resize();
+  remountTexts();
+  // autosave heartbeat
+  setInterval(function () {
+    if (strokes.length || texts.length || titleInput.value) saveState();
+  }, 15000);
+})();
+</script>
+</body>
+</html>
