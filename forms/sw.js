@@ -1,5 +1,5 @@
 /* My Form service worker — кэш оболочки для офлайна */
-const CACHE = 'myform-v1';
+const CACHE = 'myform-v2-pwa-notice';
 const ASSETS = [
   './',
   './index.html',
