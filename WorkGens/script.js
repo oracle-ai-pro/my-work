@@ -1,7 +1,14 @@
 // --- WorkGens AI state ---
+function readApiKey() {
+  return localStorage.getItem('wg_api_key')
+    || localStorage.getItem('mywork_ai_api_key')
+    || localStorage.getItem('ai_api_key')
+    || '';
+}
+
 const STATE = {
   theme: localStorage.getItem('wg_theme') || 'dark',
-  apiKey: localStorage.getItem('wg_api_key') || '',
+  apiKey: readApiKey(),
   provider: localStorage.getItem('wg_provider') || 'gemini',
   geminiModel: localStorage.getItem('wg_gemini_model') || 'gemini-3.8-flash',
   model: 'plan',
@@ -87,8 +94,8 @@ function bootFromQueryParams() {
         if (typeof sendMessage === 'function') {
           // prefer agent mode for direct asks from hub
           STATE.model = 'agent';
-          document.querySelectorAll('.model-chip').forEach(c => c.classList.remove('active'));
-          document.querySelector('.model-chip[data-model="agent"]')?.classList.add('active');
+          const ms = document.getElementById('modelModeSelect');
+          if (ms) { ms.value = 'agent'; if (ms._cselectRebuild) ms._cselectRebuild(); }
           sendMessage(q);
           if (input) input.value = '';
         }
@@ -302,9 +309,7 @@ function sendToStudio(content, structured) {
   STATE.studioStructured = structured || extractJson(content);
   STATE.studioSlideIndex = 0;
 
-  const studio = document.getElementById('studioSidebar');
-  studio.classList.remove('hidden');
-
+  // Studio opens only manually (toggle / mobile tab) — no auto-open
   const badge = document.getElementById('studioTypeBadge');
   const type = (STATE.studioStructured && STATE.studioStructured.type) || 'markdown';
   badge.innerText = 'Тип: ' + type;
@@ -624,14 +629,18 @@ function setupEventListeners() {
     sidebar.classList.remove('open');
     overlay.classList.remove('active');
   });
-  document.getElementById('collapseBtn')?.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
+  document.getElementById('collapseBtn')?.addEventListener('click', () => {
+    sidebar.classList.toggle('collapsed');
+    const ic = document.querySelector('#collapseBtn .material-symbols-rounded');
+    if (ic) ic.textContent = sidebar.classList.contains('collapsed') ? 'left_panel_open' : 'left_panel_close';
+  });
   document.getElementById('newChatBtn')?.addEventListener('click', createNewChatState);
 
   document.querySelectorAll('.service-link').forEach(li => {
     li.addEventListener('click', () => {
       const href = li.getAttribute('data-href') || '';
       // Tables under maintenance
-      if (href.includes('spreadsheet')) {
+      if (false && href.includes('spreadsheet')) {
         showToast('Таблицы на обслуживании. Данные сохранятся, скоро вернём.', 'info');
         setTimeout(() => { window.location.href = '../index.html'; }, 600);
         return;
@@ -660,11 +669,17 @@ function setupEventListeners() {
   fileInput?.addEventListener('change', (e) => handleFileSelect(e.target.files[0]));
   document.getElementById('removeFileBtn')?.addEventListener('click', removeAttachedFile);
 
-  document.getElementById('toggleStudioBtn')?.addEventListener('click', () => {
-    document.getElementById('studioSidebar').classList.toggle('hidden');
+  document.getElementById('toggleStudioBtn')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    openStudioManual();
   });
   document.getElementById('closeStudioBtn')?.addEventListener('click', () => {
-    document.getElementById('studioSidebar').classList.add('hidden');
+    if (window.innerWidth < 1024) setMobileTab('chat');
+    else {
+      document.getElementById('studioSidebar')?.classList.add('hidden');
+      document.getElementById('appMain')?.classList.remove('studio-open');
+    }
   });
 
   document.getElementById('exportProjectBtn')?.addEventListener('click', exportToService);
@@ -703,8 +718,8 @@ function setupEventListeners() {
     if (!promptText) return;
     document.getElementById('studioGenModal').classList.add('hidden');
     STATE.model = 'agent';
-    document.querySelectorAll('.model-chip').forEach(c => c.classList.remove('active'));
-    document.querySelector('.model-chip[data-model="agent"]')?.classList.add('active');
+    const ms = document.getElementById('modelModeSelect');
+    if (ms) { ms.value = 'agent'; if (ms._cselectRebuild) ms._cselectRebuild(); }
     const sys = STUDIO_PROMPTS[STATE.activeGenService] || '';
     sendMessage(promptText, true, sys);
   });
@@ -720,15 +735,9 @@ function setupEventListeners() {
     document.getElementById('settingsModal').classList.add('hidden');
   });
   document.getElementById('saveSettingsBtn')?.addEventListener('click', () => {
-    STATE.apiKey = document.getElementById('apiKeyInput').value.trim();
-    STATE.geminiModel = document.getElementById('modelSelect').value;
-    STATE.provider = document.getElementById('providerSelect').value;
-    localStorage.setItem('wg_api_key', STATE.apiKey);
-    localStorage.setItem('wg_gemini_model', STATE.geminiModel);
-    localStorage.setItem('wg_provider', STATE.provider);
+    // API настраивается на главной My Work — здесь только закрываем
     document.getElementById('settingsModal').classList.add('hidden');
-    showToast('Настройки сохранены', 'success');
-    checkApiKeyOnStart();
+    showToast('Готово', 'success');
   });
 
   document.getElementById('saveOnboardingKeyBtn')?.addEventListener('click', () => {
@@ -774,6 +783,10 @@ async function sendMessage(overrideText = null, isStudioGen = false, studioSyste
   }
 
   STATE.lastPrompt = text;
+  var _formCtx = (typeof getAttachedFormContextForPrompt === 'function') ? getAttachedFormContextForPrompt() : '';
+  if (_formCtx && !text.includes('[Прикреплённая форма')) {
+    // context added in API call
+  }
   const fileToSend = STATE.attachedFile;
 
   if (!overrideText && input) {
@@ -839,11 +852,13 @@ async function sendMessage(overrideText = null, isStudioGen = false, studioSyste
 
 function appendStudioOpenButton() {
   const container = document.getElementById('chatMessages');
+  if (!container) return;
   const box = document.createElement('div');
   box.className = 'studio-open-row';
-  box.innerHTML = '<button type="button" class="secondary-btn ripple studio-open-btn"><span class="material-symbols-rounded">auto_awesome</span> Открыть в Студии</button>';
+  box.innerHTML = '<button type="button" class="secondary-btn ripple studio-open-btn"><span class="material-symbols-rounded filled">auto_awesome</span> Открыть в Студии</button>';
   box.querySelector('button').addEventListener('click', () => {
-    document.getElementById('studioSidebar').classList.remove('hidden');
+    if (typeof openStudioManual === 'function') openStudioManual();
+    else document.getElementById('studioSidebar')?.classList.remove('hidden');
   });
   container.appendChild(box);
   container.scrollTop = container.scrollHeight;
@@ -870,36 +885,37 @@ function appendErrorUI(errorMessage, originalPrompt) {
 function setGenerationState(isGenerating) {
   STATE.isGenerating = isGenerating;
   const sendBtn = document.getElementById('sendBtn');
-  const thinkingBlock = document.getElementById('thinkingBlock');
   if (sendBtn) {
     if (isGenerating) {
       sendBtn.classList.add('stop-mode');
+      sendBtn.classList.remove('hidden');
       sendBtn.title = 'Остановить';
-      sendBtn.innerHTML = '<span class="material-symbols-rounded">stop</span><span>Стоп</span>';
-      thinkingBlock?.classList.remove('hidden');
+      sendBtn.innerHTML = '<span class="material-symbols-rounded filled">stop</span><span>Стоп</span>';
+      showInlineThinking(true);
     } else {
       sendBtn.classList.remove('stop-mode');
       sendBtn.title = 'Отправить';
-      sendBtn.innerHTML = '<span class="material-symbols-rounded" id="sendBtnIcon">arrow_upward</span>';
-      thinkingBlock?.classList.add('hidden');
+      sendBtn.innerHTML = '<span class="material-symbols-rounded filled" id="sendBtnIcon">arrow_upward</span>';
+      showInlineThinking(false);
+      updateSendButtonVisibility();
     }
   }
-  // Studio generating indicator
+  // Update studio preview if already open; never auto-open
   const studio = document.getElementById('studioSidebar');
-  if (isGenerating && studio) {
-    studio.classList.remove('hidden');
+  const studioVisible = studio && !studio.classList.contains('hidden');
+  if (isGenerating && studioVisible) {
     const badge = document.getElementById('studioTypeBadge');
     if (badge) badge.innerText = 'Тип: генерация…';
     renderStudioPreview();
   } else if (!isGenerating && STATE.studioStructured) {
     renderStudioPreview();
   } else if (!isGenerating) {
-    // clear generating placeholder if no data yet
     const preview = document.getElementById('studioPreview');
     if (preview && preview.querySelector('.studio-generating') && !STATE.studioStructured && !STATE.studioContent) {
-      preview.innerHTML = '<p class="studio-placeholder">Здесь появится сгенерированный проект.</p>';
+      preview.innerHTML = '<p class="studio-placeholder">Сгенерируйте проект в чате. Откройте Студию вручную.</p>';
     }
   }
+  updateSendButtonVisibility();
 }
 
 function appendStoppedUI(originalPrompt) {
@@ -943,7 +959,7 @@ async function fetchGeminiResponse(userPrompt, fileData, signal, isPlanMode, stu
   let system = isPlanMode ? PLAN_SYSTEM_PROMPT : SYSTEM_PROMPT;
   if (studioExtra) system += '\n\n' + studioExtra;
 
-  let textPayload = system + '\n\nЗапрос пользователя:\n' + userPrompt;
+  let textPayload = system + '\n\nЗапрос пользователя:\n' + userPrompt + ((typeof getAttachedFormContextForPrompt === 'function') ? getAttachedFormContextForPrompt() : '');
   if (fileData && !fileData.isImage) {
     textPayload = '[Файл ' + fileData.name + ']:\n' + String(fileData.content).slice(0, 12000) + '\n\n' + textPayload;
   }
@@ -979,6 +995,18 @@ async function fetchGeminiResponse(userPrompt, fileData, signal, isPlanMode, stu
 
 function appendMessage(text, sender, save = true) {
   const container = document.getElementById('chatMessages');
+  if (!container) return;
+
+  // clear is-last on previous user wraps
+  if (sender === 'user') {
+    container.querySelectorAll('.message-wrap.user.is-last').forEach(el => el.classList.remove('is-last'));
+  }
+
+  const wrap = document.createElement('div');
+  wrap.className = 'message-wrap ' + sender + (sender === 'user' ? ' is-last' : '');
+  wrap.dataset.sender = sender;
+  wrap.dataset.text = text;
+
   const msgEl = document.createElement('div');
   msgEl.className = 'message ' + sender;
   if (sender === 'ai' && window.marked) {
@@ -986,7 +1014,28 @@ function appendMessage(text, sender, save = true) {
   } else {
     msgEl.innerText = text;
   }
-  container.appendChild(msgEl);
+  wrap.appendChild(msgEl);
+
+  if (sender === 'user') {
+    const actions = document.createElement('div');
+    actions.className = 'message-actions';
+    actions.innerHTML =
+      '<button type="button" class="msg-action-btn msg-copy"><span class="material-symbols-rounded">content_copy</span> Копировать</button>' +
+      '<button type="button" class="msg-action-btn msg-edit"><span class="material-symbols-rounded">edit</span> Изменить</button>';
+    actions.querySelector('.msg-copy').addEventListener('click', (e) => {
+      e.stopPropagation();
+      navigator.clipboard?.writeText(text).then(() => showToast('Скопировано', 'success')).catch(() => showToast('Не удалось скопировать', 'error'));
+    });
+    const editBtn = actions.querySelector('.msg-edit');
+    editBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      startEditLastRequest(wrap, text);
+    });
+    wrap.appendChild(actions);
+    // Edit only on last user message (CSS also hides .msg-edit for non-last)
+  }
+
+  container.appendChild(wrap);
   container.scrollTop = container.scrollHeight;
 
   if (save && STATE.activeChatId) {
@@ -996,6 +1045,108 @@ function appendMessage(text, sender, save = true) {
       saveChats();
     }
   }
+}
+
+function showInlineThinking(show) {
+  const container = document.getElementById('chatMessages');
+  if (!container) return;
+  let el = document.getElementById('thinkingInline');
+  if (!show) {
+    if (el) el.remove();
+    return;
+  }
+  if (el) el.remove();
+  el = document.createElement('div');
+  el.id = 'thinkingInline';
+  el.className = 'thinking-inline';
+  el.innerHTML = '<div class="thinking-header"><span class="material-symbols-rounded spin-slow filled">psychology</span><span class="thinking-title">Думаю…</span></div><div class="thinking-pulser"><div class="pulse-line"></div></div>';
+  container.appendChild(el);
+  container.scrollTop = container.scrollHeight;
+}
+
+function startEditLastRequest(wrapEl, text) {
+  STATE.editMode = true;
+  STATE.editOriginalText = text;
+  document.body.classList.add('edit-request-mode');
+  document.querySelectorAll('.message-wrap.editing-target').forEach(w => w.classList.remove('editing-target'));
+  if (wrapEl) wrapEl.classList.add('editing-target');
+
+  const input = document.getElementById('promptInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const editBtn = document.getElementById('editCommitBtn');
+  if (input) {
+    input.value = text;
+    input.focus();
+    try { input.setSelectionRange(input.value.length, input.value.length); } catch (e) {}
+  }
+  if (sendBtn) sendBtn.classList.add('hidden');
+  if (editBtn) editBtn.classList.remove('hidden');
+  updateSendButtonVisibility();
+}
+
+function cancelEditRequestMode() {
+  STATE.editMode = false;
+  STATE.editOriginalText = '';
+  document.body.classList.remove('edit-request-mode');
+  document.querySelectorAll('.message-wrap.editing-target').forEach(w => w.classList.remove('editing-target'));
+  const editBtn = document.getElementById('editCommitBtn');
+  if (editBtn) editBtn.classList.add('hidden');
+  updateSendButtonVisibility();
+}
+
+function commitEditAndResend() {
+  const input = document.getElementById('promptInput');
+  const text = (input && input.value.trim()) || '';
+  if (!text) return;
+
+  // Update last user message in UI + storage
+  const last = document.querySelector('.message-wrap.user.is-last, .message-wrap.user.editing-target');
+  if (last) {
+    last.dataset.text = text;
+    const msg = last.querySelector('.message');
+    if (msg) msg.innerText = text;
+    // rebind copy
+    const copyBtn = last.querySelector('.msg-copy');
+    if (copyBtn) {
+      const nb = copyBtn.cloneNode(true);
+      copyBtn.parentNode.replaceChild(nb, copyBtn);
+      nb.addEventListener('click', (e) => {
+        e.stopPropagation();
+        navigator.clipboard?.writeText(text).then(() => showToast('Скопировано', 'success'));
+      });
+    }
+  }
+  if (STATE.activeChatId) {
+    const chat = STATE.chats.find(c => c.id === STATE.activeChatId);
+    if (chat && chat.messages && chat.messages.length) {
+      for (let i = chat.messages.length - 1; i >= 0; i--) {
+        if (chat.messages[i].sender === 'user') {
+          chat.messages[i].text = text;
+          break;
+        }
+      }
+      // drop trailing AI after last user for clean resend
+      while (chat.messages.length && chat.messages[chat.messages.length - 1].sender === 'ai') {
+        chat.messages.pop();
+      }
+      saveChats();
+    }
+  }
+  // remove AI messages after last user in DOM
+  if (last) {
+    let n = last.nextSibling;
+    while (n) {
+      const next = n.nextSibling;
+      if (n.classList && (n.classList.contains('message-wrap') || n.id === 'thinkingInline' || n.classList.contains('stopped-action-box') || n.classList.contains('studio-open-row'))) {
+        n.remove();
+      }
+      n = next;
+    }
+  }
+
+  cancelEditRequestMode();
+  if (input) input.value = '';
+  sendMessage(text);
 }
 
 function showToast(message, type) {
@@ -1171,3 +1322,411 @@ function refreshEnhancedSelect(sel) {
 function enhanceAllSelects(root) {
   (root || document).querySelectorAll('select').forEach(enhanceNativeSelect);
 }
+
+
+
+/* ===== Redesign helpers: composer, mobile tabs, model select ===== */
+function updateSendButtonVisibility() {
+  const input = document.getElementById('promptInput');
+  const btn = document.getElementById('sendBtn');
+  if (!btn) return;
+  if (STATE.isGenerating) {
+    btn.classList.remove('hidden');
+    return;
+  }
+  const has = input && input.value.trim().length > 0;
+  btn.classList.toggle('hidden', !has);
+}
+
+function setMobileTab(tab) {
+  document.body.classList.toggle('tab-chat', tab === 'chat');
+  document.body.classList.toggle('tab-studio', tab === 'studio');
+  document.querySelectorAll('.mobile-tab').forEach(t => {
+    const on = t.dataset.tab === tab;
+    t.classList.toggle('active', on);
+    const icon = t.querySelector('.material-symbols-rounded');
+    if (icon) icon.classList.toggle('filled', on);
+  });
+  const studio = document.getElementById('studioSidebar');
+  if (tab === 'studio') {
+    if (studio) studio.classList.remove('hidden');
+    renderStudioPreview();
+  } else if (window.innerWidth < 1024 && studio) {
+    studio.classList.add('hidden');
+  }
+}
+
+function openStudioManual() {
+  const studio = document.getElementById('studioSidebar');
+  const main = document.getElementById('appMain');
+  if (window.innerWidth < 1024) {
+    setMobileTab('studio');
+    if (studio) studio.classList.remove('hidden');
+  } else {
+    if (!studio) return;
+    const willOpen = studio.classList.contains('hidden');
+    studio.classList.toggle('hidden', !willOpen);
+    if (main) main.classList.toggle('studio-open', willOpen);
+    if (willOpen) renderStudioPreview();
+  }
+}
+
+function syncModelFromSelect() {
+  const sel = document.getElementById('modelModeSelect');
+  if (!sel) return;
+  STATE.model = sel.value === 'plan' ? 'plan' : 'agent';
+}
+
+function initRedesignUI() {
+  // default mobile tab
+  setMobileTab('chat');
+
+  const input = document.getElementById('promptInput');
+  if (input) {
+    input.addEventListener('input', updateSendButtonVisibility);
+    // single-line: Enter sends
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleSendOrStop();
+      }
+    });
+  }
+  updateSendButtonVisibility();
+
+  document.getElementById('tabChat')?.addEventListener('click', () => setMobileTab('chat'));
+  document.getElementById('tabStudio')?.addEventListener('click', () => setMobileTab('studio'));
+
+  // model mode select
+  const modeSel = document.getElementById('modelModeSelect');
+  if (modeSel) {
+    modeSel.value = STATE.model === 'plan' ? 'plan' : 'agent';
+    modeSel.addEventListener('change', syncModelFromSelect);
+  }
+
+  // quick cards
+  document.querySelectorAll('.card[data-prompt]').forEach(card => {
+    card.addEventListener('click', () => {
+      const p = card.getAttribute('data-prompt');
+      if (!p) return;
+      STATE.model = 'agent';
+      const ms = document.getElementById('modelModeSelect');
+      if (ms) { ms.value = 'agent'; if (ms._cselectRebuild) ms._cselectRebuild(); }
+      sendMessage(p);
+    });
+  });
+
+  // studio toggle bound in setupEventListeners via openStudioManual
+
+  // lucide optional
+  try {
+    if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
+  } catch (e) {}
+}
+
+// Hook into existing DOMContentLoaded chain
+const _origBoot = document.addEventListener;
+document.addEventListener('DOMContentLoaded', () => {
+  // re-read hub key if settings empty
+  if (!STATE.apiKey) STATE.apiKey = readApiKey();
+  initRedesignUI();
+  enhanceAllSelects();
+  const modeSel = document.getElementById('modelModeSelect');
+  if (modeSel && modeSel._cselectRebuild) modeSel._cselectRebuild();
+});
+
+// Override appendStudioOpenButton to suggest manual open
+function appendStudioOpenButton() {
+  const container = document.getElementById('chatMessages');
+  if (!container) return;
+  const box = document.createElement('div');
+  box.className = 'studio-open-row';
+  box.innerHTML = '<button type="button" class="secondary-btn ripple studio-open-btn"><span class="material-symbols-rounded filled">auto_awesome</span> Открыть в Студии</button>';
+  box.querySelector('button').addEventListener('click', () => openStudioManual());
+  container.appendChild(box);
+  container.scrollTop = container.scrollHeight;
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('libraryBtn')?.addEventListener('click', () => {
+    document.getElementById('libraryModal')?.classList.remove('hidden');
+  });
+  document.getElementById('closeLibraryBtn')?.addEventListener('click', () => {
+    document.getElementById('libraryModal')?.classList.add('hidden');
+  });
+  document.getElementById('libraryModal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'libraryModal') e.target.classList.add('hidden');
+  });
+  document.querySelectorAll('.theme-pick').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const t = btn.getAttribute('data-theme-set');
+      if (!t) return;
+      STATE.theme = t;
+      document.documentElement.setAttribute('data-theme', t);
+      localStorage.setItem('wg_theme', t);
+      showToast(t === 'dark' ? 'Тёмная тема' : 'Светлая тема', 'success');
+    });
+  });
+  document.getElementById('editCommitBtn')?.addEventListener('click', () => commitEditAndResend());
+  // Escape cancels edit mode
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && STATE.editMode) {
+      cancelEditRequestMode();
+      const input = document.getElementById('promptInput');
+      if (input) input.value = '';
+      updateSendButtonVisibility();
+    }
+  });
+});
+
+
+/* ===== Attached form from My Form ===== */
+function loadAttachedFormFromForms() {
+    try {
+        var params = new URLSearchParams(window.location.search);
+        if (params.get('attach') !== '1' && params.get('from') !== 'forms') {
+            // still try session
+        }
+        var raw = sessionStorage.getItem('wg_attached_form');
+        if (!raw) return;
+        var data = JSON.parse(raw);
+        if (!data || !data.form) return;
+        STATE.attachedForm = data;
+        renderAttachedFormChip(data);
+    } catch (e) {
+        console.warn('attached form', e);
+    }
+}
+
+function renderAttachedFormChip(data) {
+    var dock = document.getElementById('composerDock') || document.querySelector('.composer-dock') || document.querySelector('.input-area');
+    if (!dock) return;
+    var existing = document.getElementById('wg-form-attach');
+    if (existing) existing.remove();
+    var chip = document.createElement('div');
+    chip.id = 'wg-form-attach';
+    chip.className = 'wg-form-attach';
+    chip.innerHTML =
+        '<div class="wg-form-attach-main">' +
+        '<span class="material-symbols-rounded filled">assignment</span>' +
+        '<div class="wg-form-attach-meta">' +
+        '<strong>Прикреплена форма</strong>' +
+        '<span>' + escapeHtml((data && data.title) || 'Без названия') + '</span>' +
+        '</div></div>' +
+        '<button type="button" class="icon-btn" title="Открепить" id="wg-form-detach">' +
+        '<span class="material-symbols-rounded">close</span></button>';
+    dock.insertBefore(chip, dock.firstChild);
+    document.getElementById('wg-form-detach')?.addEventListener('click', function() {
+        try { sessionStorage.removeItem('wg_attached_form'); } catch (e) {}
+        STATE.attachedForm = null;
+        chip.remove();
+        showToast('Форма откреплена', 'info');
+    });
+}
+
+function getAttachedFormContextForPrompt() {
+    if (!STATE.attachedForm || !STATE.attachedForm.form) return '';
+    try {
+        var f = STATE.attachedForm.form;
+        var slim = {
+            title: f.title || f.name,
+            questions: (f.questions || []).map(function(q) {
+                return {
+                    type: q.type,
+                    title: q.title,
+                    options: q.options,
+                    correctChoices: q.correctChoices,
+                    correctText: q.correctText
+                };
+            })
+        };
+        return '\n\n[Прикреплённая форма My Form для анализа/правок]\n' + JSON.stringify(slim).slice(0, 12000);
+    } catch (e) {
+        return '';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadAttachedFormFromForms();
+});
+
+
+/* ===== Attach: My Work project OR file ===== */
+function positionAttachMenu() {
+  var menu = document.getElementById('attachSourceMenu');
+  var btn = document.getElementById('attachFileBtn');
+  if (!menu || !btn) return;
+  var rect = btn.getBoundingClientRect();
+  var top = rect.bottom + 8;
+  var left = rect.left;
+  menu.classList.remove('hidden');
+  // measure after show
+  requestAnimationFrame(function() {
+    var mh = menu.offsetHeight || 120;
+    if (top + mh > window.innerHeight - 12) {
+      top = Math.max(12, rect.top - mh - 8);
+    }
+    if (left + menu.offsetWidth > window.innerWidth - 12) {
+      left = Math.max(12, window.innerWidth - menu.offsetWidth - 12);
+    }
+    menu.style.top = top + 'px';
+    menu.style.left = left + 'px';
+  });
+}
+
+function hideAttachSourceMenu() {
+  var menu = document.getElementById('attachSourceMenu');
+  if (menu) menu.classList.add('hidden');
+}
+
+function openAttachSourceMenu(e) {
+  if (e) { e.preventDefault(); e.stopPropagation(); }
+  var menu = document.getElementById('attachSourceMenu');
+  if (!menu) {
+    document.getElementById('fileInput')?.click();
+    return;
+  }
+  if (!menu.classList.contains('hidden')) {
+    hideAttachSourceMenu();
+    return;
+  }
+  positionAttachMenu();
+}
+
+function openMwProjectPicker() {
+  hideAttachSourceMenu();
+  var modal = document.getElementById('mwProjectPickerModal');
+  var list = document.getElementById('mwProjectPickerList');
+  if (!modal || !list) return;
+  list.innerHTML = '';
+  var projects = [];
+  try {
+    var reg = JSON.parse(localStorage.getItem('mywork_registry_v1') || '[]');
+    if (Array.isArray(reg)) projects = reg;
+  } catch (e) {}
+  // also forms from my_forms_data
+  try {
+    var forms = JSON.parse(localStorage.getItem('my_forms_data') || '[]');
+    if (Array.isArray(forms)) {
+      forms.forEach(function(f, i) {
+        projects.push({
+          id: 'form-local-' + i,
+          type: 'form',
+          title: f.title || f.name || ('Форма ' + (i + 1)),
+          legacyIndex: i,
+          legacyKey: 'my_forms_data',
+          updatedAt: f.updatedAt || 0,
+          _formData: f
+        });
+      });
+    }
+  } catch (e2) {}
+
+  // dedupe by title+type roughly
+  if (!projects.length) {
+    list.innerHTML = '<p class="help-text" style="text-align:center;padding:16px;">Пока нет проектов в My Work на этом устройстве</p>';
+  } else {
+    projects.sort(function(a, b) { return (b.updatedAt || 0) - (a.updatedAt || 0); });
+    projects.slice(0, 40).forEach(function(p) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'mw-project-item';
+      var icon = 'folder';
+      if (p.type === 'form' || p.type === 'forms') icon = 'assignment';
+      else if (p.type === 'document' || p.type === 'doc') icon = 'description';
+      else if (p.type === 'slides' || p.type === 'slide') icon = 'slideshow';
+      else if (p.type === 'spreadsheet' || p.type === 'table') icon = 'table_chart';
+      else if (p.type === 'keeps' || p.type === 'note') icon = 'keep';
+      else if (p.type === 'mindmap') icon = 'account_tree';
+      btn.innerHTML =
+        '<span class="material-symbols-rounded">' + icon + '</span>' +
+        '<div class="mw-meta"><strong></strong><span></span></div>';
+      btn.querySelector('strong').textContent = p.title || 'Без названия';
+      btn.querySelector('span:last-child').textContent = (p.type || 'project') + (p.updatedAt ? ' · ' + new Date(p.updatedAt).toLocaleDateString() : '');
+      btn.addEventListener('click', function() {
+        attachMyWorkProject(p);
+      });
+      list.appendChild(btn);
+    });
+  }
+  modal.classList.remove('hidden');
+}
+
+function closeMwProjectPicker() {
+  document.getElementById('mwProjectPickerModal')?.classList.add('hidden');
+}
+
+function attachMyWorkProject(p) {
+  closeMwProjectPicker();
+  var formData = p._formData || null;
+  if (!formData && (p.type === 'form' || p.type === 'forms') && p.legacyKey === 'my_forms_data' && p.legacyIndex != null) {
+    try {
+      var forms = JSON.parse(localStorage.getItem('my_forms_data') || '[]');
+      formData = forms[p.legacyIndex] || null;
+    } catch (e) {}
+  }
+  var payload = {
+    source: 'my-work',
+    attachedAt: Date.now(),
+    type: p.type || 'project',
+    title: p.title || 'Проект',
+    projectId: p.id,
+    form: formData,
+    meta: p
+  };
+  try {
+    sessionStorage.setItem('wg_attached_form', JSON.stringify(payload));
+  } catch (e) {}
+  STATE.attachedForm = payload;
+  if (typeof renderAttachedFormChip === 'function') renderAttachedFormChip(payload);
+  else showAttachedProjectFallback(payload);
+  showToast('Проект прикреплён: ' + (payload.title || ''), 'success');
+}
+
+function showAttachedProjectFallback(data) {
+  var dock = document.getElementById('composerDock') || document.querySelector('.composer-dock') || document.querySelector('.input-area');
+  if (!dock) return;
+  var existing = document.getElementById('wg-form-attach');
+  if (existing) existing.remove();
+  var chip = document.createElement('div');
+  chip.id = 'wg-form-attach';
+  chip.className = 'wg-form-attach';
+  chip.innerHTML =
+    '<div class="wg-form-attach-main">' +
+    '<span class="material-symbols-rounded filled">folder_open</span>' +
+    '<div class="wg-form-attach-meta"><strong>Прикреплён проект My Work</strong><span></span></div></div>' +
+    '<button type="button" class="icon-btn" id="wg-form-detach"><span class="material-symbols-rounded">close</span></button>';
+  chip.querySelector('.wg-form-attach-meta span').textContent = (data && data.title) || 'Проект';
+  dock.insertBefore(chip, dock.firstChild);
+  document.getElementById('wg-form-detach')?.addEventListener('click', function() {
+    try { sessionStorage.removeItem('wg_attached_form'); } catch (e) {}
+    STATE.attachedForm = null;
+    chip.remove();
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  var attachBtn = document.getElementById('attachFileBtn');
+  if (attachBtn) {
+    // remove pure file-open listeners by cloning
+    var neo = attachBtn.cloneNode(true);
+    attachBtn.parentNode.replaceChild(neo, attachBtn);
+    neo.id = 'attachFileBtn';
+    neo.addEventListener('click', openAttachSourceMenu);
+  }
+  document.getElementById('attachFromFile')?.addEventListener('click', function() {
+    hideAttachSourceMenu();
+    document.getElementById('fileInput')?.click();
+  });
+  document.getElementById('attachFromMyWork')?.addEventListener('click', openMwProjectPicker);
+  document.getElementById('closeMwPickerBtn')?.addEventListener('click', closeMwProjectPicker);
+  document.getElementById('mwProjectPickerModal')?.addEventListener('click', function(e) {
+    if (e.target.id === 'mwProjectPickerModal') closeMwProjectPicker();
+  });
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('#attachSourceMenu') && !e.target.closest('#attachFileBtn')) {
+      hideAttachSourceMenu();
+    }
+  });
+});
