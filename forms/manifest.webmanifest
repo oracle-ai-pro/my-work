@@ -1,8 +1,7 @@
 {
-  "id": "./",
-  "name": "My Form | Prestige HQ",
+  "name": "My Form (откройте My Work)",
   "short_name": "My Form",
-  "description": "Конструктор форм и тестов Prestige HQ",
+  "description": "Установка отдельного My Form больше не поддерживается. Установите My Work с главной страницы — там Формы и все сервисы.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
@@ -15,19 +14,13 @@
       "src": "forms.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
       "src": "forms.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "forms.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     }
   ]
 }
