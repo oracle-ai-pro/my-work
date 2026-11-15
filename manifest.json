@@ -14,19 +14,19 @@
   "categories": ["productivity", "education", "utilities"],
   "icons": [
     {
-      "src": "My Work.png",
+      "src": "MY Work.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "My Work.png",
+      "src": "MY Work.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "My Work.png",
+      "src": "MY Work.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
