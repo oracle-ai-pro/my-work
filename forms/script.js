@@ -33,49 +33,435 @@ const THEME_ICONS = [
 ];
 
 const defaultForm = {
-    title: "Тестовая форма",
+    title: "Тестовая форма — все типы",
+    mode: "learn",
+    settings: {
+        saveProgress: true,
+        showCorrect: true,
+        showWrong: true,
+        defaultRequired: false
+    },
     questions: [
         {
             type: "radio",
             title: "Какой язык используется для стилизации веб-страниц?",
-            description: "Выберите один наиболее точный вариант из предложенных.",
+            description: "Выберите один наиболее точный вариант.",
             options: ["HTML", "CSS", "JavaScript", "Python"],
             correctChoices: [1],
             required: true,
             hasExplanation: true,
-            explanationTitle: "Справка по веб-разработке",
-            explanationText: "CSS (Cascading Style Sheets) отвечает за оформление и стилизацию HTML-документов."
+            explanationTitle: "Справка",
+            explanationText: "CSS (Cascading Style Sheets) отвечает за оформление HTML-документов."
+        },
+        {
+            type: "true-false",
+            title: "JavaScript можно запускать только в браузере.",
+            description: "Верно или неверно?",
+            options: ["Верно", "Неверно"],
+            correctChoices: [1],
+            required: true
+        },
+        {
+            type: "checkbox",
+            title: "Какие из перечисленного — языки программирования?",
+            description: "Можно выбрать несколько вариантов.",
+            options: ["Python", "HTML", "CSS", "JavaScript"],
+            correctChoices: [0, 3],
+            required: true
+        },
+        {
+            type: "select",
+            title: "Где хранятся данные форм в My Form (без сервера)?",
+            options: ["На сервере Google", "В localStorage браузера", "Только в оперативной памяти", "В файле на диске C:"],
+            correctChoices: [1],
+            required: true
         },
         {
             type: "text",
             title: "Я [input] купить продукты (в настоящее время).",
-            description: "Вставьте правильную форму глагола «хотеть».",
+            description: "Вставьте форму глагола «хотеть».",
             useInlineInput: true,
             correctText: ["хочу"],
             required: true
         },
         {
+            type: "fill-blank",
+            title: "Столицы",
+            fillBlankTemplate: "Столица Франции — [Париж|Paris], столица Италии — [Рим|Rome].",
+            blanks: [["Париж", "Paris"], ["Рим", "Rome"]],
+            fbCaseSensitive: false,
+            fbTrimSpaces: true,
+            fbAcceptAlts: true,
+            required: true
+        },
+        {
             type: "flashcard",
             title: "JavaScript (JS)",
-            flashcardAnswer: "Мультипарадигменный язык программирования, используемый для создания интерактивности на веб-страницах."
+            flashcardAnswer: "Язык программирования для интерактивности на веб-страницах (и не только)."
         },
         {
             type: "puzzle-drag",
-            title: "Расставьте слова по порядку (Цифры 1, 2, 3):",
+            title: "Расставьте по порядку: 1 → 2 → 3",
             options: ["Второй", "Первый", "Третий"],
             correctChoices: [1, 0, 2]
+        },
+        {
+            type: "info-slide",
+            title: "Инфо-слайд",
+            description: "Сюда можно добавить картинку, видео, аудио или просто текст-объяснение. Это не оценивается баллами."
+        },
+        {
+            type: "draw-annotate",
+            title: "Обводка по картинке",
+            description: "Ученик рисует или обводит области на изображении (как в Edvibe).",
+            comingSoon: true,
+            comingSoonLabel: "Рисование / обводка"
+        },
+        {
+            type: "youtube-media",
+            title: "Видео с YouTube",
+            description: "Инфо-слайд со встроенным роликом по ссылке.",
+            comingSoon: true,
+            comingSoonLabel: "YouTube iframe"
+        },
+        {
+            type: "match-pairs",
+            title: "Соедини пары",
+            description: "Слева термин — справа определение, соединить линиями.",
+            comingSoon: true,
+            comingSoonLabel: "Matching"
+        },
+        {
+            type: "audio-response",
+            title: "Голосовой ответ",
+            description: "Запись короткого ответа с микрофона.",
+            comingSoon: true,
+            comingSoonLabel: "Аудио-ответ"
+        },
+        {
+            type: "hotspot",
+            title: "Клик по области на картинке",
+            description: "Нужно нажать на правильную зону изображения.",
+            comingSoon: true,
+            comingSoonLabel: "Hotspot"
         }
     ]
 };
+
+/** Типы, которые ещё нельзя создать в админке (только демо / JSON) */
+const COMING_SOON_TYPES = {
+    'draw-annotate': 'Рисование / обводка',
+    'youtube-media': 'YouTube iframe',
+    'match-pairs': 'Соедини пары',
+    'audio-response': 'Голосовой ответ',
+    'hotspot': 'Hotspot на картинке'
+};
+
+function isComingSoonQuestion(q) {
+    if (!q) return false;
+    if (q.comingSoon) return true;
+    return !!(COMING_SOON_TYPES[q.type]);
+}
+
+function comingSoonLabel(q) {
+    if (!q) return 'Скоро';
+    return q.comingSoonLabel || COMING_SOON_TYPES[q.type] || q.type || 'Скоро';
+}
+
+
+/* App splash removed */
+
+/* ===== Hub integration: ?form= , picker, topbar ===== */
+function getFormQueryIndex() {
+    try {
+        var q = new URLSearchParams(window.location.search);
+        if (!q.has('form')) return null;
+        var raw = q.get('form');
+        if (raw == null || String(raw).trim() === '') return null;
+        raw = String(raw).trim();
+
+        // 1) numeric array index
+        var n = parseInt(raw, 10);
+        if (!isNaN(n) && String(n) === raw && n >= 0) {
+            if (n < allForms.length) return n;
+            if (allForms.length) return Math.min(n, allForms.length - 1);
+            return n;
+        }
+
+        // 2) form.id inside my_forms_data
+        for (var i = 0; i < allForms.length; i++) {
+            if (allForms[i] && allForms[i].id != null && String(allForms[i].id) === raw) return i;
+        }
+
+        // 3) registry id → legacyIndex
+        try {
+            var reg = JSON.parse(localStorage.getItem('mywork_registry_v1') || '[]');
+            if (Array.isArray(reg)) {
+                for (var j = 0; j < reg.length; j++) {
+                    var p = reg[j];
+                    if (!p || (p.type !== 'form' && p.type !== 'forms')) continue;
+                    if (String(p.id) !== raw) continue;
+                    if (p.legacyKey === 'my_forms_data' && p.legacyIndex != null) {
+                        var li = parseInt(p.legacyIndex, 10);
+                        if (!isNaN(li) && li >= 0) {
+                            if (li < allForms.length) return li;
+                            if (allForms.length) return Math.min(li, allForms.length - 1);
+                        }
+                    }
+                }
+            }
+        } catch (eReg) {}
+
+        // 4) last resort: numeric parse even with suffix
+        if (!isNaN(n) && n >= 0 && allForms.length) return Math.min(n, allForms.length - 1);
+    } catch (e) {}
+    return null;
+}
+
+/** Stable id for a form (for future ID system / deep links) */
+function ensureFormStableId(form, index) {
+    if (!form) return null;
+    if (form.id != null && String(form.id).trim() !== '') return String(form.id);
+    form.id = 'form_' + (index != null ? index : 0) + '_' + Date.now().toString(36);
+    return String(form.id);
+}
+
+function isStandalonePwa() {
+    return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+        || window.navigator.standalone === true;
+}
+
+function goToMyWorkHub() {
+    window.location.href = '../index.html';
+}
+
+function dismissPwaWorkModal() {
+    // Только на эту сессию — в standalone снова напомним при следующем запуске
+    try { sessionStorage.setItem('myform_pwa_work_notice_session', '1'); } catch (e) {}
+    var m = document.getElementById('pwa-work-modal');
+    if (m) m.classList.remove('active');
+}
+
+function maybeShowPwaWorkModal() {
+    if (!isStandalonePwa()) return;
+    // Больше не прячем «навсегда» — отдельный PWA My Form не поддерживается
+    try {
+        if (sessionStorage.getItem('myform_pwa_work_notice_session') === '1') return;
+    } catch (e) {}
+    var m = document.getElementById('pwa-work-modal');
+    if (m) m.classList.add('active');
+}
+
+function enterHubFormMode(formIndex) {
+    document.body.classList.add('hub-form-mode');
+    if (formIndex != null && formIndex >= 0 && formIndex < allForms.length) {
+        currentFormIndex = formIndex;
+    }
+    hideFormPicker();
+    updateAppTopbarTitle();
+    // move tools menu under topbar actions if needed
+    try {
+        var menu = document.getElementById('tools-menu');
+        var dd = document.querySelector('.app-topbar .tools-dropdown');
+        var oldDd = document.querySelector('.forms-toolbar-container .tools-dropdown');
+        if (menu && dd && oldDd && !dd.contains(menu)) {
+            dd.appendChild(menu);
+        }
+    } catch (e) {}
+}
+
+function exitHubFormMode() {
+    document.body.classList.remove('hub-form-mode');
+}
+
+function updateAppTopbarTitle() {
+    var input = document.getElementById('app-file-title');
+    var form = allForms[currentFormIndex];
+    if (input) {
+        input.value = (form && form.title) ? form.title : ('Форма ' + (currentFormIndex + 1));
+        input.readOnly = true;
+        delete input.dataset.cancel;
+    }
+}
+
+function startQuickRename() {
+    var input = document.getElementById('app-file-title');
+    if (!input) return;
+    input.readOnly = false;
+    input.focus();
+    input.select();
+}
+
+function finishQuickRename() {
+    var input = document.getElementById('app-file-title');
+    if (!input || input.readOnly) return;
+    if (input.dataset.cancel === '1') {
+        delete input.dataset.cancel;
+        input.readOnly = true;
+        updateAppTopbarTitle();
+        return;
+    }
+    var name = (input.value || '').trim();
+    input.readOnly = true;
+    if (!name) {
+        updateAppTopbarTitle();
+        return;
+    }
+    if (!allForms[currentFormIndex]) return;
+    allForms[currentFormIndex].title = name;
+    allForms[currentFormIndex].updatedAt = Date.now();
+    saveFormsToStorage();
+    try { syncRegistryFormTitle(currentFormIndex, name); } catch (e) {}
+    updateAppTopbarTitle();
+    try { renderAllFormsUI(); } catch (e) {}
+    if (typeof showAlert === 'function') {
+        /* silent toast prefer */
+    }
+}
+
+function syncRegistryFormTitle(idx, title) {
+    try {
+        var reg = JSON.parse(localStorage.getItem('mywork_registry_v1') || '[]');
+        if (!Array.isArray(reg)) return;
+        reg.forEach(function(p) {
+            if (p && p.type === 'form' && p.legacyKey === 'my_forms_data' && p.legacyIndex === idx) {
+                p.title = title;
+                p.updatedAt = Date.now();
+            }
+        });
+        localStorage.setItem('mywork_registry_v1', JSON.stringify(reg));
+    } catch (e) {}
+}
+
+function showFormPicker() {
+    exitHubFormMode();
+    var screen = document.getElementById('form-picker-screen');
+    if (!screen) return;
+    screen.classList.remove('hidden');
+    renderFormPickerList();
+}
+
+function hideFormPicker() {
+    var screen = document.getElementById('form-picker-screen');
+    if (screen) screen.classList.add('hidden');
+}
+
+function renderFormPickerList() {
+    var list = document.getElementById('form-picker-list');
+    if (!list) return;
+    list.innerHTML = '';
+    if (!allForms.length) {
+        list.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:24px;">Нет форм. Нажмите + чтобы создать.</p>';
+        return;
+    }
+    allForms.forEach(function(f, idx) {
+        var row = document.createElement('div');
+        row.className = 'form-picker-item';
+        var qn = (f.questions && f.questions.length) || 0;
+        row.innerHTML =
+            '<div class="fp-icon"><span class="material-symbols-rounded">assignment</span></div>' +
+            '<div class="fp-meta"><div class="fp-title"></div><div class="fp-sub"></div></div>' +
+            '<div class="fp-actions">' +
+            '<button type="button" class="fp-ren" title="Переименовать"><span class="material-symbols-rounded">edit</span></button>' +
+            '<button type="button" class="fp-del danger" title="В корзину"><span class="material-symbols-rounded">delete</span></button>' +
+            '</div>';
+        row.querySelector('.fp-title').textContent = f.title || ('Форма ' + (idx + 1));
+        row.querySelector('.fp-sub').textContent = qn + ' вопр.';
+        row.addEventListener('click', function(e) {
+            if (e.target.closest('.fp-actions')) return;
+            openFormByIndex(idx);
+        });
+        row.querySelector('.fp-ren').onclick = function(e) {
+            e.stopPropagation();
+            renameFormFromPicker(idx);
+        };
+        row.querySelector('.fp-del').onclick = function(e) {
+            e.stopPropagation();
+            deleteFormFromPicker(idx);
+        };
+        list.appendChild(row);
+    });
+}
+
+function openFormByIndex(idx) {
+    if (idx < 0 || idx >= allForms.length) return;
+    currentFormIndex = idx;
+    try {
+        var u = new URL(window.location.href);
+        // Prefer stable form.id; fall back to array index (hub still uses legacyIndex)
+        var form = allForms[idx];
+        var linkVal = form && form.id != null && String(form.id).trim() !== '' ? String(form.id) : String(idx);
+        if (form && (form.id == null || String(form.id).trim() === '')) {
+            try { ensureFormStableId(form, idx); linkVal = String(form.id); saveFormsToStorage(); } catch (eId) {}
+        }
+        u.searchParams.set('form', linkVal);
+        history.replaceState(null, '', u.toString());
+    } catch (e) {}
+    enterHubFormMode(idx);
+    renderAllFormsUI();
+    loadCurrentForm();
+}
+
+function renameFormFromPicker(idx) {
+    var f = allForms[idx];
+    if (!f) return;
+    showPrompt('Название формы', f.title || '', function(name) {
+        if (name === null) return;
+        name = String(name).trim();
+        if (!name) return;
+        f.title = name;
+        f.updatedAt = Date.now();
+        saveFormsToStorage();
+        try { syncRegistryFormTitle(idx, name); } catch (e) {}
+        renderFormPickerList();
+        try { renderAllFormsUI(); } catch (e) {}
+    });
+}
+
+function deleteFormFromPicker(idx) {
+    if (allForms.length <= 1) {
+        showAlert('Нельзя удалить единственную форму', 'warning');
+        return;
+    }
+    var f = allForms[idx];
+    showConfirm('В корзину?', '«' + ((f && f.title) || 'Форма') + '» будет удалена из списка. На главной My Work можно будет убрать из реестра.', function() {
+        // soft: remove form from array (hub trash is separate registry — here delete form data)
+        allForms.splice(idx, 1);
+        saveFormsToStorage();
+        if (currentFormIndex >= allForms.length) currentFormIndex = allForms.length - 1;
+        renderFormPickerList();
+        try { renderAllFormsUI(); } catch (e) {}
+        showAlert('Форма удалена', 'delete');
+    });
+}
+
+function initHubFormRouting() {
+    maybeShowPwaWorkModal();
+    var idx = getFormQueryIndex();
+    if (idx !== null) {
+        if (idx >= allForms.length) idx = 0;
+        enterHubFormMode(idx);
+        currentFormIndex = idx;
+        return { picker: false, index: idx };
+    }
+    // no ?form= → full screen picker
+    showFormPicker();
+    return { picker: true, index: null };
+}
+
 
 document.addEventListener('DOMContentLoaded', () => {
     loadFormsFromStorage();
     applyShareParamsFromUrl();
     var enteredPreview = applyPreviewFromUrl();
     initSettings();
+    var hubRoute = { picker: false };
     if (!enteredPreview) {
-        renderAllFormsUI();
-        loadCurrentForm();
+        try { hubRoute = initHubFormRouting(); } catch (e) { console.warn(e); hubRoute = { picker: false }; }
+        if (!hubRoute.picker) {
+            renderAllFormsUI();
+            loadCurrentForm();
+        }
         checkOldDataMigration();
     }
     try { enhanceAllSelects(document); } catch (e) { console.warn('enhanceAllSelects', e); }
@@ -149,11 +535,24 @@ function loadFormsFromStorage() {
             allForms = JSON.parse(saved);
         } catch (e) {
             console.error("Ошибка чтения из localStorage", e);
-            allForms = [defaultForm];
+            allForms = [JSON.parse(JSON.stringify(defaultForm))];
         }
     } else {
-        allForms = [defaultForm];
+        allForms = [JSON.parse(JSON.stringify(defaultForm))];
         saveFormsToStorage();
+    }
+    if (!Array.isArray(allForms) || !allForms.length) {
+        allForms = [JSON.parse(JSON.stringify(defaultForm))];
+    }
+    var changed = false;
+    allForms.forEach(function(f, i) {
+        if (f && (f.id == null || String(f.id).trim() === '')) {
+            ensureFormStableId(f, i);
+            changed = true;
+        }
+    });
+    if (changed) {
+        try { saveFormsToStorage(); } catch (e2) {}
     }
 }
 
@@ -583,24 +982,16 @@ function deleteForm(index, event) {
 
 function switchForm(index) {
     currentFormIndex = parseInt(index);
+    if (document.body.classList.contains('hub-form-mode')) {
+        try {
+            var u = new URL(window.location.href);
+            u.searchParams.set('form', String(currentFormIndex));
+            history.replaceState(null, '', u.toString());
+        } catch (e) {}
+        updateAppTopbarTitle();
+    }
     renderAllFormsUI();
     loadCurrentForm();
-}
-
-function createNewFormPrompt() {
-    showPrompt("Введите название новой формы:", "", (title) => {
-        if (title && title.trim()) {
-            allForms.push({
-                title: title.trim(),
-                questions: []
-            });
-            currentFormIndex = allForms.length - 1;
-            saveFormsToStorage();
-            renderAllFormsUI();
-            loadCurrentForm();
-            showAlert('Новая форма успешно создана!', 'check_circle');
-        }
-    });
 }
 
 /* ==========================================
@@ -664,16 +1055,117 @@ function loadCurrentForm() {
     }
 }
 
-function renderMediaHTML(url) {
-    if (!url) return '';
-    if (url.startsWith('data:video') || url.match(/\.(mp4|webm|ogv)$/i)) {
-        return `<div style="text-align:center; margin-bottom:15px;"><video src="${url}" controls style="max-width:100%; border-radius:12px;"></video></div>`;
-    } else if (url.startsWith('data:audio') || url.match(/\.(mp3|wav|ogg)$/i)) {
-        return `<div style="text-align:center; margin-bottom:15px;"><audio src="${url}" controls style="width:100%;"></audio></div>`;
-    } else {
-        return `<div style="text-align:center; margin-bottom:15px;"><img src="${url}" style="max-width:100%; border-radius:12px;"></div>`;
-    }
+function parseYouTubeId(url) {
+    if (!url) return null;
+    var s = String(url).trim();
+    var m = s.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/);
+    return m ? m[1] : null;
 }
+
+function renderYouTubeEmbed(url) {
+    var id = parseYouTubeId(url);
+    if (!id) return '';
+    var src = 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(id) + '?rel=0';
+    return '<div class="yt-embed-wrap"><iframe src="' + src + '" title="YouTube" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>';
+}
+
+function renderMediaHTML(url, opts) {
+    opts = opts || {};
+    if (!url) return '';
+    var yt = parseYouTubeId(url);
+    if (yt || /youtube\.com|youtu\.be/i.test(url)) {
+        return renderYouTubeEmbed(url) || '';
+    }
+    if (url.startsWith('data:video') || url.match(/\.(mp4|webm|ogv)$/i)) {
+        return '<div style="text-align:center; margin-bottom:15px;"><video src="' + url + '" controls style="max-width:100%; border-radius:12px;"></video></div>';
+    }
+    if (url.startsWith('data:audio') || url.match(/\.(mp3|wav|ogg)$/i)) {
+        return '<div style="text-align:center; margin-bottom:15px;"><audio src="' + url + '" controls style="width:100%;"></audio></div>';
+    }
+    // image (+ optional draw)
+    if (opts.allowDraw) {
+        var uid = 'draw-' + Date.now();
+        return (
+            '<div class="draw-toolbar" data-for="' + uid + '">' +
+            '<button type="button" class="active" data-tool="pen" onclick="setDrawTool(this)"><span class="material-symbols-rounded" style="font-size:16px;">edit</span>Карандаш</button>' +
+            '<button type="button" data-tool="eraser" onclick="setDrawTool(this)"><span class="material-symbols-rounded" style="font-size:16px;">ink_eraser</span>Ластик</button>' +
+            '<button type="button" onclick="clearDrawCanvas(\'' + uid + '\')"><span class="material-symbols-rounded" style="font-size:16px;">delete</span>Очистить</button>' +
+            '<span style="font-size:11px;color:var(--text-muted);align-self:center;">Сбросится после ответа</span>' +
+            '</div>' +
+            '<div class="draw-media-wrap" id="' + uid + '-wrap" style="text-align:center;">' +
+            '<img id="' + uid + '-img" src="' + url + '" alt="" onload="initDrawCanvas(\'' + uid + '\')">' +
+            '<canvas id="' + uid + '" class="draw-canvas"></canvas>' +
+            '</div>'
+        );
+    }
+    return '<div style="text-align:center; margin-bottom:15px;"><img src="' + url + '" style="max-width:100%; border-radius:12px;"></div>';
+}
+
+/* Drawing helpers (ephemeral — not saved) */
+var _drawTool = 'pen';
+var _drawColor = '#ea4335';
+function setDrawTool(btn) {
+    _drawTool = btn.getAttribute('data-tool') || 'pen';
+    var bar = btn.parentElement;
+    if (bar) bar.querySelectorAll('button[data-tool]').forEach(function(b){ b.classList.toggle('active', b === btn); });
+}
+function clearDrawCanvas(id) {
+    var c = document.getElementById(id);
+    if (!c) return;
+    var ctx = c.getContext('2d');
+    ctx.clearRect(0, 0, c.width, c.height);
+}
+function initDrawCanvas(id) {
+    var canvas = document.getElementById(id);
+    var img = document.getElementById(id + '-img');
+    var wrap = document.getElementById(id + '-wrap');
+    if (!canvas || !img) return;
+    var w = img.clientWidth || img.naturalWidth;
+    var h = img.clientHeight || img.naturalHeight;
+    if (!w || !h) return;
+    canvas.width = w;
+    canvas.height = h;
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    var ctx = canvas.getContext('2d');
+    var drawing = false;
+    function pos(e) {
+        var r = canvas.getBoundingClientRect();
+        var t = e.touches && e.touches[0];
+        var x = (t ? t.clientX : e.clientX) - r.left;
+        var y = (t ? t.clientY : e.clientY) - r.top;
+        return { x: x * (canvas.width / r.width), y: y * (canvas.height / r.height) };
+    }
+    function start(e) { e.preventDefault(); drawing = true; var p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); }
+    function move(e) {
+        if (!drawing) return;
+        e.preventDefault();
+        var p = pos(e);
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        if (_drawTool === 'eraser') {
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.lineWidth = 16;
+        } else {
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.strokeStyle = _drawColor;
+            ctx.lineWidth = 3;
+        }
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+    }
+    function end() { drawing = false; ctx.beginPath(); }
+    canvas.onmousedown = start;
+    canvas.onmousemove = move;
+    canvas.onmouseup = end;
+    canvas.onmouseleave = end;
+    canvas.ontouchstart = start;
+    canvas.ontouchmove = move;
+    canvas.ontouchend = end;
+}
+
 
 function getFlashcardAnswerText(q) {
     if (!q) return '—';
@@ -858,6 +1350,35 @@ function renderQuestion() {
     if (nextBtn) nextBtn.classList.remove('hidden');
     const q = _active.q;
     currentRealQuestionIndex = _active.realIdx;
+
+    // Вопросы «Скоро» — заглушка, не ломаем квиз
+    if (typeof isComingSoonQuestion === 'function' && isComingSoonQuestion(q)) {
+        if (nextBtn) nextBtn.classList.remove('hidden');
+        document.getElementById('current-number').textContent = currentQuestionIndex + 1;
+        document.getElementById('total-number').textContent = _active.activeCount || form.questions.length;
+        const progressPercent = ((currentQuestionIndex + 1) / (_active.activeCount || form.questions.length || 1)) * 100;
+        document.getElementById('progress').style.width = progressPercent + '%';
+        const timerDisplay = document.getElementById('timer-display');
+        if (timerDisplay) timerDisplay.classList.add('hidden');
+        const hintBtn = document.getElementById('hint-btn');
+        const hintBox = document.getElementById('hint-box');
+        if (hintBtn) hintBtn.classList.add('hidden');
+        if (hintBox) hintBox.classList.add('hidden');
+        const body = document.getElementById('question-body');
+        const label = comingSoonLabel(q);
+        body.innerHTML =
+            '<div class="coming-soon-card">' +
+            '<span class="coming-soon-badge">Скоро</span>' +
+            '<h3 style="margin:12px 0 8px;font-weight:600;">' + escapeHtml(q.title || label) + '</h3>' +
+            (q.description ? '<p style="color:var(--text-muted);font-size:0.92rem;line-height:1.45;margin:0 0 12px;">' + escapeHtml(q.description) + '</p>' : '') +
+            '<div class="coming-soon-box">' +
+            '<span class="material-symbols-rounded" style="font-size:36px;color:var(--accent-color);">construction</span>' +
+            '<p style="margin:8px 0 0;font-weight:600;">Тип «' + escapeHtml(label) + '»</p>' +
+            '<p style="margin:6px 0 0;font-size:13px;color:var(--text-muted);">Пока в разработке. В админке создать нельзя — только демо в этой тестовой форме. Нажмите «Далее».</p>' +
+            '</div></div>';
+        try { saveAnswer('coming-soon-skip'); } catch (e) {}
+        return;
+    }
     
     document.getElementById('current-number').textContent = currentQuestionIndex + 1;
     document.getElementById('total-number').textContent = _active.activeCount || form.questions.length;
@@ -1102,13 +1623,23 @@ function renderQuestion() {
             break;
 
         case 'info-slide':
+            if (q.youtubeUrl) {
+                body.innerHTML += renderYouTubeEmbed(q.youtubeUrl) || renderMediaHTML(q.youtubeUrl);
+            }
             if (q.mediaUrl) {
-                body.innerHTML += renderMediaHTML(q.mediaUrl);
+                body.innerHTML += renderMediaHTML(q.mediaUrl, { allowDraw: !!q.allowDraw });
             }
             saveAnswer('viewed');
             break;
 
-        default:
+                case 'table': {
+            body.innerHTML += '<span class="beta-pill-q">BETA</span>';
+            body.innerHTML += '<p style="font-size:12px;color:var(--text-muted);margin:6px 0 10px;">Таблица (бета): заполните только подсвеченные ячейки.</p>';
+            body.innerHTML += renderStudentTableHTML(q, savedVal);
+            setTimeout(function() { bindStudentTableInputs(q); }, 0);
+            break;
+        }
+default:
             body.innerHTML += `<p style="color:var(--text-muted);">Тип вопроса поддерживается в упрощенном режиме.</p>`;
             saveAnswer('viewed');
     }
@@ -1204,6 +1735,17 @@ function nextStep(force = false) {
 
     var ans = userAnswers[currentRealQuestionIndex];
     var answerIsEmpty = (ans === undefined || ans === null || ans === '' || (Array.isArray(ans) && (ans.length === 0 || ans.every(function(x){ return !String(x||'').trim(); }))));
+    // Table BETA: empty if all editable cells blank
+    if (q.type === 'table' && ans && typeof ans === 'object' && !Array.isArray(ans)) {
+        var cells = q.tableCells || {};
+        var keys = Object.keys(cells).filter(function(k) {
+            return !!(q.tableAllowAllEdit || (cells[k] && cells[k].editable));
+        });
+        if (!keys.length) keys = Object.keys(ans);
+        answerIsEmpty = !keys.length || keys.every(function(k) {
+            return !String(ans[k] != null ? ans[k] : '').trim();
+        });
+    }
     if (!force && !isExplanationShowing && q.required && answerIsEmpty) {
         showAlert('Пожалуйста, ответьте на обязательный вопрос!', 'warning');
         return;
@@ -1272,6 +1814,7 @@ function stopHoldTimer() {
 }
 
 function getCorrectAnswerDisplay(q) {
+    if (q && q.type === 'table') return getTableCorrectDisplay(q);
     if (!q) return '—';
     if (q.type === 'fill-blank' && Array.isArray(q.blanks)) {
         return q.blanks.map(function(alts) {
@@ -1468,7 +2011,7 @@ function calculateResults() {
     form.questions.forEach((q, idx) => {
         const userAns = userAnswers[idx];
 
-        if (q.type === 'flashcard' || q.type === 'info-slide') {
+        if (q.type === 'flashcard' || q.type === 'info-slide' || (typeof isComingSoonQuestion === 'function' && isComingSoonQuestion(q))) {
             var infoExp = '';
             if (q.hasExplanation && q.explanationText) {
                 infoExp = '<div class="result-explanation exp-info" style="margin-top:6px;">' +
@@ -1512,6 +2055,8 @@ function calculateResults() {
             if (q.correctText && q.correctText.some(t => t.toLowerCase().trim() === String(userAns || '').toLowerCase().trim())) isCorrect = true;
         } else if (q.type === 'puzzle-drag') {
             if (Array.isArray(userAns) && q.correctChoices && JSON.stringify(userAns) === JSON.stringify(q.correctChoices)) isCorrect = true;
+        } else if (q.type === 'table') {
+            if (isTableAnswerCorrect(q, userAns)) isCorrect = true;
         }
 
         var displayTitle;
@@ -1600,7 +2145,7 @@ function calculateResults() {
         emailBlock +=
             '<button type="button" class="btn" style="width:100%;margin-top:12px;background:transparent;color:var(--text-color);border:1px solid var(--border-color);" onclick="exportStudentResultsJSON()">' +
             '<span class="material-symbols-rounded" style="font-size:18px;vertical-align:middle;">download</span> ' +
-            'Скачать ответы (.json) <span class="novelty-badge">НОВИНКА</span></button>';
+            'Скачать ответы (.json) </button>';
     }
 
     document.getElementById('review-box').innerHTML = emailBlock + reviewHTML;
@@ -1931,7 +2476,7 @@ function openStudentResultsReview(data, fileName) {
             '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;">' +
                 '<h3 style="margin:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
                     '<span class="material-symbols-rounded" style="color:var(--accent-color);">grading</span>' +
-                    'Сверка ответов <span class="novelty-badge">НОВИНКА</span>' +
+                    'Сверка ответов ' +
                 '</h3>' +
                 '<button type="button" onclick="closeStudentResultsModal()" style="background:transparent;border:none;cursor:pointer;color:var(--text-color);display:flex;">' +
                     '<span class="material-symbols-rounded">close</span></button>' +
@@ -2017,6 +2562,264 @@ function tryLogin() {
     }
 }
 
+
+/* ===== Создать форму (модалка) + карта QR-входа ===== */
+function createNewFormPrompt() {
+    var m = document.getElementById('create-form-modal');
+    var inp = document.getElementById('create-form-title');
+    if (inp) inp.value = '';
+    if (m) {
+        m.classList.add('active');
+        setTimeout(function() { if (inp) inp.focus(); }, 80);
+    } else {
+        // fallback
+        showPrompt("Введите название новой формы:", "", function(title) {
+            if (title && title.trim()) confirmCreateEmptyFormWithTitle(title.trim());
+        });
+    }
+}
+function closeCreateFormModal() {
+    var m = document.getElementById('create-form-modal');
+    if (m) m.classList.remove('active');
+}
+function confirmCreateEmptyForm() {
+    var inp = document.getElementById('create-form-title');
+    var title = (inp && inp.value || '').trim();
+    if (!title) {
+        showAlert('Введите название формы', 'edit');
+        return;
+    }
+    confirmCreateEmptyFormWithTitle(title);
+}
+function confirmCreateEmptyFormWithTitle(title) {
+    allForms.push({ title: title, questions: [], settings: { saveProgress: true, showCorrect: true, showWrong: true } });
+    currentFormIndex = allForms.length - 1;
+    saveFormsToStorage();
+    renderAllFormsUI();
+    loadCurrentForm();
+    closeCreateFormModal();
+    showAlert('Новая форма создана!', 'check_circle');
+}
+
+function openAccessCardWizard() {
+    closeFormSettings();
+    var m = document.getElementById('access-card-wizard');
+    if (m) m.classList.add('active');
+}
+function closeAccessCardWizard() {
+    var m = document.getElementById('access-card-wizard');
+    if (m) m.classList.remove('active');
+}
+
+function buildAdminAccessPayload(formIndex) {
+    var form = allForms[formIndex];
+    var auth = getFormAdminAuth(form);
+    // MFAD = MyForm Admin Device card v1
+    return ['MFAD', 'v1', String(formIndex), String(auth.u), String(auth.p), (form && form.title) ? String(form.title).slice(0, 80) : ''].join('|');
+}
+
+function parseAdminAccessPayload(raw) {
+    var s = String(raw || '').trim();
+    // also accept URL-like
+    if (s.indexOf('MFAD|') === -1 && s.indexOf('MFAD%7C') !== -1) {
+        try { s = decodeURIComponent(s); } catch (e) {}
+    }
+    var i = s.indexOf('MFAD|');
+    if (i > 0) s = s.slice(i);
+    var parts = s.split('|');
+    if (parts[0] !== 'MFAD' || parts[1] !== 'v1' || parts.length < 5) return null;
+    return {
+        formIndex: parseInt(parts[2], 10),
+        login: parts[3],
+        pass: parts[4],
+        title: parts[5] || ''
+    };
+}
+
+function printTeacherAccessCard() {
+    closeAccessCardWizard();
+    var fi = currentFormIndex;
+    var form = allForms[fi];
+    if (!form) {
+        showAlert('Нет активной формы', 'error');
+        return;
+    }
+    var auth = getFormAdminAuth(form);
+    var payload = buildAdminAccessPayload(fi);
+    var qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&ecc=M&data=' + encodeURIComponent(payload);
+    var w = window.open('', '_blank');
+    if (!w) {
+        showAlert('Разрешите всплывающие окна для печати карты', 'warning');
+        return;
+    }
+    var html = '<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Карта доступа — ' +
+        (form.title || 'Форма').replace(/</g, '') + '</title><style>' +
+        'body{font-family:system-ui,Segoe UI,sans-serif;padding:24px;color:#111;max-width:480px;margin:0 auto;}' +
+        '.card{border:2px solid #1a73e8;border-radius:16px;padding:20px;}' +
+        'h1{font-size:18px;margin:0 0 8px;}' +
+        '.warn{background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:10px 12px;border-radius:10px;font-size:13px;margin:12px 0;}' +
+        '.row{margin:6px 0;font-size:14px;}' +
+        '.qr{text-align:center;margin:16px 0;}' +
+        'code{font-size:11px;word-break:break-all;background:#f3f4f6;padding:6px 8px;border-radius:6px;display:block;}' +
+        '.hint{font-size:12px;color:#555;margin-top:12px;line-height:1.45;}' +
+        '@media print{button{display:none!important;}}' +
+        '</style></head><body>' +
+        '<div class="card">' +
+        '<h1>Карта преподавателя — My Form</h1>' +
+        '<div class="row"><b>Форма:</b> ' + String(form.title || ('№' + (fi + 1))).replace(/</g, '') + '</div>' +
+        '<div class="row"><b>Роль:</b> Вход в админ-панель</div>' +
+        '<div class="row"><b>Логин:</b> ' + String(auth.u).replace(/</g, '') + '</div>' +
+        '<div class="row"><b>Пароль:</b> ' + String(auth.p).replace(/</g, '') + '</div>' +
+        '<div class="warn"><b>⚠ НИКОМУ НЕ ПОКАЗЫВАЙТЕ</b><br>Карта даёт полный доступ к редактированию этой формы. Не фотографируйте и не пересылайте посторонним.</div>' +
+        '<div class="qr"><img src="' + qrUrl + '" width="240" height="240" alt="QR"><div style="font-size:12px;margin-top:6px;">Отсканируйте в «Войти по коду»</div></div>' +
+        '<div class="hint"><b>Инструкция:</b> My Form → Вход для администратора → «Войти по коду» → наведите камеру на QR. Если камера недоступна — введите код вручную:</div>' +
+        '<code>' + payload.replace(/</g, '') + '</code>' +
+        '</div>' +
+        '<p style="text-align:center;margin-top:16px;"><button onclick="window.print()" style="padding:10px 18px;border:none;border-radius:10px;background:#1a73e8;color:#fff;font-weight:600;cursor:pointer;">Печать</button></p>' +
+        '<script>setTimeout(function(){try{window.print();}catch(e){}},600);<\/script>' +
+        '</body></html>';
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+}
+
+var _qrStream = null;
+var _qrScanTimer = null;
+var _qrDetector = null;
+
+function openQrLoginScanner() {
+    var m = document.getElementById('qr-login-modal');
+    if (m) m.classList.add('active');
+    var st = document.getElementById('qr-login-status');
+    if (st) st.textContent = 'Запрос доступа к камере…';
+    startQrCamera();
+}
+function closeQrLoginScanner() {
+    stopQrCamera();
+    var m = document.getElementById('qr-login-modal');
+    if (m) m.classList.remove('active');
+}
+function stopQrCamera() {
+    if (_qrScanTimer) { clearInterval(_qrScanTimer); _qrScanTimer = null; }
+    if (_qrStream) {
+        try { _qrStream.getTracks().forEach(function(t) { t.stop(); }); } catch (e) {}
+        _qrStream = null;
+    }
+    var v = document.getElementById('qr-login-video');
+    if (v) v.srcObject = null;
+}
+function startQrCamera() {
+    var video = document.getElementById('qr-login-video');
+    var st = document.getElementById('qr-login-status');
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        if (st) st.textContent = 'Камера недоступна — вставьте код вручную ниже';
+        return;
+    }
+    navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
+    }).then(function(stream) {
+        _qrStream = stream;
+        if (video) {
+            video.srcObject = stream;
+            video.setAttribute('playsinline', 'true');
+            video.play().catch(function(){});
+        }
+        if (st) st.textContent = 'Наведите на QR карты…';
+        if (window.BarcodeDetector) {
+            try {
+                _qrDetector = new BarcodeDetector({ formats: ['qr_code'] });
+            } catch (e) { _qrDetector = null; }
+        }
+        if (_qrScanTimer) clearInterval(_qrScanTimer);
+        _qrScanTimer = setInterval(scanQrFrame, 450);
+    }).catch(function(err) {
+        console.warn(err);
+        if (st) st.textContent = 'Нет доступа к камере — введите код вручную';
+        showAlert('Камера недоступна. Нужен HTTPS/localhost или разрешение. Можно ввести код с карты вручную.', 'videocam_off');
+    });
+}
+function scanQrFrame() {
+    var video = document.getElementById('qr-login-video');
+    if (!video || video.readyState < 2) return;
+    if (_qrDetector) {
+        _qrDetector.detect(video).then(function(codes) {
+            if (codes && codes.length) {
+                var raw = codes[0].rawValue || codes[0].rawData || '';
+                if (raw) onQrCodeDetected(String(raw));
+            }
+        }).catch(function(){});
+        return;
+    }
+    // Без BarcodeDetector — только ручной ввод (локальный MVP)
+}
+function playQrBeep() {
+    try {
+        var ctx = new (window.AudioContext || window.webkitAudioContext)();
+        var o = ctx.createOscillator();
+        var g = ctx.createGain();
+        o.type = 'sine';
+        o.frequency.value = 880;
+        g.gain.value = 0.08;
+        o.connect(g); g.connect(ctx.destination);
+        o.start();
+        setTimeout(function() { try { o.stop(); ctx.close(); } catch (e) {} }, 120);
+    } catch (e) {}
+}
+function onQrCodeDetected(raw) {
+    var data = parseAdminAccessPayload(raw);
+    if (!data) return; // ignore other QR
+    stopQrCamera();
+    playQrBeep();
+    applyQrAdminLogin(data);
+}
+function submitManualQrLogin() {
+    var inp = document.getElementById('qr-login-manual');
+    var raw = (inp && inp.value || '').trim();
+    if (!raw) {
+        showAlert('Вставьте код с карты', 'qr_code');
+        return;
+    }
+    var data = parseAdminAccessPayload(raw);
+    if (!data) {
+        showAlert('Код не распознан. Нужен формат MFAD|v1|…', 'error');
+        return;
+    }
+    playQrBeep();
+    applyQrAdminLogin(data);
+}
+function applyQrAdminLogin(data) {
+    if (!data || isNaN(data.formIndex) || data.formIndex < 0 || data.formIndex >= allForms.length) {
+        // try match by title
+        var found = -1;
+        if (data && data.title) {
+            for (var i = 0; i < allForms.length; i++) {
+                if ((allForms[i].title || '') === data.title) { found = i; break; }
+            }
+        }
+        if (found < 0) {
+            showAlert('Форма из карты не найдена на этом устройстве. Сначала откройте/импортируйте ту же форму.', 'error');
+            return;
+        }
+        data.formIndex = found;
+    }
+    currentFormIndex = data.formIndex;
+    var form = allForms[currentFormIndex];
+    var stored = getFormAdminAuth(form);
+    if (String(data.login) === String(stored.u) && String(data.pass) === String(stored.p)) {
+        closeQrLoginScanner();
+        closeLoginModal();
+        renderAllFormsUI();
+        switchScreen('admin');
+        showAlert('Вход по карте выполнен', 'check_circle');
+    } else {
+        showAlert('Код карты не совпадает с логином/паролем этой формы (пароль могли сменить).', 'lock');
+        openQrLoginScanner();
+    }
+}
+
+
+
 function logout() { loadCurrentForm(); }
 
 function toggleAddQuestionForm() {
@@ -2040,7 +2843,8 @@ function formatQuestionTypeLabel(type) {
         'fill-blank': 'Пропуски ★',
         'puzzle-drag': 'Пазл',
         'info-slide': 'Инфо',
-        'flashcard': 'Флешкарта'
+        'flashcard': 'Флешкарта',
+        'table': 'Таблица ★ BETA'
     };
     return map[type] || type;
 }
@@ -2056,6 +2860,17 @@ function toggleAdminFields() {
     if (fbBox) fbBox.classList.toggle('hidden', type !== 'fill-blank');
     document.getElementById('flashcard-answer-box').classList.toggle('hidden', type !== 'flashcard');
     document.getElementById('media-upload-box').classList.toggle('hidden', type !== 'info-slide');
+    var tblBox = document.getElementById('admin-table-fields');
+    if (tblBox) {
+        tblBox.classList.toggle('hidden', type !== 'table');
+        if (type === 'table') rebuildAdminTableGrid();
+    }
+    if (type !== 'info-slide') {
+        var ytIn = document.getElementById('new-youtube-url');
+        if (ytIn) ytIn.value = '';
+        var adIn = document.getElementById('new-allow-draw');
+        if (adIn) adIn.checked = false;
+    }
 
     // Заголовок всегда виден; для fill-blank — опциональный
     var titleField = document.getElementById('new-title');
@@ -2242,14 +3057,30 @@ function processSaveQuestion(type, title, useInline) {
         if (document.getElementById('new-multiline-input')?.checked) newQ.multiline = true;
         if (document.getElementById('new-allow-format')?.checked) newQ.allowFormat = true;
         if (document.getElementById('new-side-notes')?.checked) newQ.sideNotes = true;
+    } else if (type === 'table') {
+        var tr = parseInt((document.getElementById('table-rows') || {}).value, 10) || 3;
+        var tc = parseInt((document.getElementById('table-cols') || {}).value, 10) || 3;
+        tr = Math.min(25, Math.max(1, tr));
+        tc = Math.min(25, Math.max(1, tc));
+        newQ.tableRows = tr;
+        newQ.tableCols = tc;
+        newQ.tableAllowAllEdit = !!(document.getElementById('table-allow-all-edit') && document.getElementById('table-allow-all-edit').checked);
+        newQ.tableCells = collectAdminTableCells(tr, tc, newQ.tableAllowAllEdit);
+        newQ._beta = true;
     } else if (type === 'flashcard') {
         newQ.flashcardAnswer = document.getElementById('new-flashcard-answer').value.trim();
     } else if (type === 'info-slide') {
         if (uploadedMediaBase64) {
             newQ.mediaUrl = uploadedMediaBase64;
-        } else if (editingQuestionIndex !== null && form.questions[editingQuestionIndex].mediaUrl) {
+        } else if (editingQuestionIndex !== null && form.questions[editingQuestionIndex] && form.questions[editingQuestionIndex].mediaUrl) {
             newQ.mediaUrl = form.questions[editingQuestionIndex].mediaUrl;
         }
+        var ytEl = document.getElementById('new-youtube-url');
+        var yt = ytEl ? (ytEl.value || '').trim() : '';
+        if (yt) newQ.youtubeUrl = yt;
+        var ad = document.getElementById('new-allow-draw');
+        if (ad && ad.checked) newQ.allowDraw = true;
+        else newQ.allowDraw = false;
     }
 
     if (document.getElementById('toggle-hint-input').checked) {
@@ -2470,7 +3301,13 @@ function editQuestion(idx) {
         if (typeof toggleTextInputs === 'function') toggleTextInputs(q.useInlineInput ? 'inline' : (q.multiline ? 'multiline' : ''));
     } else if (q.type === 'flashcard') {
         document.getElementById('new-flashcard-answer').value = q.flashcardAnswer || '';
-    } else if (q.type === 'info-slide' && q.mediaUrl) {
+    } else if (q.type === 'info-slide') {
+        var ytIn = document.getElementById('new-youtube-url');
+        if (ytIn) ytIn.value = q.youtubeUrl || '';
+        var adIn = document.getElementById('new-allow-draw');
+        if (adIn) adIn.checked = !!q.allowDraw;
+    }
+    if (q.type === 'info-slide' && q.mediaUrl) {
         document.getElementById('media-preview-container').innerHTML = renderMediaHTML(q.mediaUrl);
     }
 
@@ -2709,7 +3546,7 @@ function renderAdminQuestionsList() {
                     </button>
                     <button onclick="openQuestionPreview(${idx})" class="q-action-btn preview-q-btn" title="Протестировать вопрос">
                         <span class="material-symbols-rounded" style="font-size:16px;">play_circle</span> Тест
-                        <span class="novelty-badge">НОВИНКА</span>
+                        
                     </button>
                     <button onclick="editQuestion(${idx})" class="q-action-btn" title="Изменить вопрос">
                         <span class="material-symbols-rounded" style="font-size:16px;">edit</span> Изменить
@@ -3111,16 +3948,17 @@ function showAnswerExplanation(selectedIdx) {
     selectedIdx = parseInt(selectedIdx, 10);
     var correctSet = (q.correctChoices || []).map(Number);
     var isCorrect = !isNaN(selectedIdx) && correctSet.indexOf(selectedIdx) >= 0;
+    var hlAlways = !!(previewMode && previewMode.highlightAlways);
 
-    // Learn: подсветка вариантов
+    // Learn: подсветка. Если preview highlightAlways — верные зелёные даже без выбора.
     if (q.type === 'radio' || q.type === 'select') {
         document.querySelectorAll('#question-body .option').forEach(function(lab) {
             lab.classList.remove('correct-highlight', 'incorrect-highlight');
             var inp = lab.querySelector('input');
             if (!inp) return;
             var v = parseInt(inp.value, 10);
-            if (correctSet.indexOf(v) >= 0) lab.classList.add('correct-highlight');
-            else if (v === selectedIdx) lab.classList.add('incorrect-highlight');
+            if (correctSet.indexOf(v) >= 0 && (hlAlways || !isNaN(selectedIdx))) lab.classList.add('correct-highlight');
+            else if (!isNaN(selectedIdx) && v === selectedIdx && correctSet.indexOf(v) < 0) lab.classList.add('incorrect-highlight');
         });
     } else if (q.type === 'true-false') {
         document.querySelectorAll('#question-body .tf-choice').forEach(function(lab) {
@@ -3128,9 +3966,9 @@ function showAnswerExplanation(selectedIdx) {
             var inp = lab.querySelector('input');
             if (!inp) return;
             var v = parseInt(inp.value, 10);
-            if (v === selectedIdx) lab.classList.add('selected');
-            if (correctSet.indexOf(v) >= 0) lab.classList.add('correct-highlight');
-            else if (v === selectedIdx) lab.classList.add('incorrect-highlight');
+            if (!isNaN(selectedIdx) && v === selectedIdx) lab.classList.add('selected');
+            if (correctSet.indexOf(v) >= 0 && ((typeof hlAlways !== 'undefined' && hlAlways) || !isNaN(selectedIdx))) lab.classList.add('correct-highlight');
+            else if (!isNaN(selectedIdx) && v === selectedIdx) lab.classList.add('incorrect-highlight');
         });
     } else if (q.type === 'checkbox') {
         document.querySelectorAll('#question-body .option').forEach(function(lab) {
@@ -3929,16 +4767,44 @@ function openPreviewInOverlay(url) {
     var ov = document.createElement('div');
     ov.id = 'preview-overlay';
     ov.className = 'preview-overlay';
+    var hlOn = localStorage.getItem('mf_preview_highlight_always') === '1';
+    try {
+        var uHl = new URL(url, window.location.href);
+        if (hlOn) uHl.searchParams.set('hl', '1');
+        else uHl.searchParams.delete('hl');
+        url = uHl.toString();
+        safeUrl = String(url).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+        jsUrl = String(url).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    } catch (eHl) {}
     ov.innerHTML =
         '<div class="preview-overlay-bar">' +
             '<span class="material-symbols-rounded">science</span>' +
-            '<span style="flex:1;font-weight:600;">Превью — без всплывающих окон</span>' +
+            '<span style="flex:1;font-weight:600;min-width:0;">Превью — без всплывающих окон</span>' +
+            '<label class="preview-hl-toggle" title="Подсвечивать зелёным правильные ответы даже без выбора">' +
+                '<input type="checkbox" id="preview-hl-always"' + (hlOn ? ' checked' : '') + ' onchange="onPreviewHighlightToggle(this.checked)">' +
+                '<span class="hl-label-full">Подсвечивать зелёным правильные ответы даже без выбора</span>' +
+                '<span class="hl-label-short">Верные всегда</span>' +
+            '</label>' +
             '<button type="button" class="btn btn-ghost" style="width:auto;padding:6px 12px;margin:0;" onclick="openPreviewInNewTab(\'' + jsUrl + '\')">В новой вкладке</button>' +
             '<button type="button" class="btn" style="width:auto;padding:6px 14px;margin:0;" onclick="closePreviewOverlay()">Закрыть</button>' +
         '</div>' +
         '<iframe id="preview-iframe" class="preview-iframe" src="' + safeUrl + '" title="Превью"></iframe>';
     document.body.appendChild(ov);
     document.body.classList.add('preview-overlay-open');
+}
+
+function onPreviewHighlightToggle(on) {
+    localStorage.setItem('mf_preview_highlight_always', on ? '1' : '0');
+    var iframe = document.getElementById('preview-iframe');
+    if (!iframe || !iframe.src) return;
+    try {
+        var u = new URL(iframe.src, window.location.href);
+        if (on) u.searchParams.set('hl', '1');
+        else u.searchParams.delete('hl');
+        iframe.src = u.toString();
+    } catch (e) {
+        try { iframe.contentWindow.postMessage({ type: 'myform-preview-hl', on: !!on }, '*'); } catch (e2) {}
+    }
 }
 
 function openPreviewInNewTab(url) {
@@ -3961,6 +4827,10 @@ window.addEventListener('message', function(e) {
     if (!e.data || typeof e.data !== 'object') return;
     if (e.data.type === 'myform-preview-done' || e.data.type === 'myform-preview-close') {
         closePreviewOverlay();
+    }
+    if (e.data.type === 'myform-preview-hl' && previewMode) {
+        previewMode.highlightAlways = !!e.data.on;
+        try { showAnswerExplanation(NaN); } catch (err) {}
     }
 });
 
@@ -3987,11 +4857,13 @@ function applyPreviewFromUrl() {
         currentFormIndex = fi;
 
         var qIdx = params.get('q') != null ? parseInt(params.get('q'), 10) : null;
+        var hlAlways = params.get('hl') === '1' || localStorage.getItem('mf_preview_highlight_always') === '1';
         previewMode = {
             type: pv,
             formIndex: fi,
             questionIndex: (pv === 'question' && !isNaN(qIdx)) ? qIdx : null,
-            token: token
+            token: token,
+            highlightAlways: hlAlways
         };
 
         document.body.classList.add('preview-mode');
@@ -4059,6 +4931,7 @@ function applyPreviewFromUrl() {
         if (burger) burger.classList.add('hidden');
 
         renderQuestion();
+        if (previewMode && previewMode.highlightAlways) setTimeout(function(){ try { showAnswerExplanation(NaN); } catch(e){} }, 50);
         return true;
     } catch (e) {
         console.warn('applyPreviewFromUrl', e);
@@ -4272,6 +5145,42 @@ function goOnlineFeature(url, action) {
 }
 
 /* ----- Mini WorkGens (локальная генерация форм) ----- */
+
+
+/* ----- FormsGens AI (чат, 1 на форму, только онлайн) ----- */
+const FORMSGENS_CHATS_KEY = 'formsgens_chats_v1';
+// ключ API — общий с WorkGens (если сохранён)
+function getWorkGensApiKey() {
+    try {
+        return localStorage.getItem('workgens_api_key')
+            || localStorage.getItem('wg_api_key')
+            || localStorage.getItem('openai_api_key')
+            || localStorage.getItem('gemini_api_key')
+            || '';
+    } catch (e) { return ''; }
+}
+function formsgensFormKey(idx) {
+    var f = allForms[idx != null ? idx : currentFormIndex];
+    return (idx != null ? idx : currentFormIndex) + '::' + ((f && (f.id || f.title)) || 'form');
+}
+function loadFormsGensChats() {
+    try { return JSON.parse(localStorage.getItem(FORMSGENS_CHATS_KEY) || '{}') || {}; }
+    catch (e) { return {}; }
+}
+function saveFormsGensChats(map) {
+    localStorage.setItem(FORMSGENS_CHATS_KEY, JSON.stringify(map));
+}
+function getFormsGensMessages(idx) {
+    var map = loadFormsGensChats();
+    var k = formsgensFormKey(idx);
+    return Array.isArray(map[k]) ? map[k] : [];
+}
+function setFormsGensMessages(idx, msgs) {
+    var map = loadFormsGensChats();
+    map[formsgensFormKey(idx)] = msgs.slice(-80);
+    saveFormsGensChats(map);
+}
+
 function toggleMiniAI(force) {
     var panel = document.getElementById('mini-ai-panel');
     var bd = document.getElementById('mini-ai-backdrop');
@@ -4281,42 +5190,198 @@ function toggleMiniAI(force) {
     panel.setAttribute('aria-hidden', open ? 'false' : 'true');
     if (bd) bd.classList.toggle('hidden', !open);
     document.body.classList.toggle('mini-ai-open', open);
+    if (open) {
+        refreshFormsGensUI();
+        var ta = document.getElementById('mini-ai-prompt');
+        if (ta && isOnline()) setTimeout(function(){ ta.focus(); }, 120);
+    }
 }
 
-function runMiniAIGenerate() {
-    var ta = document.getElementById('mini-ai-prompt');
-    var status = document.getElementById('mini-ai-status');
-    var asNew = document.getElementById('mini-ai-new-form');
-    var text = (ta && ta.value || '').trim();
-    if (!text) {
-        showAlert('Опишите, какую форму создать', 'edit');
+function toggleFormsGensMenu(e) {
+    if (e) e.stopPropagation();
+    var m = document.getElementById('formsgens-menu');
+    if (!m) return;
+    m.classList.toggle('hidden');
+    if (!m.classList.contains('hidden')) {
+        setTimeout(function() {
+            document.addEventListener('click', function hide() {
+                m.classList.add('hidden');
+                document.removeEventListener('click', hide);
+            }, { once: true });
+        }, 10);
+    }
+}
+
+function refreshFormsGensUI() {
+    var label = document.getElementById('formsgens-form-label');
+    var form = allForms[currentFormIndex];
+    if (label) label.textContent = form ? ('Форма: ' + (form.title || ('№' + (currentFormIndex + 1)))) : 'Нет формы';
+    var banner = document.getElementById('formsgens-offline-banner');
+    if (banner) banner.classList.toggle('hidden', isOnline());
+    renderFormsGensMessages();
+}
+
+function renderFormsGensMessages() {
+    var box = document.getElementById('formsgens-messages');
+    if (!box) return;
+    var msgs = getFormsGensMessages(currentFormIndex);
+    if (!msgs.length) {
+        box.innerHTML = '<div class="fg-bubble system">Чат привязан к этой форме. Один чат на форму. Ключ API берётся из WorkGens (если сохранён). Только онлайн.</div>';
         return;
     }
-    if (status) status.textContent = 'Генерирую…';
+    box.innerHTML = msgs.map(function(m) {
+        var role = m.role === 'user' ? 'user' : (m.role === 'system' ? 'system' : 'assistant');
+        var text = escapeHtml(m.text || '');
+        var actions = '';
+        if (m.applyForm && m.payload) {
+            actions = '<div class="fg-actions"><button type="button" class="btn" style="width:auto;padding:6px 12px;font-size:12px;" onclick=\'applyFormsGensPayload(' + JSON.stringify(JSON.stringify(m.payload)) + ')\'>Применить к форме</button></div>';
+        }
+        return '<div class="fg-bubble ' + role + '">' + text.replace(/\n/g, '<br>') + actions + '</div>';
+    }).join('');
+    box.scrollTop = box.scrollHeight;
+}
+
+function clearFormsGensChat() {
+    setFormsGensMessages(currentFormIndex, []);
+    renderFormsGensMessages();
+    showAlert('Чат этой формы очищен', 'check_circle');
+}
+
+function showFormsGensLimits() {
+    showAlert('Лимиты зависят от вашего ключа API в WorkGens. FormsGens использует тот же ключ. Локальных квот нет.', 'speed');
+}
+function showFormsGensAbout() {
+    showAlert('FormsGens AI — встроенный помощник My Form. Генерирует и правит вопросы текущей формы. Один чат на форму. Полный WorkGens — через меню ⋮.', 'info');
+}
+
+function sendFormsGensMessage() {
+    if (!isOnline()) {
+        showAlert('FormsGens доступен только онлайн', 'wifi_off');
+        return;
+    }
+    var ta = document.getElementById('mini-ai-prompt');
+    var text = (ta && ta.value || '').trim();
+    if (!text) return;
+    var msgs = getFormsGensMessages(currentFormIndex);
+    msgs.push({ role: 'user', text: text, ts: Date.now() });
+    setFormsGensMessages(currentFormIndex, msgs);
+    if (ta) ta.value = '';
+    renderFormsGensMessages();
+
+    // Попытка реального API; fallback — локальный генератор
+    var key = getWorkGensApiKey();
+    if (key) {
+        callFormsGensApi(text, key).catch(function() {
+            localFormsGensReply(text);
+        });
+    } else {
+        localFormsGensReply(text);
+    }
+}
+
+function localFormsGensReply(userText) {
+    var form = miniAIBuildForm(userText);
+    var reply = 'Предложил форму «' + form.title + '» (' + form.questions.length + ' вопр.). Нажмите «Применить к форме», чтобы добавить вопросы в текущую форму, или опишите правки.';
+    var msgs = getFormsGensMessages(currentFormIndex);
+    msgs.push({ role: 'assistant', text: reply, ts: Date.now(), applyForm: true, payload: form });
+    setFormsGensMessages(currentFormIndex, msgs);
+    renderFormsGensMessages();
+}
+
+async function callFormsGensApi(userText, key) {
+    var form = allForms[currentFormIndex];
+    var ctx = {
+        title: form && form.title,
+        questionsCount: form && form.questions ? form.questions.length : 0,
+        types: (form && form.questions || []).slice(0, 12).map(function(q){ return q.type; })
+    };
+    var system = 'Ты FormsGens AI — помощник конструктора форм My Form. Отвечай кратко по-русски. Если пользователь просит создать/добавить вопросы, верни в конце блок JSON между маркерами <<<FORM и FORM>>> с полями title и questions (type, title, options, correctChoices и т.д.). Контекст формы: ' + JSON.stringify(ctx);
+    // Gemini-style REST (часто ключ gemini)
+    var endpoint = localStorage.getItem('workgens_api_endpoint') || '';
     try {
-        var form = miniAIBuildForm(text);
-        if (asNew && asNew.checked) {
-            allForms.push(form);
+        var answer = '';
+        if (!endpoint && (key.startsWith('AIza') || localStorage.getItem('gemini_api_key'))) {
+            var model = localStorage.getItem('workgens_model') || 'gemini-2.0-flash';
+            var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + encodeURIComponent(key);
+            var res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ role: 'user', parts: [{ text: system + '\n\nЗапрос: ' + userText }] }]
+                })
+            });
+            if (!res.ok) throw new Error('api ' + res.status);
+            var data = await res.json();
+            answer = (((data.candidates || [])[0] || {}).content || {}).parts;
+            answer = Array.isArray(answer) ? answer.map(function(p){ return p.text || ''; }).join('') : '';
+        } else {
+            // OpenAI-compatible
+            endpoint = endpoint || 'https://api.openai.com/v1/chat/completions';
+            var res2 = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + key
+                },
+                body: JSON.stringify({
+                    model: localStorage.getItem('workgens_model') || 'gpt-4o-mini',
+                    messages: [
+                        { role: 'system', content: system },
+                        { role: 'user', content: userText }
+                    ]
+                })
+            });
+            if (!res2.ok) throw new Error('api ' + res2.status);
+            var data2 = await res2.json();
+            answer = (((data2.choices || [])[0] || {}).message || {}).content || '';
+        }
+        if (!answer) throw new Error('empty');
+        var payload = null;
+        var fm = answer.match(/<<<FORM([\s\S]*?)FORM>>>/);
+        if (fm) {
+            try { payload = JSON.parse(fm[1].trim()); } catch (e) {}
+            answer = answer.replace(/<<<FORM[\s\S]*?FORM>>>/, '').trim();
+        }
+        var msgs = getFormsGensMessages(currentFormIndex);
+        msgs.push({ role: 'assistant', text: answer || 'Готово.', ts: Date.now(), applyForm: !!payload, payload: payload });
+        setFormsGensMessages(currentFormIndex, msgs);
+        renderFormsGensMessages();
+    } catch (e) {
+        console.warn('FormsGens API', e);
+        localFormsGensReply(userText);
+    }
+}
+
+function applyFormsGensPayload(payloadStr) {
+    try {
+        var form = typeof payloadStr === 'string' ? JSON.parse(payloadStr) : payloadStr;
+        if (typeof form === 'string') form = JSON.parse(form);
+        if (!form || !Array.isArray(form.questions)) {
+            showAlert('Нет данных формы для применения', 'error');
+            return;
+        }
+        if (!allForms[currentFormIndex]) {
+            allForms.push({ title: form.title || 'FormsGens', questions: form.questions, settings: { saveProgress: true } });
             currentFormIndex = allForms.length - 1;
         } else {
-            if (!allForms[currentFormIndex]) allForms.push(form);
-            else {
+            if (form.title && !(allForms[currentFormIndex].questions || []).length) {
                 allForms[currentFormIndex].title = form.title;
-                allForms[currentFormIndex].questions = (allForms[currentFormIndex].questions || []).concat(form.questions);
             }
+            allForms[currentFormIndex].questions = (allForms[currentFormIndex].questions || []).concat(form.questions);
         }
         saveFormsToStorage();
         renderAllFormsUI();
         loadCurrentForm();
-        if (status) status.textContent = 'Готово: «' + form.title + '» — вопросов: ' + form.questions.length;
-        showAlert('Форма создана: ' + form.title + ' (' + form.questions.length + ' вопр.)', 'check_circle');
-        // открыть админку удобно
-        try { switchScreen('login'); } catch (e) {}
+        showAlert('Добавлено вопросов: ' + form.questions.length, 'check_circle');
     } catch (e) {
         console.warn(e);
-        if (status) status.textContent = 'Ошибка генерации';
-        showAlert('Не удалось разобрать описание', 'error');
+        showAlert('Не удалось применить', 'error');
     }
+}
+
+// legacy aliases
+function runMiniAIGenerate() {
+    sendFormsGensMessage();
 }
 
 function miniAIBuildForm(text) {
@@ -4409,3 +5474,251 @@ function miniAIMakeQuestion(type, topic, i) {
         wrapRender();
     }
 })();
+
+
+/* ===== Table question (BETA) ===== */
+window.__adminTableState = window.__adminTableState || { cells: {}, ctxKey: null };
+
+function clampTableSize(n) {
+    n = parseInt(n, 10);
+    if (isNaN(n) || n < 1) return 1;
+    return Math.min(25, n);
+}
+function tableCellKey(r, c) { return r + ',' + c; }
+
+function rebuildAdminTableGrid() {
+    var wrap = document.getElementById('admin-table-grid-wrap');
+    if (!wrap) return;
+    var rows = clampTableSize((document.getElementById('table-rows') || {}).value || 3);
+    var cols = clampTableSize((document.getElementById('table-cols') || {}).value || 3);
+    var rowsEl = document.getElementById('table-rows');
+    var colsEl = document.getElementById('table-cols');
+    if (rowsEl) rowsEl.value = rows;
+    if (colsEl) colsEl.value = cols;
+    var allowAll = !!(document.getElementById('table-allow-all-edit') && document.getElementById('table-allow-all-edit').checked);
+    var st = window.__adminTableState;
+    if (!st.cells) st.cells = {};
+    var html = '<table class="mf-table" id="admin-mf-table"><tbody>';
+    for (var r = 0; r < rows; r++) {
+        html += '<tr>';
+        for (var c = 0; c < cols; c++) {
+            var key = tableCellKey(r, c);
+            var cell = st.cells[key] || { value: '', editable: allowAll, correct: '' };
+            if (allowAll) cell.editable = true;
+            st.cells[key] = cell;
+            var cls = cell.editable ? 'mf-editable' : 'mf-locked';
+            html += '<td class="' + cls + '" data-r="' + r + '" data-c="' + c + '" data-key="' + key + '">' +
+                '<input class="mf-cell-inner" type="text" value="' + escapeHtml(cell.value || '') + '" ' +
+                'oninput="onAdminTableCellInput(this)" data-key="' + key + '"></td>';
+        }
+        html += '</tr>';
+    }
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+    wrap.querySelectorAll('td').forEach(function(td) {
+        td.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            openAdminTableCtx(e, td);
+        });
+    });
+}
+
+function onAdminTableCellInput(input) {
+    var key = input.getAttribute('data-key');
+    if (!key) return;
+    var st = window.__adminTableState;
+    if (!st.cells[key]) st.cells[key] = { value: '', editable: false, correct: '' };
+    st.cells[key].value = input.value;
+}
+
+function onTableAllowAllChange() {
+    var allowAll = !!(document.getElementById('table-allow-all-edit') && document.getElementById('table-allow-all-edit').checked);
+    var st = window.__adminTableState;
+    Object.keys(st.cells || {}).forEach(function(k) {
+        if (allowAll) st.cells[k].editable = true;
+    });
+    rebuildAdminTableGrid();
+}
+
+function openAdminTableCtx(e, td) {
+    var key = td.getAttribute('data-key');
+    var st = window.__adminTableState;
+    var cell = st.cells[key] || { value: '', editable: false, correct: '' };
+    st.ctxKey = key;
+    document.querySelectorAll('#admin-mf-table td').forEach(function(x) { x.classList.remove('mf-selected'); });
+    td.classList.add('mf-selected');
+    var menu = document.getElementById('admin-table-ctx');
+    if (!menu) return;
+    var ed = document.getElementById('atx-editable');
+    var corr = document.getElementById('atx-correct');
+    if (ed) ed.checked = !!cell.editable;
+    if (corr) corr.value = cell.correct || '';
+    menu.classList.remove('hidden');
+    menu.style.left = Math.min(e.clientX, window.innerWidth - 280) + 'px';
+    menu.style.top = Math.min(e.clientY, window.innerHeight - 180) + 'px';
+}
+
+function applyAdminTableCtx() {
+    var st = window.__adminTableState;
+    var key = st.ctxKey;
+    if (!key) return;
+    if (!st.cells[key]) st.cells[key] = { value: '', editable: false, correct: '' };
+    var ed = document.getElementById('atx-editable');
+    var corr = document.getElementById('atx-correct');
+    st.cells[key].editable = !!(ed && ed.checked);
+    st.cells[key].correct = corr ? String(corr.value || '') : '';
+    var allowAll = document.getElementById('table-allow-all-edit');
+    if (allowAll && !st.cells[key].editable) allowAll.checked = false;
+    hideAdminTableCtx();
+    rebuildAdminTableGrid();
+}
+
+function hideAdminTableCtx() {
+    var menu = document.getElementById('admin-table-ctx');
+    if (menu) menu.classList.add('hidden');
+    window.__adminTableState.ctxKey = null;
+}
+
+document.addEventListener('click', function(e) {
+    var menu = document.getElementById('admin-table-ctx');
+    if (!menu || menu.classList.contains('hidden')) return;
+    if (!e.target.closest('#admin-table-ctx')) hideAdminTableCtx();
+});
+
+function collectAdminTableCells(rows, cols, allowAll) {
+    var st = window.__adminTableState;
+    var out = {};
+    for (var r = 0; r < rows; r++) {
+        for (var c = 0; c < cols; c++) {
+            var key = tableCellKey(r, c);
+            var cell = (st.cells && st.cells[key]) || { value: '', editable: false, correct: '' };
+            out[key] = {
+                value: cell.value || '',
+                editable: allowAll ? true : !!cell.editable,
+                correct: cell.correct || ''
+            };
+        }
+    }
+    return out;
+}
+
+function renderStudentTableHTML(q, savedVal) {
+    var rows = clampTableSize(q.tableRows || 3);
+    var cols = clampTableSize(q.tableCols || 3);
+    var cells = q.tableCells || {};
+    var saved = (savedVal && typeof savedVal === 'object' && !Array.isArray(savedVal)) ? savedVal : {};
+    var html = '<div class="student-table-wrap"><table class="mf-table" id="student-mf-table"><tbody>';
+    for (var r = 0; r < rows; r++) {
+        html += '<tr>';
+        for (var c = 0; c < cols; c++) {
+            var key = tableCellKey(r, c);
+            var cell = cells[key] || { value: '', editable: !!q.tableAllowAllEdit, correct: '' };
+            var editable = !!(q.tableAllowAllEdit || cell.editable);
+            var val = editable && saved[key] != null ? saved[key] : (cell.value || '');
+            if (editable) {
+                html += '<td class="mf-editable"><input class="mf-cell-inner" type="text" data-key="' + key + '" value="' + escapeHtml(String(val)) + '"></td>';
+            } else {
+                html += '<td class="mf-locked"><span class="mf-cell-inner">' + escapeHtml(String(cell.value || '')) + '</span></td>';
+            }
+        }
+        html += '</tr>';
+    }
+    html += '</tbody></table></div>';
+    return html;
+}
+
+function bindStudentTableInputs(q) {
+    var table = document.getElementById('student-mf-table');
+    if (!table) return;
+    function persist() {
+        var data = {};
+        table.querySelectorAll('input.mf-cell-inner[data-key]').forEach(function(inp) {
+            data[inp.getAttribute('data-key')] = inp.value;
+        });
+        saveAnswer(data);
+    }
+    table.querySelectorAll('input.mf-cell-inner[data-key]').forEach(function(inp) {
+        inp.addEventListener('input', persist);
+        inp.addEventListener('change', persist);
+    });
+    persist();
+}
+
+function isTableAnswerCorrect(q, userAns) {
+    var cells = q.tableCells || {};
+    var saved = (userAns && typeof userAns === 'object' && !Array.isArray(userAns)) ? userAns : {};
+    var checked = 0;
+    var keys = Object.keys(cells);
+    for (var i = 0; i < keys.length; i++) {
+        var key = keys[i];
+        var correct = String((cells[key] && cells[key].correct) || '').trim();
+        if (!correct) continue;
+        checked++;
+        var got = String(saved[key] != null ? saved[key] : '').trim();
+        if (got.toLowerCase() !== correct.toLowerCase()) return false;
+    }
+    return true;
+}
+
+function getTableCorrectDisplay(q) {
+    var cells = q.tableCells || {};
+    var parts = [];
+    Object.keys(cells).forEach(function(k) {
+        if (String((cells[k] && cells[k].correct) || '').trim())
+            parts.push(k + ' → ' + cells[k].correct);
+    });
+    return parts.length ? parts.join('; ') : '—';
+}
+
+
+/* ===== Legacy notice (button deprecated from 14.11.2026) ===== */
+function openLegacyNoticeModal() {
+    var m = document.getElementById('legacy-notice-modal');
+    if (m) m.classList.remove('hidden');
+}
+function closeLegacyNoticeModal() {
+    var m = document.getElementById('legacy-notice-modal');
+    if (m) m.classList.add('hidden');
+}
+function goToLegacyVersion() {
+    window.location.href = 'https://oracle-ai-pro.github.io/my-work/forms/index_old.html';
+}
+
+
+/** Открыть полный WorkGens с прикреплённой текущей формой */
+function openWorkGensWithCurrentForm() {
+    if (!navigator.onLine) {
+        showAlert('WorkGens AI доступен только онлайн', 'warning');
+        return;
+    }
+    var form = (typeof allForms !== 'undefined' && allForms[currentFormIndex]) ? allForms[currentFormIndex] : null;
+    var payload = null;
+    if (form) {
+        try {
+            payload = {
+                source: 'my-form',
+                attachedAt: Date.now(),
+                formIndex: currentFormIndex,
+                title: form.title || form.name || ('Форма ' + (currentFormIndex + 1)),
+                form: form
+            };
+            sessionStorage.setItem('wg_attached_form', JSON.stringify(payload));
+            localStorage.setItem('wg_attached_form_meta', JSON.stringify({
+                title: payload.title,
+                formIndex: currentFormIndex,
+                attachedAt: payload.attachedAt
+            }));
+        } catch (e) {
+            console.warn('attach form', e);
+        }
+    }
+    var url = '../WorkGens/index.html?from=forms&attach=1';
+    if (payload && payload.title) {
+        url += '&formTitle=' + encodeURIComponent(payload.title);
+    }
+    window.location.href = url;
+}
+
+// FormsGens panel deprecated — redirect any old calls
+function toggleMiniAI() { openWorkGensWithCurrentForm(); }
