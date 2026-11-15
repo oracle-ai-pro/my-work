@@ -1,313 +1,209 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-theme="dark" data-radius="rounded">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>My Spreadsheets | Prestige HQ</title>
     <link rel="icon" type="image/png" href="spreadsheets.png">
-    <link rel="apple-touch-icon" href="spreadsheets.png">
-    <link rel="manifest" href="manifest.webmanifest">
-    <meta name="theme-color" content="#1a73e8">
-    <meta name="mobile-web-app-capable" content="yes">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="app">
-        <!-- Таблицы (как вкладки форм) -->
-        <header class="app-header tables-header">
+        <!-- Hub topbar -->
+        <div class="app-topbar" id="app-topbar">
+            <a class="app-topbar-back" href="../index.html" title="На главную My Work">
+                <span class="material-symbols-rounded">arrow_back</span>
+            </a>
+            <div class="app-topbar-title-wrap">
+                <input type="text" class="app-topbar-title" id="app-file-title" readonly
+                    title="Нажмите, чтобы переименовать"
+                    onclick="startQuickRenameTable()"
+                    onblur="finishQuickRenameTable()"
+                    onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();} if(event.key==='Escape'){this.dataset.cancel='1';this.blur();}">
+            </div>
+            <div class="app-topbar-actions">
+                <button type="button" class="tool-btn" onclick="exportTableToJSON()" title="Экспорт">
+                    <span class="material-symbols-rounded">download</span>
+                </button>
+                <button type="button" class="tool-btn" onclick="printCurrentTable()" title="Печать">
+                    <span class="material-symbols-rounded">print</span>
+                </button>
+                <button type="button" class="tool-btn" onclick="openSettingsModal()" title="Настройки">
+                    <span class="material-symbols-rounded">settings</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Legacy multi-table toolbar (hidden in hub mode) -->
+        <header class="app-header" id="legacy-header">
             <div class="logo-area">
                 <img src="spreadsheets.png" alt="" class="app-icon" onerror="this.style.display='none'">
-                <span class="app-title">My Spreadsheets <span class="badge">Prestige HQ</span></span>
+                <span class="app-title">My Spreadsheets <span class="badge">HQ</span></span>
             </div>
-            <div class="header-tabs" id="table-tabs"></div>
             <div class="header-actions">
-                <button type="button" class="icon-btn" onclick="addTable()" title="Новая таблица">
-                    <span class="material-symbols-rounded">add</span>
-                </button>
-                <button type="button" class="icon-btn" id="btn-offline" title="Сеть / офлайн" onclick="onOfflineClick()">
-                    <span class="material-symbols-rounded">cloud</span>
-                </button>
-                <button type="button" class="icon-btn" onclick="toggleMenu()" title="Меню">
-                    <span class="material-symbols-rounded">more_vert</span>
-                </button>
+                <button class="btn btn-secondary" type="button" onclick="createNewTablePrompt()">+ Таблица</button>
+                <button class="btn btn-secondary" type="button" onclick="document.getElementById('import-file').click()">Импорт</button>
+                <button class="btn btn-primary" type="button" onclick="exportTableToJSON()">Экспорт</button>
+                <input type="file" id="import-file" class="hidden" accept=".json" onchange="importTableFromJSON(this)">
             </div>
         </header>
 
-        <!-- Листы выбранной таблицы -->
-        <div class="sheets-bar">
-            <span class="sheets-label">Листы</span>
-            <div class="header-tabs sheets-tabs" id="sheet-tabs"></div>
-            <button type="button" class="icon-btn sm" onclick="addSheet()" title="Новый лист">
-                <span class="material-symbols-rounded">add</span>
+        <div class="forms-toolbar-container" id="tables-tabs-bar">
+            <div class="forms-tabs-list" id="forms-tabs-list"></div>
+            <select id="forms-tabs-select" class="compact-tab-select" onchange="switchTable(this.value)"></select>
+            <button class="btn-add-tab" type="button" onclick="createNewTablePrompt()" title="Новая таблица">+</button>
+        </div>
+
+        <div class="toolbar">
+            <button class="tool-btn" type="button" onclick="addRowBelowSelected()" title="Строка снизу">
+                <span class="material-symbols-rounded">table_rows</span>
+                <span class="tool-label">Строка</span>
+            </button>
+            <button class="tool-btn" type="button" onclick="addColumnRightSelected()" title="Столбец справа">
+                <span class="material-symbols-rounded">view_column</span>
+                <span class="tool-label">Столбец</span>
+            </button>
+            <div class="separator"></div>
+            <button class="tool-btn" type="button" onclick="printCurrentTable()" title="Печать">
+                <span class="material-symbols-rounded">print</span>
+            </button>
+            <button class="tool-btn" type="button" onclick="openAiModal()" title="ИИ">
+                <span class="material-symbols-rounded">auto_awesome</span>
+                <span class="tool-label">ИИ</span>
             </button>
         </div>
 
-        <div id="tools-menu" class="tools-menu hidden">
-            <div class="tools-item" onclick="openShareModal(); hideMenu();">
-                <span class="material-symbols-rounded">share</span> Поделиться
-            </div>
-            <div class="tools-item" onclick="openPrintModal(); hideMenu();">
-                <span class="material-symbols-rounded">print</span> Распечатать
-            </div>
-            <div class="tools-item" onclick="exportJSON(); hideMenu();">
-                <span class="material-symbols-rounded">upload</span> Экспорт JSON
-            </div>
-            <div class="tools-item" onclick="document.getElementById('import-file').click(); hideMenu();">
-                <span class="material-symbols-rounded">download</span> Импорт JSON
-            </div>
-            <div class="tools-item tools-online-only" data-online-only="1" onclick="goOnline('../WorkGens/index.html')">
-                <span class="material-symbols-rounded">auto_awesome</span> WorkGens AI
-                <span class="online-lock material-symbols-rounded">lock</span>
-            </div>
-            <hr>
-            <div class="tools-item tools-online-only" data-online-only="1" onclick="goOnline('../forms')">
-                <span class="material-symbols-rounded">description</span> Формы
-            </div>
-            <div class="tools-item tools-online-only" data-online-only="1" onclick="goOnline('../document')">
-                <span class="material-symbols-rounded">article</span> Документы
-            </div>
-            <div class="tools-item tools-online-only" data-online-only="1" onclick="goOnline('../slides')">
-                <span class="material-symbols-rounded">slideshow</span> Слайды
-            </div>
-            <div class="tools-item tools-online-only" data-online-only="1" onclick="goOnline('../keeps')">
-                <span class="material-symbols-rounded">notes</span> Заметки
-            </div>
-            <hr>
-            <div class="tools-item" onclick="openSettings(); hideMenu();">
-                <span class="material-symbols-rounded">settings</span> Настройки
-            </div>
-        </div>
-        <input type="file" id="import-file" accept=".json,application/json" hidden onchange="importJSON(this)">
-
-        <!-- Панель форматирования -->
-        <div class="format-bar">
-            <span class="cell-ref" id="cell-ref">A1</span>
-            <input type="text" id="formula-input" class="formula-input" placeholder="Значение или =SUM(A1:A3)" autocomplete="off">
-            <div class="format-actions">
-                <button type="button" class="fmt-btn" title="Жирный" onclick="toggleBold()"><b>B</b></button>
-                <div class="fill-picker-wrap">
-                    <button type="button" class="fmt-btn" title="Заливка" onclick="toggleFillPicker()">
-                        <span class="material-symbols-rounded" style="font-size:18px;">format_color_fill</span>
-                        <span class="fill-swatch" id="fill-swatch"></span>
-                    </button>
-                    <div id="fill-picker" class="fill-picker hidden">
-                        <button type="button" class="swatch none" data-color="" title="Без заливки"></button>
-                        <button type="button" class="swatch" data-color="#ffffff" style="background:#fff"></button>
-                        <button type="button" class="swatch" data-color="#fef3c7" style="background:#fef3c7"></button>
-                        <button type="button" class="swatch" data-color="#dcfce7" style="background:#dcfce7"></button>
-                        <button type="button" class="swatch" data-color="#dbeafe" style="background:#dbeafe"></button>
-                        <button type="button" class="swatch" data-color="#fce7f3" style="background:#fce7f3"></button>
-                        <button type="button" class="swatch" data-color="#ede9fe" style="background:#ede9fe"></button>
-                        <button type="button" class="swatch" data-color="#ffedd5" style="background:#ffedd5"></button>
-                        <button type="button" class="swatch" data-color="#fee2e2" style="background:#fee2e2"></button>
-                        <button type="button" class="swatch" data-color="#1a73e8" style="background:#1a73e8"></button>
-                        <button type="button" class="swatch" data-color="#2e7d32" style="background:#2e7d32"></button>
-                        <button type="button" class="swatch" data-color="#d32f2f" style="background:#d32f2f"></button>
-                        <button type="button" class="swatch" data-color="#f59e0b" style="background:#f59e0b"></button>
-                        <button type="button" class="swatch" data-color="#111827" style="background:#111827"></button>
-                    </div>
-                </div>
-                <div class="border-picker-wrap">
-                    <button type="button" class="fmt-btn" title="Границы" onclick="toggleBorderPicker()">
-                        <span class="material-symbols-rounded" style="font-size:18px;">border_all</span>
-                    </button>
-                    <div id="border-picker" class="border-picker hidden">
-                        <button type="button" class="border-opt" data-border="all" title="Все границы"><span class="b-preview b-all"></span> Все</button>
-                        <button type="button" class="border-opt" data-border="outer" title="Внешние"><span class="b-preview b-outer"></span> Внешние</button>
-                        <button type="button" class="border-opt" data-border="none" title="Без границ"><span class="b-preview b-none"></span> Нет</button>
-                        <button type="button" class="border-opt" data-border="top" title="Сверху"><span class="b-preview b-top"></span> Верх</button>
-                        <button type="button" class="border-opt" data-border="bottom" title="Снизу"><span class="b-preview b-bottom"></span> Низ</button>
-                        <button type="button" class="border-opt" data-border="left" title="Слева"><span class="b-preview b-left"></span> Лево</button>
-                        <button type="button" class="border-opt" data-border="right" title="Справа"><span class="b-preview b-right"></span> Право</button>
-                        <button type="button" class="border-opt" data-border="horizontal" title="Горизонтальные"><span class="b-preview b-h"></span> Гориз.</button>
-                        <button type="button" class="border-opt" data-border="vertical" title="Вертикальные"><span class="b-preview b-v"></span> Верт.</button>
-                    </div>
-                </div>
-                <button type="button" class="fmt-btn" title="Очистить формат" onclick="clearFormat()">
-                    <span class="material-symbols-rounded" style="font-size:18px;">format_clear</span>
-                </button>
-            </div>
+        <div class="formula-bar">
+            <div class="cell-address-box" id="active-cell-address">—</div>
+            <div class="formula-fx">fx</div>
+            <input type="text" id="formula-input" class="formula-input" placeholder="Значение ячейки" autocomplete="off">
         </div>
 
-        <div class="grid-area">
-            <div class="grid-wrap" id="grid-wrap">
-                <div class="grid-scroll" id="grid-scroll">
-                    <table class="sheet-table" id="sheet-table">
-                        <thead id="sheet-thead"></thead>
-                        <tbody id="sheet-tbody"></tbody>
-                    </table>
-                </div>
+        <main class="grid-container" id="grid-container">
+            <div class="table-scroll">
+                <table class="custom-table spreadsheet-table" id="main-table">
+                    <thead id="table-head"></thead>
+                    <tbody id="table-body"></tbody>
+                </table>
             </div>
-            <button type="button" class="expand-cols-btn" title="+40 столбцов" onclick="addColumns(40)">
-                <span class="material-symbols-rounded">add</span>
-                <span class="expand-label">+40</span>
-            </button>
-        </div>
+            <div class="edge-actions">
+                <button type="button" class="edge-btn" onclick="addRowBelowSelected()">+ 5 строк</button>
+                <button type="button" class="edge-btn" onclick="addColumnRightSelected()">+ столбец</button>
+            </div>
+        </main>
 
-        <div class="expand-rows-bar">
-            <button type="button" class="expand-rows-btn" onclick="addRows(40)">
-                <span class="material-symbols-rounded">add</span>
-                +40 строк
-            </button>
-        </div>
-
-        <footer class="status-bar">
-            <span id="status-text">Готово</span>
-            <span id="status-sel"></span>
+        <footer class="bottom-bar" id="bottom-bar">
+            <span class="table-title-footer" id="table-title">Таблица</span>
+            <span class="hint-muted">Двойной тап / Enter — правка · ПКМ — меню</span>
         </footer>
     </div>
 
-    <!-- ПКМ: таблица -->
-    <div id="table-ctx" class="ctx-menu hidden">
-        <div class="ctx-title">Таблица</div>
-        <div class="ctx-item" data-action="rename">
-            <span class="material-symbols-rounded">edit</span> Переименовать
+    <!-- Picker -->
+    <div id="table-picker-screen" class="table-picker-screen hidden">
+        <div class="table-picker-header">
+            <a class="app-topbar-back" href="../index.html"><span class="material-symbols-rounded">arrow_back</span></a>
+            <h1>Выберите таблицу</h1>
+            <button type="button" class="btn-add-tab" onclick="createNewTablePrompt()" title="Создать">+</button>
         </div>
-        <div class="ctx-item ctx-danger" data-action="delete">
-            <span class="material-symbols-rounded">delete</span> Удалить
+        <div id="table-picker-list" class="table-picker-list"></div>
+    </div>
+
+    <div id="pwa-work-modal" class="modal-overlay hidden">
+        <div class="modal-card" style="max-width:400px;">
+            <div class="modal-header"><h3>My Work</h3></div>
+            <div class="modal-body">
+                <p style="font-size:0.92rem;color:var(--text-muted);line-height:1.5;">Удобнее установить <strong>My Work</strong> с главной — там все проекты.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" type="button" onclick="dismissPwaWorkModal()">Понятно</button>
+                <button class="btn btn-primary" type="button" onclick="location.href='../index.html'">Открыть My Work</button>
+            </div>
         </div>
     </div>
 
-    <!-- ПКМ: лист -->
-    <div id="sheet-ctx" class="ctx-menu hidden">
-        <div class="ctx-title">Лист</div>
-        <div class="ctx-item" data-action="rename">
-            <span class="material-symbols-rounded">edit</span> Переименовать
-        </div>
-        <div class="ctx-item ctx-danger" data-action="delete">
-            <span class="material-symbols-rounded">delete</span> Удалить
+    <div id="context-menu" class="context-menu hidden">
+        <div class="menu-item" onclick="addRowAboveSelected()">Строка выше</div>
+        <div class="menu-item" onclick="addRowBelowSelected()">Строка ниже</div>
+        <div class="menu-item" onclick="addColumnLeftSelected()">Столбец слева</div>
+        <div class="menu-item" onclick="addColumnRightSelected()">Столбец справа</div>
+        <div class="divider"></div>
+        <div class="menu-item ctx-danger" onclick="deleteSelectedRow()">Удалить строку</div>
+        <div class="menu-item ctx-danger" onclick="deleteSelectedColumn()">Удалить столбец</div>
+        <div class="divider"></div>
+        <div class="menu-item" onclick="clearSelectedCell()">Очистить</div>
+    </div>
+
+    <div id="custom-prompt" class="modal-overlay hidden">
+        <div class="modal-card">
+            <div class="modal-header"><h3 id="custom-prompt-title">Введите</h3></div>
+            <div class="modal-body">
+                <input type="text" id="custom-prompt-input" class="form-control" placeholder="Название...">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" type="button" onclick="closePrompt(false)">Отмена</button>
+                <button class="btn btn-primary" type="button" onclick="closePrompt(true)">OK</button>
+            </div>
         </div>
     </div>
 
-    <!-- ПКМ: ячейка -->
-    <div id="cell-ctx" class="ctx-menu hidden">
-        <div class="ctx-title">Ячейка</div>
-        <div class="ctx-item" data-action="insert-row-above">
-            <span class="material-symbols-rounded">keyboard_arrow_up</span> Вставить строку выше
-        </div>
-        <div class="ctx-item" data-action="insert-row-below">
-            <span class="material-symbols-rounded">keyboard_arrow_down</span> Вставить строку ниже
-        </div>
-        <div class="ctx-item" data-action="insert-col-left">
-            <span class="material-symbols-rounded">keyboard_arrow_left</span> Вставить столбец слева
-        </div>
-        <div class="ctx-item" data-action="insert-col-right">
-            <span class="material-symbols-rounded">keyboard_arrow_right</span> Вставить столбец справа
-        </div>
-        <hr>
-        <div class="ctx-item" data-action="delete-row">
-            <span class="material-symbols-rounded">remove</span> Удалить строку
-        </div>
-        <div class="ctx-item" data-action="delete-col">
-            <span class="material-symbols-rounded">remove</span> Удалить столбец
-        </div>
-        <hr>
-        <div class="ctx-item" data-action="fill">
-            <span class="material-symbols-rounded">format_color_fill</span> Заливка…
-        </div>
-        <div class="ctx-item" data-action="clear">
-            <span class="material-symbols-rounded">ink_eraser</span> Очистить
+    <div id="custom-alert" class="modal-overlay hidden">
+        <div class="modal-card" style="text-align:center;">
+            <div class="modal-body">
+                <span class="material-symbols-rounded" id="custom-alert-icon" style="font-size:40px;color:var(--accent-primary);">info</span>
+                <p id="custom-alert-msg" style="margin-top:10px;"></p>
+            </div>
+            <div class="modal-footer" style="justify-content:center;">
+                <button class="btn btn-primary" type="button" onclick="closeAlert()">Понятно</button>
+            </div>
         </div>
     </div>
 
     <div id="settings-modal" class="modal-overlay hidden">
         <div class="modal-card">
-            <div class="modal-head">
-                <h3><span class="material-symbols-rounded">settings</span> Настройки</h3>
-                <button type="button" class="icon-btn" onclick="closeSettings()"><span class="material-symbols-rounded">close</span></button>
+            <div class="modal-header">
+                <h3>Настройки</h3>
+                <button class="btn-close-modal" type="button" onclick="closeSettingsModal()">&times;</button>
             </div>
-            <label class="section-label">Тема</label>
-            <div class="theme-row">
-                <button type="button" class="btn btn-ghost" onclick="setTheme('light')">Светлая</button>
-                <button type="button" class="btn btn-ghost" onclick="setTheme('dark')">Тёмная</button>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Тема</label>
+                    <select id="setting-theme" class="form-control" onchange="setTheme(this.value)">
+                        <option value="dark">Тёмная</option>
+                        <option value="light">Светлая</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Скругления</label>
+                    <select id="setting-radius" class="form-control" onchange="document.documentElement.setAttribute('data-radius', this.value); localStorage.setItem('app_radius', this.value);">
+                        <option value="rounded">Rounded</option>
+                        <option value="sharp">Sharp</option>
+                        <option value="full">Full</option>
+                    </select>
+                </div>
             </div>
-            <label class="switch-label" style="margin-top:16px;">
-                <span>Liquid Glass <span class="novelty-badge">BETA</span></span>
-                <span class="switch"><input type="checkbox" id="toggle-liquid" onchange="toggleLiquid(this.checked)"><span class="slider"></span></span>
-            </label>
-            <label class="switch-label" style="margin-top:12px;">
-                <span>Сохранять в localStorage</span>
-                <span class="switch"><input type="checkbox" id="toggle-autosave" checked onchange="toggleAutosave(this.checked)"><span class="slider"></span></span>
-            </label>
-            <button type="button" class="btn" style="width:100%;margin-top:20px;" onclick="closeSettings()">Готово</button>
-        </div>
-    </div>
-
-    <div id="alert-modal" class="modal-overlay hidden">
-        <div class="modal-card" style="max-width:360px;text-align:center;">
-            <div id="alert-msg" style="margin-bottom:16px;line-height:1.45;"></div>
-            <button type="button" class="btn" style="width:100%;" onclick="closeAlert()">Понятно</button>
-        </div>
-    </div>
-
-    <div id="prompt-modal" class="modal-overlay hidden">
-        <div class="modal-card" style="max-width:380px;">
-            <h3 id="prompt-title" style="margin:0 0 12px;font-size:1.05rem;">Введите значение</h3>
-            <input type="text" id="prompt-input" class="modal-input" autocomplete="off">
-            <div class="modal-actions">
-                <button type="button" class="btn btn-ghost" onclick="closePrompt(false)">Отмена</button>
-                <button type="button" class="btn" onclick="closePrompt(true)">Сохранить</button>
+            <div class="modal-footer">
+                <button class="btn btn-primary" type="button" onclick="closeSettingsModal()">Готово</button>
             </div>
         </div>
     </div>
 
-    <div id="confirm-modal" class="modal-overlay hidden">
-        <div class="modal-card" style="max-width:380px;">
-            <h3 id="confirm-title" style="margin:0 0 8px;font-size:1.05rem;">Подтвердите</h3>
-            <p id="confirm-text" style="margin:0 0 18px;color:var(--text-muted);font-size:0.95rem;line-height:1.45;"></p>
-            <div class="modal-actions">
-                <button type="button" class="btn btn-ghost" onclick="closeConfirm(false)">Отмена</button>
-                <button type="button" class="btn btn-danger" onclick="closeConfirm(true)">Удалить</button>
+    <div id="ai-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>ИИ: таблица</h3>
+                <button class="btn-close-modal" type="button" onclick="closeAiModal()">&times;</button>
             </div>
-        </div>
-    </div>
-
-    
-    <!-- Share -->
-    <div id="share-modal" class="modal-overlay hidden">
-        <div class="modal-card share-card">
-            <div class="modal-head">
-                <h3><span class="material-symbols-rounded">share</span> Поделиться</h3>
-                <button type="button" class="icon-btn" onclick="closeShareModal()"><span class="material-symbols-rounded">close</span></button>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Описание таблицы</label>
+                    <input type="text" id="ai-prompt-input" class="form-control" placeholder="Например: склад товаров">
+                </div>
+                <p id="ai-status-msg" class="hidden" style="font-size:13px;color:var(--text-muted);"></p>
             </div>
-            <label class="section-label">Срок действия ссылки</label>
-            <select id="share-expiry" class="modal-select" onchange="updateSharePreview()">
-                <option value="7">7 дней</option>
-                <option value="14">14 дней</option>
-                <option value="30">1 месяц</option>
-                <option value="90">3 месяца</option>
-                <option value="365">1 год</option>
-                <option value="0">Бессрочно</option>
-            </select>
-            <label class="section-label" style="margin-top:12px;">Ссылка</label>
-            <input type="text" id="share-link-input" class="modal-input" readonly>
-            <div class="modal-actions">
-                <button type="button" class="btn" style="flex:1;" onclick="copyShareLink()">Копировать</button>
-                <button type="button" class="btn btn-ghost" onclick="closeShareModal()">Закрыть</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Print sheet picker -->
-    <div id="print-modal" class="modal-overlay hidden">
-        <div class="modal-card share-card">
-            <div class="modal-head">
-                <h3><span class="material-symbols-rounded">print</span> Печать</h3>
-                <button type="button" class="icon-btn" onclick="closePrintModal()"><span class="material-symbols-rounded">close</span></button>
-            </div>
-            <p style="font-size:13px;color:var(--text-muted);margin:0 0 12px;">Выберите листы текущей таблицы для печати:</p>
-            <div id="print-sheets-list" class="print-sheets-list"></div>
-            <div style="display:flex;gap:8px;margin:12px 0;">
-                <button type="button" class="btn btn-ghost" style="flex:1;" onclick="printSelectAll(true)">Все</button>
-                <button type="button" class="btn btn-ghost" style="flex:1;" onclick="printSelectAll(false)">Снять</button>
-            </div>
-            <div class="modal-actions">
-                <button type="button" class="btn" style="flex:1;" onclick="doPrintSheets()">
-                    <span class="material-symbols-rounded" style="font-size:18px;vertical-align:middle;">print</span>
-                    Печать
-                </button>
-                <button type="button" class="btn btn-ghost" onclick="closePrintModal()">Отмена</button>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" type="button" onclick="closeAiModal()">Отмена</button>
+                <button class="btn btn-primary" type="button" onclick="generateAiTable()">Сгенерировать</button>
             </div>
         </div>
     </div>
