@@ -18,6 +18,175 @@ let userAnswers = {};               // Ответы пользователя т�
 // ==========================================
 // 2. ИНИЦИАЛИЗАЦИЯ И ИНИЦИАЛЬНЫЕ НАСТРОЙКИ
 // ==========================================
+
+
+/* ===== Hub Document: ?doc= ===== */
+function getDocQueryIndex() {
+    try {
+        var q = new URLSearchParams(window.location.search);
+        if (q.has('doc')) {
+            var n = parseInt(q.get('doc'), 10);
+            if (!isNaN(n) && n >= 0) return n;
+        }
+    } catch (e) {}
+    return null;
+}
+function isStandalonePwa() {
+    return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+        || window.navigator.standalone === true;
+}
+function dismissPwaWorkModal() {
+    localStorage.setItem('mydoc_pwa_work_notice_v1', '1');
+    var m = document.getElementById('pwa-work-modal');
+    if (m) m.classList.add('hidden');
+}
+function maybeShowPwaWorkModal() {
+    if (!isStandalonePwa()) return;
+    if (localStorage.getItem('mydoc_pwa_work_notice_v1')) return;
+    var m = document.getElementById('pwa-work-modal');
+    if (m) m.classList.remove('hidden');
+}
+function enterHubDocMode(idx) {
+    document.body.classList.add('hub-doc-mode');
+    if (idx != null && idx >= 0 && idx < allDocs.length) currentDocIndex = idx;
+    hideDocPicker();
+    updateAppTopbarTitle();
+    try {
+        var menu = document.getElementById('tools-menu');
+        var slot = document.getElementById('app-topbar-tools-slot');
+        if (menu && slot && !slot.contains(menu)) slot.appendChild(menu);
+    } catch (e) {}
+}
+function exitHubDocMode() {
+    document.body.classList.remove('hub-doc-mode');
+}
+function updateAppTopbarTitle() {
+    var input = document.getElementById('app-file-title');
+    var doc = allDocs[currentDocIndex];
+    if (input) {
+        input.value = (doc && doc.title) ? doc.title : ('Документ ' + (currentDocIndex + 1));
+        input.readOnly = true;
+        delete input.dataset.cancel;
+    }
+}
+function startQuickRenameDoc() {
+    var input = document.getElementById('app-file-title');
+    if (!input) return;
+    input.readOnly = false;
+    input.focus();
+    input.select();
+}
+function finishQuickRenameDoc() {
+    var input = document.getElementById('app-file-title');
+    if (!input || input.readOnly) return;
+    if (input.dataset.cancel === '1') {
+        delete input.dataset.cancel;
+        input.readOnly = true;
+        updateAppTopbarTitle();
+        return;
+    }
+    var name = (input.value || '').trim();
+    input.readOnly = true;
+    if (!name || !allDocs[currentDocIndex]) {
+        updateAppTopbarTitle();
+        return;
+    }
+    allDocs[currentDocIndex].title = name;
+    saveDocs();
+    try { syncRegistryDocTitle(currentDocIndex, name); } catch (e) {}
+    updateAppTopbarTitle();
+    try { renderTabs(); } catch (e) {}
+}
+function syncRegistryDocTitle(idx, title) {
+    try {
+        var reg = JSON.parse(localStorage.getItem('mywork_registry_v1') || '[]');
+        if (!Array.isArray(reg)) return;
+        reg.forEach(function(p) {
+            if (p && (p.type === 'document' || p.type === 'doc') && p.legacyIndex === idx) {
+                p.title = title;
+                p.updatedAt = Date.now();
+            }
+        });
+        localStorage.setItem('mywork_registry_v1', JSON.stringify(reg));
+    } catch (e) {}
+}
+function showDocPicker() {
+    exitHubDocMode();
+    var screen = document.getElementById('doc-picker-screen');
+    if (!screen) return;
+    screen.classList.remove('hidden');
+    renderDocPickerList();
+}
+function hideDocPicker() {
+    var screen = document.getElementById('doc-picker-screen');
+    if (screen) screen.classList.add('hidden');
+}
+function renderDocPickerList() {
+    var list = document.getElementById('doc-picker-list');
+    if (!list) return;
+    list.innerHTML = '';
+    if (!allDocs.length) {
+        list.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:24px;">Нет документов. Нажмите +</p>';
+        return;
+    }
+    allDocs.forEach(function(d, idx) {
+        var row = document.createElement('div');
+        row.className = 'doc-picker-item';
+        var bn = (d.blocks && d.blocks.length) || 0;
+        row.innerHTML =
+            '<div class="dp-icon"><span class="material-symbols-rounded">description</span></div>' +
+            '<div class="dp-meta"><div class="dp-title"></div><div class="dp-sub"></div></div>' +
+            '<div class="dp-actions">' +
+            '<button type="button" class="dp-ren" title="Переименовать"><span class="material-symbols-rounded">edit</span></button>' +
+            '<button type="button" class="dp-del danger" title="Удалить"><span class="material-symbols-rounded">delete</span></button>' +
+            '</div>';
+        row.querySelector('.dp-title').textContent = d.title || ('Документ ' + (idx + 1));
+        row.querySelector('.dp-sub').textContent = bn + ' блок(ов)';
+        row.addEventListener('click', function(e) {
+            if (e.target.closest('.dp-actions')) return;
+            openDocByIndex(idx);
+        });
+        row.querySelector('.dp-ren').onclick = function(e) {
+            e.stopPropagation();
+            if (typeof renameDocAtIndex === 'function') renameDocAtIndex(idx);
+        };
+        row.querySelector('.dp-del').onclick = function(e) {
+            e.stopPropagation();
+            if (typeof deleteDocAtIndex === 'function') {
+                deleteDocAtIndex(idx);
+                setTimeout(renderDocPickerList, 200);
+            }
+        };
+        list.appendChild(row);
+    });
+}
+function openDocByIndex(idx) {
+    if (idx < 0 || idx >= allDocs.length) return;
+    currentDocIndex = idx;
+    currentStep = 0;
+    try {
+        var u = new URL(window.location.href);
+        u.searchParams.set('doc', String(idx));
+        history.replaceState(null, '', u.toString());
+    } catch (e) {}
+    enterHubDocMode(idx);
+    try { renderTabs(); } catch (e) {}
+    try { renderDocScreen(); } catch (e) {}
+}
+function initHubDocRouting() {
+    maybeShowPwaWorkModal();
+    var idx = getDocQueryIndex();
+    if (idx !== null) {
+        if (idx >= allDocs.length) idx = 0;
+        enterHubDocMode(idx);
+        currentDocIndex = idx;
+        return { picker: false, index: idx };
+    }
+    showDocPicker();
+    return { picker: true, index: null };
+}
+
+
 document.addEventListener('DOMContentLoaded', () => {
     loadDocs();
     applyShareParamsFromUrl();
@@ -39,9 +208,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         saveDocs();
     }
-    
-    renderTabs();
-    renderDocScreen();
+
+    var hubRoute = { picker: false };
+    try { hubRoute = initHubDocRouting(); } catch (e) { console.warn(e); }
+    if (!hubRoute.picker) {
+        renderTabs();
+        renderDocScreen();
+    }
     
     const savedTheme = localStorage.getItem('theme') || 'light';
     setTheme(savedTheme, false);
@@ -90,6 +263,8 @@ function loadDocs() {
 function saveDocs() {
     localStorage.setItem('myDocsData', JSON.stringify(allDocs));
 }
+function saveDocsToStorage() { saveDocs(); }
+
 
 // ==========================================
 // 4. ВКЛАДКИ ДОКУМЕНТОВ И КОНТЕКСТНОЕ МЕНЮ
