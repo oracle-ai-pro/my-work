@@ -4,14 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Form Lite | Prestige HQ</title>
-    <link rel="icon" type="image/png" href="forms lite.png">
     <!-- Иконки Material Symbols Rounded -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
     <div class="container">
+
+        <div class="app-topbar" id="app-topbar">
+            <a class="app-topbar-back" href="../index.html" title="На главную My Work">
+                <span class="material-symbols-rounded">arrow_back</span>
+            </a>
+            <div class="app-topbar-title-wrap">
+                <input type="text" class="app-topbar-title" id="app-file-title" readonly title="Нажмите, чтобы переименовать"
+                    onclick="startQuickRename()"
+                    onblur="finishQuickRename()"
+                    onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();} if(event.key==='Escape'){this.dataset.cancel='1';this.blur();}">
+            </div>
+            <div class="app-topbar-actions">
+                <button class="tools-btn" onclick="openLanguageModal()" title="Язык">
+                    <span class="material-symbols-rounded">language</span>
+                </button>
+                <div class="tools-dropdown" id="app-topbar-tools-slot">
+                    <button class="tools-btn" onclick="toggleToolsMenu()" title="Меню">
+                        <span class="material-symbols-rounded">more_vert</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- ВЕРХНЯЯ ПАНЕЛЬ С ВКЛАДКАМИ И МЕНЮ -->
         <div class="forms-toolbar-container">
             <!-- 1. Компактный выбор форм (Select) -->
@@ -483,6 +504,31 @@
             <input type="text" id="lite-admin-login" class="admin-input" placeholder="Логин">
             <input type="password" id="lite-admin-pass" class="admin-input" placeholder="Пароль">
             <button class="btn" style="width:100%;" onclick="saveAuthLite()">Сохранить</button>
+        </div>
+    </div>
+
+    
+    <div id="form-picker-screen" class="form-picker-screen hidden">
+        <div class="form-picker-header">
+            <a class="app-topbar-back" href="../index.html"><span class="material-symbols-rounded">arrow_back</span></a>
+            <h1>Выберите форму</h1>
+            <button type="button" class="tools-btn" onclick="createNewFormPrompt()" title="Создать">
+                <span class="material-symbols-rounded">add</span>
+            </button>
+        </div>
+        <div id="form-picker-list" class="form-picker-list"></div>
+    </div>
+
+    <div id="pwa-work-modal" class="custom-alert-overlay">
+        <div class="custom-alert-card" style="max-width:400px;text-align:left;">
+            <h3 style="margin:0 0 10px;display:flex;align-items:center;gap:8px;">
+                <span class="material-symbols-rounded" style="color:var(--accent-color)">install_desktop</span>
+                Установка My Form Lite больше не нужна
+            </h3>
+            <p class="pwa-limit-text">Отдельный ярлык <strong>My Form Lite</strong> устарел. Установите <strong>My Work</strong> с главной — там все сервисы и проекты. Данные форм в браузере сохранятся.</p>
+            <p class="pwa-limit-text" style="font-size:12px;">Напоминание снова при следующем запуске этого ярлыка.</p>
+            <button type="button" class="btn" style="width:100%;margin-bottom:8px;" onclick="window.location.href='../index.html'">Открыть My Work</button>
+            <button type="button" class="btn" style="width:100%;background:transparent;color:var(--text-color);border:1px solid var(--border-color);" onclick="dismissPwaWorkModal()">Остаться (на эту сессию)</button>
         </div>
     </div>
 
