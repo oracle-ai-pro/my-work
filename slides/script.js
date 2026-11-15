@@ -52,21 +52,228 @@ let lastPresenterSlideIndex = -1;
 /* ==========================================================================
    СОБЫТИЕ ЗАГРУЗКИ СТРАНИЦЫ И ГЛОБАЛЬНЫЕ СЛУШАТЕЛИ
    ========================================================================== */
+
+
+/* ===== Hub Slides: ?deck= ===== */
+function getDeckQuery() {
+    try {
+        var q = new URLSearchParams(window.location.search);
+        if (q.has('deck')) return q.get('deck');
+        if (q.has('deckId')) return q.get('deckId');
+    } catch (e) {}
+    return null;
+}
+function resolveDeckId(param) {
+    if (param == null || param === '') return null;
+    // by id
+    if (decks.some(function(d) { return d.id === param; })) return param;
+    // by index
+    var n = parseInt(param, 10);
+    if (!isNaN(n) && n >= 0 && n < decks.length) return decks[n].id;
+    return null;
+}
+function isStandalonePwa() {
+    return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+        || window.navigator.standalone === true;
+}
+function dismissPwaWorkModal() {
+    localStorage.setItem('slides_pwa_work_notice_v1', '1');
+    var m = document.getElementById('pwa-work-modal');
+    if (m) m.classList.remove('active');
+}
+function maybeShowPwaWorkModal() {
+    if (!isStandalonePwa()) return;
+    if (localStorage.getItem('slides_pwa_work_notice_v1')) return;
+    var m = document.getElementById('pwa-work-modal');
+    if (m) m.classList.add('active');
+}
+function enterHubDeckMode(deckId) {
+    document.body.classList.add('hub-deck-mode');
+    if (deckId) currentDeckId = deckId;
+    hideDeckPicker();
+    updateAppTopbarTitle();
+    try {
+        var menu = document.getElementById('tools-menu');
+        var slot = document.getElementById('app-topbar-tools-slot');
+        if (menu && slot && !slot.contains(menu)) slot.appendChild(menu);
+    } catch (e) {}
+}
+function exitHubDeckMode() {
+    document.body.classList.remove('hub-deck-mode');
+}
+function getCurrentDeck() {
+    return decks.find(function(d) { return d.id === currentDeckId; }) || decks[0];
+}
+function updateAppTopbarTitle() {
+    var input = document.getElementById('app-file-title');
+    var deck = getCurrentDeck();
+    if (input) {
+        input.value = (deck && deck.title) ? deck.title : 'Презентация';
+        input.readOnly = true;
+        delete input.dataset.cancel;
+    }
+}
+function startQuickRenameDeck() {
+    var input = document.getElementById('app-file-title');
+    if (!input) return;
+    input.readOnly = false;
+    input.focus();
+    input.select();
+}
+function finishQuickRenameDeck() {
+    var input = document.getElementById('app-file-title');
+    if (!input || input.readOnly) return;
+    if (input.dataset.cancel === '1') {
+        delete input.dataset.cancel;
+        input.readOnly = true;
+        updateAppTopbarTitle();
+        return;
+    }
+    var name = (input.value || '').trim();
+    input.readOnly = true;
+    var deck = getCurrentDeck();
+    if (!name || !deck) {
+        updateAppTopbarTitle();
+        return;
+    }
+    deck.title = name;
+    try { saveDecks(); } catch (e) {
+        try {
+            localStorage.setItem('prestige_decks', JSON.stringify(decks));
+        } catch (e2) {}
+    }
+    try { syncRegistryDeckTitle(deck); } catch (e) {}
+    updateAppTopbarTitle();
+    try { renderTabsAndSelect(); } catch (e) {}
+}
+function syncRegistryDeckTitle(deck) {
+    if (!deck) return;
+    try {
+        var reg = JSON.parse(localStorage.getItem('mywork_registry_v1') || '[]');
+        if (!Array.isArray(reg)) return;
+        reg.forEach(function(p) {
+            if (p && (p.type === 'slides' || p.type === 'slide' || p.type === 'deck') &&
+                (p.legacyId === deck.id || p.id === 'slides-' + deck.id)) {
+                p.title = deck.title;
+                p.updatedAt = Date.now();
+            }
+        });
+        localStorage.setItem('mywork_registry_v1', JSON.stringify(reg));
+    } catch (e) {}
+}
+function showDeckPicker() {
+    exitHubDeckMode();
+    var screen = document.getElementById('deck-picker-screen');
+    if (!screen) return;
+    screen.classList.remove('hidden');
+    renderDeckPickerList();
+}
+function hideDeckPicker() {
+    var screen = document.getElementById('deck-picker-screen');
+    if (screen) screen.classList.add('hidden');
+}
+function renderDeckPickerList() {
+    var list = document.getElementById('deck-picker-list');
+    if (!list) return;
+    list.innerHTML = '';
+    if (!decks.length) {
+        list.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:24px;">Нет презентаций</p>';
+        return;
+    }
+    decks.forEach(function(d, idx) {
+        var row = document.createElement('div');
+        row.className = 'deck-picker-item';
+        var sn = (d.slides && d.slides.length) || 0;
+        row.innerHTML =
+            '<div class="dk-icon"><span class="material-symbols-rounded">slideshow</span></div>' +
+            '<div class="dk-meta"><div class="dk-title"></div><div class="dk-sub"></div></div>' +
+            '<div class="dk-actions">' +
+            '<button type="button" class="dk-ren" title="Переименовать"><span class="material-symbols-rounded">edit</span></button>' +
+            '<button type="button" class="dk-del danger" title="Удалить"><span class="material-symbols-rounded">delete</span></button>' +
+            '</div>';
+        row.querySelector('.dk-title').textContent = d.title || ('Презентация ' + (idx + 1));
+        row.querySelector('.dk-sub').textContent = sn + ' слайд(ов)';
+        row.addEventListener('click', function(e) {
+            if (e.target.closest('.dk-actions')) return;
+            openDeckById(d.id);
+        });
+        row.querySelector('.dk-ren').onclick = function(e) {
+            e.stopPropagation();
+            if (typeof renameDeck === 'function') renameDeck(d.id);
+            else if (typeof showPrompt === 'function') {
+                showPrompt('Название презентации', d.title || '', function(val) {
+                    if (val && val.trim()) {
+                        d.title = val.trim();
+                        try { saveDecks(); } catch (err) {}
+                        renderDeckPickerList();
+                    }
+                });
+            }
+        };
+        row.querySelector('.dk-del').onclick = function(e) {
+            e.stopPropagation();
+            if (typeof deleteDeck === 'function') {
+                deleteDeck(d.id);
+                setTimeout(renderDeckPickerList, 150);
+            }
+        };
+        list.appendChild(row);
+    });
+}
+function openDeckById(id) {
+    if (!decks.some(function(d) { return d.id === id; })) return;
+    currentDeckId = id;
+    try {
+        var u = new URL(window.location.href);
+        u.searchParams.set('deck', id);
+        history.replaceState(null, '', u.toString());
+    } catch (e) {}
+    enterHubDeckMode(id);
+    try { if (typeof switchDeck === 'function') switchDeck(id); else {
+        try { saveDecks(); } catch (e) {}
+        try { renderTabsAndSelect(); } catch (e) {}
+        try { renderCurrentSlide(); } catch (e) {}
+    } } catch (e) {}
+}
+function initHubDeckRouting() {
+    maybeShowPwaWorkModal();
+    var param = getDeckQuery();
+    var id = resolveDeckId(param);
+    if (id) {
+        enterHubDeckMode(id);
+        currentDeckId = id;
+        return { picker: false, id: id };
+    }
+    showDeckPicker();
+    return { picker: true, id: null };
+}
+
+
 document.addEventListener('DOMContentLoaded', () => {
     initTheme();
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const deckIdFromUrl = urlParams.get('deckId');
-
-    if (deckIdFromUrl) {
-        const deckExists = decks.find(d => d.id === deckIdFromUrl);
-        if (deckExists) {
-            currentDeckId = deckIdFromUrl;
+    // Legacy ?deckId= → normalize to ?deck=
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const deckIdFromUrl = urlParams.get('deckId') || urlParams.get('deck');
+        if (deckIdFromUrl) {
+            const deckExists = decks.find(d => d.id === deckIdFromUrl);
+            if (deckExists) {
+                currentDeckId = deckIdFromUrl;
+            } else {
+                const n = parseInt(deckIdFromUrl, 10);
+                if (!isNaN(n) && n >= 0 && n < decks.length) currentDeckId = decks[n].id;
+            }
         }
-    }
+    } catch (e) {}
 
-    renderTabsAndSelect();
-    renderSlide();
+    var hubRoute = { picker: false };
+    try { hubRoute = initHubDeckRouting(); } catch (e) { console.warn(e); }
+
+    if (!hubRoute.picker) {
+        renderTabsAndSelect();
+        renderSlide();
+    }
     initSlideTouchAndClick();
     initPresentationContextMenu();
     if (typeof enhanceAllSelects === 'function') enhanceAllSelects();
@@ -371,6 +578,16 @@ window.addEventListener('resize', function() {
 });
 
 function switchDeck(id) {
+    if (document.body.classList.contains('hub-deck-mode')) {
+        try {
+            var u = new URL(window.location.href);
+            u.searchParams.set('deck', id);
+            u.searchParams.delete('deckId');
+            history.replaceState(null, '', u.toString());
+        } catch (e) {}
+        try { updateAppTopbarTitle(); } catch (e) {}
+    }
+
     currentDeckId = id;
     currentSlideIndex = 0;
     saveDecks();
