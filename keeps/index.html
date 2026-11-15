@@ -19,6 +19,33 @@
 </head>
 <body>
 
+    <!-- Hub topbar: ← | title | actions -->
+    <header class="app-topbar-header" id="app-topbar-header">
+        <a class="app-topbar-back" href="../index.html" title="На главную My Work">
+            <span class="material-symbols-rounded">arrow_back</span>
+        </a>
+        <div class="app-topbar-title-wrap">
+            <input type="text" class="app-topbar-title" id="app-file-title" readonly
+                title="Нажмите, чтобы переименовать"
+                onclick="startQuickRenameNote()"
+                onblur="finishQuickRenameNote()"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();} if(event.key==='Escape'){this.dataset.cancel='1';this.blur();}">
+        </div>
+        <div class="app-topbar-actions">
+            <button type="button" class="tools-icon-btn" id="hub-pin-btn" onclick="togglePinFromHub()" title="Закрепить">
+                <span class="material-symbols-rounded">push_pin</span>
+            </button>
+            <button type="button" class="tools-icon-btn" onclick="saveActiveNoteFromHub()" title="Сохранить">
+                <span class="material-symbols-rounded">save</span>
+            </button>
+            <div class="tools-dropdown" id="hub-tools-slot">
+                <button class="tools-btn" onclick="toggleToolsMenu(event)" title="Меню">
+                    <span class="material-symbols-rounded">more_vert</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
     <!-- ШАПКА -->
     <header class="header">
         <div class="header-left">
@@ -83,6 +110,33 @@
             <button type="button" class="filter-chip" data-filter="pinned" onclick="setNotesFilter('pinned')">Закреплённые</button>
             <button type="button" class="filter-chip" data-filter="reminders" onclick="setNotesFilter('reminders')">С напоминанием</button>
             <button type="button" class="filter-chip" data-filter="archived" onclick="setNotesFilter('archived')">Архив <span class="novelty-badge">NEW</span></button>
+        </div>
+
+
+        <!-- Single-note editor (hub mode) -->
+        <div class="single-note-editor" id="single-note-editor">
+            <div class="create-note-card" id="single-note-card">
+                <div class="formatting-toolbar">
+                    <button class="fmt-btn" onclick="execFormat('formatBlock', '<h1>')" title="H1">H1</button>
+                    <button class="fmt-btn" onclick="execFormat('formatBlock', '<h2>')" title="H2">H2</button>
+                    <button class="fmt-btn" onclick="execFormat('bold')" title="Жирный"><b>B</b></button>
+                    <button class="fmt-btn" onclick="execFormat('italic')" title="Курсив"><i>I</i></button>
+                    <button class="fmt-btn" onclick="execFormat('underline')" title="Подчёркнутый"><u>U</u></button>
+                    <div class="fmt-divider"></div>
+                    <button class="fmt-btn" onclick="execFormat('insertUnorderedList')" title="Список">
+                        <span class="material-symbols-rounded" style="font-size:16px;">format_list_bulleted</span>
+                    </button>
+                    <button class="fmt-btn" onclick="insertCheckbox('hub-note-content')" title="Чекбокс">
+                        <span class="material-symbols-rounded" style="font-size:16px;">check_box</span>
+                    </button>
+                    <div class="fmt-divider"></div>
+                    <div class="color-picker-palette" id="hub-color-palette"></div>
+                </div>
+                <div id="hub-note-content" class="rich-editor" contenteditable="true" data-placeholder="Текст заметки..."></div>
+                <div style="display:flex;justify-content:flex-end;gap:8px;">
+                    <button class="btn" onclick="saveActiveNoteFromHub()">Сохранить</button>
+                </div>
+            </div>
         </div>
 
         <!-- Создание заметки с обновленной панелью -->
@@ -307,6 +361,30 @@
             <span id="custom-alert-icon" class="material-symbols-rounded" style="font-size: 44px; color: var(--accent-color); margin-bottom: 8px;">info</span>
             <p id="custom-alert-msg" style="font-size: 0.95rem; color: var(--text-color); margin-bottom: 20px; line-height: 1.4;"></p>
             <button class="btn" style="padding: 8px 24px;" onclick="closeAlert()">Понятно</button>
+        </div>
+    </div>
+
+    
+    <div id="note-picker-screen" class="note-picker-screen hidden">
+        <div class="note-picker-header">
+            <a class="app-topbar-back" href="../index.html"><span class="material-symbols-rounded">arrow_back</span></a>
+            <h1>Выберите заметку</h1>
+            <button type="button" class="tools-btn" onclick="createNoteFromPicker()" title="Новая">
+                <span class="material-symbols-rounded">add</span>
+            </button>
+        </div>
+        <div id="note-picker-list" class="note-picker-list"></div>
+    </div>
+
+    <div id="pwa-work-modal" class="custom-alert-overlay">
+        <div class="custom-alert-card" style="max-width:400px;text-align:left;">
+            <h3 style="margin:0 0 10px;display:flex;align-items:center;gap:8px;">
+                <span class="material-symbols-rounded" style="color:var(--accent-color)">install_desktop</span>
+                My Work
+            </h3>
+            <p class="pwa-limit-text">Удобнее установить <strong>My Work</strong> с главной — там все проекты и сервисы. Отдельный ярлык Keeps можно не ставить.</p>
+            <button type="button" class="btn" style="width:100%;margin-bottom:8px;" onclick="location.href='../index.html'">Открыть My Work</button>
+            <button type="button" class="btn" style="width:100%;background:transparent;color:var(--text-color);border:1px solid var(--border-color);" onclick="dismissPwaWorkModal()">Понятно</button>
         </div>
     </div>
 
