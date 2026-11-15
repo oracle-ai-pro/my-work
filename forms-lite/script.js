@@ -46,11 +46,239 @@ const defaultForm = {
     ]
 };
 
+
+/* App splash removed */
+
+
+/* ===== Hub Lite: ?form= , picker, topbar ===== */
+function getFormQueryIndex() {
+    try {
+        var q = new URLSearchParams(window.location.search);
+        if (!q.has('form')) return null;
+        var raw = q.get('form');
+        if (raw == null || String(raw).trim() === '') return null;
+        raw = String(raw).trim();
+
+        var n = parseInt(raw, 10);
+        if (!isNaN(n) && String(n) === raw && n >= 0) {
+            if (n < allForms.length) return n;
+            if (allForms.length) return Math.min(n, allForms.length - 1);
+            return n;
+        }
+
+        for (var i = 0; i < allForms.length; i++) {
+            if (allForms[i] && allForms[i].id != null && String(allForms[i].id) === raw) return i;
+        }
+
+        try {
+            var reg = JSON.parse(localStorage.getItem('mywork_registry_v1') || '[]');
+            if (Array.isArray(reg)) {
+                for (var j = 0; j < reg.length; j++) {
+                    var p = reg[j];
+                    if (!p || (p.type !== 'form' && p.type !== 'forms' && p.type !== 'form-lite')) continue;
+                    if (String(p.id) !== raw) continue;
+                    if (p.legacyIndex != null) {
+                        var li = parseInt(p.legacyIndex, 10);
+                        if (!isNaN(li) && li >= 0) {
+                            if (li < allForms.length) return li;
+                            if (allForms.length) return Math.min(li, allForms.length - 1);
+                        }
+                    }
+                    if (p.legacyId != null) {
+                        for (var k = 0; k < allForms.length; k++) {
+                            if (allForms[k] && String(allForms[k].id) === String(p.legacyId)) return k;
+                        }
+                    }
+                }
+            }
+        } catch (eReg) {}
+
+        if (!isNaN(n) && n >= 0 && allForms.length) return Math.min(n, allForms.length - 1);
+    } catch (e) {}
+    return null;
+}
+
+function ensureFormStableId(form, index) {
+    if (!form) return null;
+    if (form.id != null && String(form.id).trim() !== '') return String(form.id);
+    form.id = 'form_' + (index != null ? index : 0) + '_' + Date.now().toString(36);
+    return String(form.id);
+}
+function isStandalonePwa() {
+    return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+        || window.navigator.standalone === true;
+}
+function dismissPwaWorkModal() {
+    try { sessionStorage.setItem('myform_lite_pwa_work_notice_session', '1'); } catch (e) {}
+    var m = document.getElementById('pwa-work-modal');
+    if (m) m.classList.remove('active');
+}
+function maybeShowPwaWorkModal() {
+    if (!isStandalonePwa()) return;
+    try {
+        if (sessionStorage.getItem('myform_lite_pwa_work_notice_session') === '1') return;
+    } catch (e) {}
+    var m = document.getElementById('pwa-work-modal');
+    if (m) m.classList.add('active');
+}
+function enterHubFormMode(formIndex) {
+    document.body.classList.add('hub-form-mode');
+    if (formIndex != null && formIndex >= 0 && formIndex < allForms.length) {
+        currentFormIndex = formIndex;
+    }
+    hideFormPicker();
+    updateAppTopbarTitle();
+    try {
+        var menu = document.getElementById('tools-menu');
+        var slot = document.getElementById('app-topbar-tools-slot');
+        if (menu && slot && !slot.contains(menu)) slot.appendChild(menu);
+    } catch (e) {}
+}
+function exitHubFormMode() {
+    document.body.classList.remove('hub-form-mode');
+}
+function updateAppTopbarTitle() {
+    var input = document.getElementById('app-file-title');
+    var form = allForms[currentFormIndex];
+    if (input) {
+        input.value = (form && form.title) ? form.title : ('Форма ' + (currentFormIndex + 1));
+        input.readOnly = true;
+        delete input.dataset.cancel;
+    }
+}
+function startQuickRename() {
+    var input = document.getElementById('app-file-title');
+    if (!input) return;
+    input.readOnly = false;
+    input.focus();
+    input.select();
+}
+function finishQuickRename() {
+    var input = document.getElementById('app-file-title');
+    if (!input || input.readOnly) return;
+    if (input.dataset.cancel === '1') {
+        delete input.dataset.cancel;
+        input.readOnly = true;
+        updateAppTopbarTitle();
+        return;
+    }
+    var name = (input.value || '').trim();
+    input.readOnly = true;
+    if (!name || !allForms[currentFormIndex]) {
+        updateAppTopbarTitle();
+        return;
+    }
+    allForms[currentFormIndex].title = name;
+    saveFormsToStorage();
+    try { syncRegistryFormTitleLite(currentFormIndex, name); } catch (e) {}
+    updateAppTopbarTitle();
+    try { renderAllFormsUI(); } catch (e) {}
+}
+function syncRegistryFormTitleLite(idx, title) {
+    try {
+        var reg = JSON.parse(localStorage.getItem('mywork_registry_v1') || '[]');
+        if (!Array.isArray(reg)) return;
+        reg.forEach(function(p) {
+            if (p && (p.type === 'form' || p.type === 'form-lite') && p.legacyIndex === idx) {
+                p.title = title;
+                p.updatedAt = Date.now();
+            }
+        });
+        localStorage.setItem('mywork_registry_v1', JSON.stringify(reg));
+    } catch (e) {}
+}
+function showFormPicker() {
+    exitHubFormMode();
+    var screen = document.getElementById('form-picker-screen');
+    if (!screen) return;
+    screen.classList.remove('hidden');
+    renderFormPickerList();
+}
+function hideFormPicker() {
+    var screen = document.getElementById('form-picker-screen');
+    if (screen) screen.classList.add('hidden');
+}
+function renderFormPickerList() {
+    var list = document.getElementById('form-picker-list');
+    if (!list) return;
+    list.innerHTML = '';
+    if (!allForms.length) {
+        list.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:24px;">Нет форм</p>';
+        return;
+    }
+    allForms.forEach(function(f, idx) {
+        var row = document.createElement('div');
+        row.className = 'form-picker-item';
+        var qn = (f.questions && f.questions.length) || 0;
+        row.innerHTML =
+            '<div class="fp-icon"><span class="material-symbols-rounded">assignment</span></div>' +
+            '<div class="fp-meta"><div class="fp-title"></div><div class="fp-sub"></div></div>' +
+            '<div class="fp-actions">' +
+            '<button type="button" class="fp-ren" title="Переименовать"><span class="material-symbols-rounded">edit</span></button>' +
+            '<button type="button" class="fp-del danger" title="Удалить"><span class="material-symbols-rounded">delete</span></button>' +
+            '</div>';
+        row.querySelector('.fp-title').textContent = f.title || ('Форма ' + (idx + 1));
+        row.querySelector('.fp-sub').textContent = qn + ' вопр.';
+        row.addEventListener('click', function(e) {
+            if (e.target.closest('.fp-actions')) return;
+            openFormByIndex(idx);
+        });
+        row.querySelector('.fp-ren').onclick = function(e) {
+            e.stopPropagation();
+            renameForm(idx, e);
+        };
+        row.querySelector('.fp-del').onclick = function(e) {
+            e.stopPropagation();
+            deleteForm(idx, e);
+            setTimeout(renderFormPickerList, 100);
+        };
+        list.appendChild(row);
+    });
+}
+function openFormByIndex(idx) {
+    if (idx < 0 || idx >= allForms.length) return;
+    currentFormIndex = idx;
+    try {
+        var u = new URL(window.location.href);
+        var form = allForms[idx];
+        var linkVal = String(idx);
+        if (form) {
+            try {
+                if (form.id == null || String(form.id).trim() === '') ensureFormStableId(form, idx);
+                if (form.id != null) linkVal = String(form.id);
+                saveFormsToStorage();
+            } catch (eId) {}
+        }
+        u.searchParams.set('form', linkVal);
+        history.replaceState(null, '', u.toString());
+    } catch (e) {}
+    enterHubFormMode(idx);
+    renderAllFormsUI();
+    loadCurrentForm();
+}
+function initHubFormRouting() {
+    maybeShowPwaWorkModal();
+    var idx = getFormQueryIndex();
+    if (idx !== null) {
+        if (idx >= allForms.length) idx = 0;
+        enterHubFormMode(idx);
+        currentFormIndex = idx;
+        return { picker: false, index: idx };
+    }
+    showFormPicker();
+    return { picker: true, index: null };
+}
+
+
 document.addEventListener('DOMContentLoaded', () => {
     loadFormsFromStorage();
     initSettings();
-    renderAllFormsUI();
-    loadCurrentForm();
+    var hubRoute = { picker: false };
+    try { hubRoute = initHubFormRouting(); } catch (e) { console.warn(e); }
+    if (!hubRoute.picker) {
+        renderAllFormsUI();
+        loadCurrentForm();
+    }
     checkOldDataMigration();
     initAiAndDbInputs();
 });
@@ -112,11 +340,24 @@ function loadFormsFromStorage() {
             allForms = JSON.parse(saved);
         } catch (e) {
             console.error("Ошибка чтения из localStorage", e);
-            allForms = [defaultForm];
+            allForms = [JSON.parse(JSON.stringify(defaultForm))];
         }
     } else {
-        allForms = [defaultForm];
+        allForms = [JSON.parse(JSON.stringify(defaultForm))];
         saveFormsToStorage();
+    }
+    if (!Array.isArray(allForms) || !allForms.length) {
+        allForms = [JSON.parse(JSON.stringify(defaultForm))];
+    }
+    var changed = false;
+    allForms.forEach(function(f, i) {
+        if (f && (f.id == null || String(f.id).trim() === '')) {
+            ensureFormStableId(f, i);
+            changed = true;
+        }
+    });
+    if (changed) {
+        try { saveFormsToStorage(); } catch (e2) {}
     }
 }
 
@@ -451,24 +692,78 @@ function deleteForm(index, event) {
 
 function switchForm(index) {
     currentFormIndex = parseInt(index);
+    if (document.body.classList.contains('hub-form-mode')) {
+        try {
+            var u = new URL(window.location.href);
+            u.searchParams.set('form', String(currentFormIndex));
+            history.replaceState(null, '', u.toString());
+        } catch (e) {}
+        updateAppTopbarTitle();
+    }
     renderAllFormsUI();
     loadCurrentForm();
 }
 
 function createNewFormPrompt() {
-    showPrompt("Введите название новой формы:", "", (title) => {
-        if (title && title.trim()) {
-            allForms.push({
-                title: title.trim(),
-                questions: []
-            });
-            currentFormIndex = allForms.length - 1;
-            saveFormsToStorage();
-            renderAllFormsUI();
-            loadCurrentForm();
-            showAlert('Новая форма успешно создана!', 'check_circle');
+    var alertModal = document.getElementById('custom-alert');
+    if (!alertModal) {
+        showPrompt("Введите название новой формы:", "", function(title) {
+            if (title && title.trim()) {
+                allForms.push({ title: title.trim(), questions: [] });
+                currentFormIndex = allForms.length - 1;
+                saveFormsToStorage();
+                renderAllFormsUI();
+                loadCurrentForm();
+                showAlert('Новая форма успешно создана!', 'check_circle');
+                if (document.getElementById('form-picker-screen') && !document.getElementById('form-picker-screen').classList.contains('hidden')) openFormByIndex(currentFormIndex);
+            }
+        });
+        return;
+    }
+    var card = alertModal.querySelector('.custom-alert-card');
+    if (!card) return;
+    var original = card.innerHTML;
+    card.innerHTML = `
+        <h3 style="margin:0 0 12px;text-align:left;font-size:1.1rem;">Создать новую форму</h3>
+        <input type="text" id="lite-new-form-title" class="admin-input" placeholder="Название формы..." style="margin-bottom:12px;">
+        <div style="display:flex;gap:10px;margin-bottom:12px;">
+            <button type="button" class="btn" id="lite-create-form-cancel" style="flex:1;background:transparent;color:var(--text-color);border:1px solid var(--border-color);">Отмена</button>
+            <button type="button" class="btn" id="lite-create-form-ok" style="flex:1;">Создать</button>
+        </div>
+        <button type="button" class="btn" id="lite-import-form-btn" style="width:100%;background:transparent;color:var(--text-color);border:1px solid var(--border-color);display:flex;align-items:center;justify-content:center;gap:8px;">
+            <span class="material-symbols-rounded" style="font-size:18px;">download</span> Импортировать форму
+        </button>
+    `;
+    alertModal.classList.add('active');
+    var restore = function() {
+        alertModal.classList.remove('active');
+        setTimeout(function() { card.innerHTML = original; }, 200);
+    };
+    document.getElementById('lite-create-form-cancel').onclick = restore;
+    document.getElementById('lite-create-form-ok').onclick = function() {
+        var title = (document.getElementById('lite-new-form-title').value || '').trim();
+        if (!title) {
+            var inp = document.getElementById('lite-new-form-title');
+            if (inp) inp.focus();
+            return;
         }
-    });
+        restore();
+        allForms.push({ title: title, questions: [] });
+        currentFormIndex = allForms.length - 1;
+        saveFormsToStorage();
+        renderAllFormsUI();
+        loadCurrentForm();
+        showAlert('Новая форма успешно создана!', 'check_circle');
+    };
+    document.getElementById('lite-import-form-btn').onclick = function() {
+        restore();
+        var el = document.getElementById('import-file');
+        if (el) { el.value = ''; el.click(); }
+    };
+    setTimeout(function() {
+        var inp = document.getElementById('lite-new-form-title');
+        if (inp) inp.focus();
+    }, 80);
 }
 
 /* ==========================================
