@@ -1,1218 +1,404 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prestige HQ | Выбор сервиса</title>
-    <link rel="icon" type="image/png" href="MY Work.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
-    <style>
-        :root {
-            --bg-color: #000000;
-            --card-bg: #050505;
-            --card-hover-bg: #121212;
-            --text-color: #f8fafc;
-            --text-muted: #94a3b8;
-            --border-color: rgba(255, 255, 255, 0.1);
-            --accent-color: #1a73e8;
-            --accent-glow: rgba(99, 102, 241, 0.25);
-            --modal-bg: #1e293b;
-            --code-bg: #0f172a;
-            --card-radius: 16px;
-            --transition-speed: 0.25s;
-            --iw-doc-bg: #0f2447;
-            --iw-doc-fg: #3b82f6;
-            --iw-slides-bg: #3a2205;
-            --iw-slides-fg: #f59e0b;
-            --iw-forms-bg: #2a153c;
-            --iw-forms-fg: #a855f7;
-            --iw-forms-lite-bg: #1a2e3c;
-            --iw-forms-lite-fg: #38bdf8;
-            --iw-sheets-bg: #072d20;
-            --iw-sheets-fg: #10b981;
-            --iw-keeps-bg: #391124;
-            --iw-keeps-fg: #ec4899;
-            --iw-mindmap-bg: #1a1e36;
-            --iw-mindmap-fg: #818cf8;
-            --iw-wg-bg: #182232;
-            --iw-wg-fg: #6366f1;
-            --maint-bg: rgba(245, 158, 11, 0.12);
-            --maint-border: rgba(245, 158, 11, 0.45);
-            --maint-text: #fbbf24;
-            --new-bg: rgba(239, 68, 68, 0.18);
-            --new-border: rgba(239, 68, 68, 0.55);
-            --new-text: #f87171;
-        }
-        body.light-theme {
-            --bg-color: #f8fafc;
-            --card-bg: #ffffff;
-            --card-hover-bg: #f1f5f9;
-            --text-color: #0f172a;
-            --text-muted: #64748b;
-            --border-color: rgba(0, 0, 0, 0.08);
-            --accent-glow: rgba(26, 115, 232, 0.12);
-            --modal-bg: #ffffff;
-            --code-bg: #f1f5f9;
-            --iw-doc-bg: #dbeafe;
-            --iw-doc-fg: #2563eb;
-            --iw-slides-bg: #ffedd5;
-            --iw-slides-fg: #d97706;
-            --iw-forms-bg: #f3e8ff;
-            --iw-forms-fg: #9333ea;
-            --iw-forms-lite-bg: #e0f2fe;
-            --iw-forms-lite-fg: #0284c7;
-            --iw-sheets-bg: #d1fae5;
-            --iw-sheets-fg: #059669;
-            --iw-keeps-bg: #fce7f3;
-            --iw-keeps-fg: #db2777;
-            --iw-mindmap-bg: #e0e7ff;
-            --iw-mindmap-fg: #6366f1;
-            --iw-wg-bg: #e0e7ff;
-            --iw-wg-fg: #4f46e5;
-            --maint-bg: rgba(245, 158, 11, 0.1);
-            --maint-border: rgba(217, 119, 6, 0.4);
-            --maint-text: #b45309;
-            --new-bg: rgba(239, 68, 68, 0.12);
-            --new-border: rgba(220, 38, 38, 0.4);
-            --new-text: #dc2626;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 24px;
-            transition: background-color var(--transition-speed) ease, color var(--transition-speed) ease;
-        }
-        .container { width: 100%; max-width: 1100px; text-align: center; position: relative; }
-        .top-nav { display: flex; justify-content: flex-end; width: 100%; margin-bottom: 10px; }
-        .icon-btn {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            color: var(--text-color);
-            padding: 10px 16px;
-            border-radius: 12px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: all var(--transition-speed) ease;
-        }
-        .icon-btn:hover {
-            background: var(--card-hover-bg);
-            border-color: var(--accent-color);
-            transform: translateY(-2px);
-        }
-        .notice-banner {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            background: rgba(99, 102, 241, 0.12);
-            border: 1px solid var(--accent-color);
-            border-radius: 12px;
-            padding: 12px 18px;
-            margin-bottom: 16px;
-            text-align: left;
-            font-size: 0.9rem;
-            line-height: 1.4;
-            animation: fadeIn 0.3s ease;
-        }
-        body.light-theme .notice-banner { background: rgba(26, 115, 232, 0.08); }
-        .notice-banner.hidden { display: none; }
-        .notice-content { display: flex; align-items: center; gap: 10px; }
-        .notice-content .material-symbols-rounded { color: var(--accent-color); font-size: 22px; flex-shrink: 0; }
-        .notice-close-btn {
-            background: transparent;
-            border: none;
-            color: var(--text-muted);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            padding: 4px;
-            border-radius: 6px;
-        }
-        .notice-close-btn:hover { color: var(--text-color); }
-        .header { margin-bottom: 40px; }
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 14px;
-            background: var(--accent-glow);
-            color: var(--accent-color);
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 16px;
-        }
-        .header h1 { font-size: 2.2rem; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 8px; }
-        .header p { color: var(--text-muted); font-size: 1rem; }
-        .services-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-            gap: 20px;
-            width: 100%;
-        }
-        .service-card {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: var(--card-radius);
-            padding: 28px 20px;
-            text-decoration: none;
-            color: inherit;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            transition: all var(--transition-speed) ease;
-            position: relative;
-            overflow: hidden;
-            cursor: pointer;
-        }
-        .service-card:not(.disabled):hover {
-            transform: translateY(-6px);
-            background: var(--card-hover-bg);
-            box-shadow: 0 12px 24px -10px var(--accent-glow);
-            border-color: var(--accent-color);
-        }
-        .new-badge {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 0.68rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.4px;
-            padding: 4px 8px;
-            border-radius: 8px;
-            background: var(--new-bg);
-            color: var(--new-text);
-            border: 1px solid var(--new-border);
-            z-index: 1;
-        }
-        .icon-wrapper {
-            padding: 10px 16px;
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 16px;
-            transition: transform var(--transition-speed) ease, background 0.25s ease, color 0.25s ease;
-        }
-        .custom-card-icon { width: 30px; height: 30px; object-fit: contain; }
-        .service-card:not(.disabled):hover .icon-wrapper { transform: scale(1.08); }
-        .icon-wrapper .material-symbols-rounded { font-size: 30px; }
-        .card-doc .icon-wrapper { background: var(--iw-doc-bg); color: var(--iw-doc-fg); }
-        .card-slides .icon-wrapper { background: var(--iw-slides-bg); color: var(--iw-slides-fg); }
-        .card-forms .icon-wrapper { background: var(--iw-forms-bg); color: var(--iw-forms-fg); }
-        .card-forms-lite .icon-wrapper { background: var(--iw-forms-lite-bg); color: var(--iw-forms-lite-fg); }
-        .card-sheets .icon-wrapper { background: var(--iw-sheets-bg); color: var(--iw-sheets-fg); }
-        .card-keeps .icon-wrapper { background: var(--iw-keeps-bg); color: var(--iw-keeps-fg); }
-        .card-mindmap .icon-wrapper { background: var(--iw-mindmap-bg); color: var(--iw-mindmap-fg); }
-        .service-card h2 { font-size: 1.15rem; font-weight: 600; margin-bottom: 8px; }
-        .service-card p { font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; }
-        .card-action {
-            margin-top: 20px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--accent-color);
-            opacity: 0;
-            transform: translateY(6px);
-            transition: all var(--transition-speed) ease;
-        }
-        .service-card:not(.disabled):hover .card-action { opacity: 1; transform: translateY(0); }
-        .transition-overlay {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100vw; height: 100vh;
-            background: var(--bg-color);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.25s ease;
-        }
-        .transition-overlay.active { opacity: 1; pointer-events: auto; }
-        .loader-card-preview {
-            width: 140px;
-            height: 160px;
-            background: var(--card-bg);
-            border: 2px solid var(--border-color);
-            border-radius: 16px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-            animation: pulseCard 1s infinite alternate ease-in-out;
-            margin-bottom: 20px;
-        }
-        body.light-theme .loader-card-preview { box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
-        .loader-card-preview .material-symbols-rounded { font-size: 48px; }
-        .loader-spinner {
-            width: 28px; height: 28px;
-            border: 3px solid var(--border-color);
-            border-top-color: var(--accent-color);
-            border-radius: 50%;
-            animation: spin 0.6s linear infinite;
-        }
-        .loader-text { font-size: 1.1rem; font-weight: 600; color: var(--text-color); }
-        @keyframes pulseCard {
-            0% { transform: scale(0.95); }
-            100% { transform: scale(1.05); }
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .modal-overlay {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100vw; height: 100vh;
-            background: rgba(0, 0, 0, 0.55);
-            backdrop-filter: blur(4px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.25s ease;
-            padding: 20px;
-        }
-        body.light-theme .modal-overlay { background: rgba(15, 23, 42, 0.35); }
-        .modal-overlay.active { opacity: 1; pointer-events: auto; }
-        .modal-card {
-            background: var(--modal-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            width: 100%;
-            max-width: 540px;
-            padding: 28px;
-            text-align: left;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
-            transform: scale(0.95);
-            transition: transform 0.25s ease;
-            max-height: 85vh;
-            overflow-y: auto;
-            color: var(--text-color);
-        }
-        body.light-theme .modal-card { box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1); }
-        .modal-overlay.active .modal-card { transform: scale(1); }
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        .modal-header h3 {
-            font-size: 1.25rem;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: var(--text-color);
-        }
-        .modal-close {
-            background: transparent;
-            border: none;
-            color: var(--text-muted);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            padding: 4px;
-            border-radius: 6px;
-        }
-        .modal-close:hover { color: var(--text-color); }
-        .setting-group { margin-bottom: 20px; }
-        .setting-label {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 10px;
-            display: block;
-        }
-        .theme-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-        .theme-btn {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            color: var(--text-color);
-            padding: 10px;
-            border-radius: 10px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            transition: all 0.2s ease;
-        }
-        body.light-theme .theme-btn { background: var(--code-bg); }
-        .theme-btn:hover, .theme-btn.active {
-            border-color: var(--accent-color);
-            background: var(--card-hover-bg);
-            color: var(--accent-color);
-        }
-        .info-link-btn {
-            width: 100%;
-            background: var(--accent-glow);
-            border: 1px solid var(--accent-color);
-            color: var(--accent-color);
-            padding: 12px;
-            border-radius: 12px;
-            cursor: pointer;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            margin-top: 10px;
-            transition: all 0.2s ease;
-        }
-        .info-link-btn:hover { opacity: 0.9; transform: translateY(-1px); }
-        .api-explain-box { font-size: 0.92rem; line-height: 1.6; color: var(--text-color); }
-        .api-explain-box p { margin-bottom: 14px; }
-        .api-card-section {
-            background: var(--code-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 14px;
-            margin-top: 12px;
-            margin-bottom: 14px;
-        }
-        .api-card-section h4 {
-            font-size: 0.95rem;
-            margin-bottom: 6px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            color: var(--accent-color);
-        }
-        .code-inline {
-            background: var(--border-color);
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: monospace;
-            font-size: 0.85rem;
-        }
-        .footer { margin-top: 50px; font-size: 0.8rem; color: var(--text-muted); }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-8px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @media (max-width: 600px) {
-            .header h1 { font-size: 1.6rem; }
-            .theme-buttons { grid-template-columns: 1fr; }
-        }
-        .wg-fab-root {
-            position: fixed;
-            right: 20px;
-            bottom: 20px;
-            z-index: 1500;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 0;
-        }
-        .wg-fab {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            color: var(--text-color);
-            border-radius: 999px;
-            padding: 10px 16px 10px 10px;
-            cursor: pointer;
-            box-shadow: 0 8px 28px rgba(0,0,0,0.35);
-            transition: transform 0.2s ease, box-shadow 0.2s ease, width 0.25s ease;
-            max-width: min(320px, calc(100vw - 40px));
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-        body.light-theme .wg-fab { box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
-        .wg-fab:hover { transform: translateY(-2px); border-color: var(--accent-color); }
-        .wg-fab-icon {
-            width: 36px; height: 36px;
-            border-radius: 50%;
-            object-fit: contain;
-            background: var(--iw-wg-bg);
-            padding: 4px;
-            flex-shrink: 0;
-        }
-        .wg-fab-label {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            color: var(--text-color);
-        }
-        .wg-fab-root.expanded .wg-fab { display: none; }
-        .wg-fab-panel {
-            display: none;
-            width: min(420px, calc(100vw - 32px));
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 18px;
-            padding: 12px;
-            box-shadow: 0 12px 40px rgba(0,0,0,0.4);
-            animation: fadeIn 0.2s ease;
-        }
-        body.light-theme .wg-fab-panel { box-shadow: 0 12px 32px rgba(0,0,0,0.12); }
-        .wg-fab-root.expanded .wg-fab-panel { display: block; }
-        .wg-fab-panel-row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .wg-fab-panel-row img {
-            width: 32px; height: 32px;
-            border-radius: 50%;
-            object-fit: contain;
-            background: var(--iw-wg-bg);
-            padding: 3px;
-            flex-shrink: 0;
-        }
-        .wg-fab-input {
-            flex: 1;
-            min-width: 0;
-            border: 1px solid var(--border-color);
-            background: var(--bg-color);
-            color: var(--text-color);
-            border-radius: 12px;
-            padding: 10px 12px;
-            font-size: 0.95rem;
-            outline: none;
-        }
-        .wg-fab-input:focus { border-color: var(--accent-color); }
-        .wg-fab-send {
-            background: var(--accent-color);
-            color: #fff;
-            border: none;
-            width: 40px; height: 40px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            flex-shrink: 0;
-        }
-        .wg-fab-send:hover { filter: brightness(1.08); }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>My Work | Prestige HQ</title>
+<link rel="icon" type="image/png" href="My Work.png">
+<link rel="apple-touch-icon" href="My Work.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1a73e8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="My Work">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+<style>
+:root{--bg:#000;--card:#0a0a0c;--card2:#141418;--text:#f8fafc;--muted:#94a3b8;--border:rgba(255,255,255,.1);--accent:#1a73e8;--glow:rgba(26,115,232,.28);--warn:#f59e0b;--radius:16px;--nav-h:64px;--safe-b:env(safe-area-inset-bottom,0px);--sidebar:232px}
+body.light{--bg:#f1f5f9;--card:#fff;--card2:#f8fafc;--text:#0f172a;--muted:#64748b;--border:rgba(15,23,42,.1);--glow:rgba(26,115,232,.14)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100dvh}
+button,input,textarea{font:inherit;color:inherit}
+.hidden{display:none!important}
+.app{display:flex;min-height:100dvh}
+.side{display:none;width:var(--sidebar);flex-shrink:0;background:var(--card);border-right:1px solid var(--border);padding:18px 12px;flex-direction:column;position:sticky;top:0;height:100dvh}
+.brand{display:flex;align-items:center;gap:10px;padding:6px 10px 20px;font-weight:700}
+.brand img{width:32px;height:32px;border-radius:8px;object-fit:contain}
+.nav-btn{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border:none;border-radius:12px;background:transparent;color:var(--muted);cursor:pointer;font-weight:500;font-size:.92rem;text-align:left}
+.nav-btn .material-symbols-rounded{font-size:22px}
+.nav-btn:hover{background:var(--card2);color:var(--text)}
+.nav-btn.active{background:var(--glow);color:var(--accent);font-weight:600}
+.side .spacer{flex:1}
+.main{flex:1;min-width:0;padding:20px 16px calc(var(--nav-h) + var(--safe-b) + 88px);max-width:980px;margin:0 auto;width:100%}
+@media(min-width:900px){.side{display:flex}.bottom{display:none!important}.main{padding:28px 32px 48px;max-width:none}.main-inner{max-width:920px}}
+.bottom{position:fixed;left:0;right:0;bottom:0;z-index:100;display:flex;justify-content:space-around;background:var(--card);border-top:1px solid var(--border);padding:6px 4px calc(6px + var(--safe-b));height:calc(var(--nav-h) + var(--safe-b))}
+.bottom .nav-btn{flex-direction:column;gap:2px;padding:6px 4px;font-size:.58rem;min-width:0;flex:1;justify-content:center;align-items:center}
+.bottom .nav-btn .material-symbols-rounded{font-size:22px}
+.page-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.page-h h1{font-size:1.45rem;font-weight:700;letter-spacing:-.03em}
+.page-h p{color:var(--muted);font-size:.88rem;margin-top:4px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:10px 16px;font-weight:600;font-size:.9rem;cursor:pointer}
+.btn:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
+.btn-ghost{background:transparent;color:var(--text);border:1px solid var(--border)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent);filter:none}
+.icon-btn{width:40px;height:40px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.chip{border:1px solid var(--border);background:var(--card);color:var(--muted);border-radius:999px;padding:8px 14px;font-size:.82rem;font-weight:600;cursor:pointer}
+.chip.active{background:var(--glow);color:var(--accent);border-color:transparent}
+.toolbar-row{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.search{flex:1;min-width:180px;display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:999px;padding:8px 14px}
+.search input{flex:1;border:none;outline:none;background:transparent;color:var(--text);font-size:.92rem}
+.search .material-symbols-rounded{color:var(--muted);font-size:20px}
+.cselect{position:relative}
+.cselect-btn{border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:999px;padding:8px 14px;font-size:.82rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px}
+.cselect-menu{display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:50;background:var(--card);border:1px solid var(--border);border-radius:14px;min-width:200px;padding:6px;box-shadow:0 16px 40px rgba(0,0,0,.35)}
+.cselect.open .cselect-menu{display:block}
+.cselect-opt{width:100%;text-align:left;border:none;background:transparent;color:var(--text);padding:10px 12px;border-radius:10px;cursor:pointer;font-size:.88rem}
+.cselect-opt:hover,.cselect-opt.active{background:var(--card2);color:var(--accent)}
+.list{display:flex;flex-direction:column;gap:8px}
+.row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;color:inherit;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 14px;cursor:pointer}
+.row:hover{border-color:var(--accent);background:var(--card2)}
+.row.has-accent{border-left:4px solid var(--row-accent,var(--accent))}
+.p-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.p-icon.form{background:rgba(168,85,247,.15);color:#a855f7}
+.p-icon.doc{background:rgba(59,130,246,.15);color:#3b82f6}
+.p-icon.slides{background:rgba(245,158,11,.15);color:#f59e0b}
+.p-icon.sheet{background:rgba(16,185,129,.15);color:#10b981}
+.p-icon.keep{background:rgba(236,72,153,.15);color:#ec4899}
+.p-icon.mind{background:rgba(20,184,166,.15);color:#14b8a6}
+.p-icon.board{background:rgba(99,102,241,.15);color:#818cf8}
+.p-meta{flex:1;min-width:0}
+.p-title{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p-sub{font-size:.78rem;color:var(--muted);margin-top:2px}
+.more{width:36px;height:36px;border:none;background:transparent;color:var(--muted);border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.more:hover{background:var(--bg);color:var(--text)}
+.empty{text-align:center;padding:48px 16px;color:var(--muted)}
+.empty .material-symbols-rounded{font-size:48px;opacity:.45;margin-bottom:10px}
+.empty h3{color:var(--text);margin-bottom:8px}
+.banner{display:flex;gap:12px;align-items:flex-start;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.4);border-radius:14px;padding:12px 14px;margin-bottom:14px;font-size:.88rem;line-height:1.45}
+.banner .material-symbols-rounded{color:var(--warn);flex-shrink:0}
+.banner-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.create-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+.create-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px 12px;text-align:center;cursor:pointer;color:inherit;transition:transform .15s,border-color .15s}
+.create-card:hover{transform:translateY(-2px);border-color:var(--accent)}
+.create-card .p-icon{margin:0 auto 10px;width:52px;height:52px}
+.create-card h3{font-size:.95rem;margin-bottom:4px}
+.create-card p{font-size:.75rem;color:var(--muted);line-height:1.35}
+.badge-beta{display:inline-block;margin-top:6px;font-size:.65rem;font-weight:800;color:#fbbf24;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.4);padding:2px 6px;border-radius:6px}
+.templates{margin-top:28px}
+.section-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:10px}
+.tpl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.tpl-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;text-align:left;cursor:pointer;color:inherit}
+.tpl-card:hover{border-color:var(--accent)}
+.tpl-card .t{font-size:.7rem;color:var(--accent);font-weight:700;text-transform:uppercase;margin-bottom:4px}
+.tpl-card h4{font-size:.92rem;margin-bottom:4px}
+.tpl-card p{font-size:.75rem;color:var(--muted)}
+.open-layout{display:grid;grid-template-columns:220px 1fr;gap:14px;min-height:420px}
+@media(max-width:720px){.open-layout{grid-template-columns:1fr}}
+.storage-side{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:10px;display:flex;flex-direction:column;gap:4px}
+.storage-item{display:flex;align-items:center;gap:10px;width:100%;border:none;background:transparent;color:var(--text);padding:10px 12px;border-radius:12px;cursor:pointer;text-align:left;font-size:.88rem}
+.storage-item:hover,.storage-item.active{background:var(--card2);color:var(--accent)}
+.storage-foot{margin-top:auto;padding-top:8px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:4px}
+.files-pane{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:12px;min-height:360px}
+.path-bar{font-size:.8rem;color:var(--muted);margin-bottom:12px;padding:8px 10px;background:var(--bg);border-radius:10px}
+.searcher-sticky{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(10px);padding:4px 0 12px;margin-bottom:8px}
+.composer{display:flex;align-items:flex-end;gap:6px;padding:6px;border-radius:28px;border:1px solid var(--border);background:var(--card);box-shadow:0 8px 28px rgba(0,0,0,.2)}
+.composer:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--glow)}
+.composer textarea{flex:1;border:none;outline:none;resize:none;background:transparent;color:var(--text);padding:10px 8px;max-height:120px;line-height:1.4}
+.composer .round{width:42px;height:42px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.composer .plus{background:transparent;color:var(--muted)}
+.composer .plus:hover{color:var(--accent);background:var(--card2)}
+.composer .send{background:var(--accent);color:#fff}
+.attach-prev{margin-bottom:10px;position:relative;display:inline-block}
+.attach-prev img{max-height:88px;border-radius:14px;border:1px solid var(--border);display:block}
+.attach-prev .rm{position:absolute;top:-8px;right:-8px;width:26px;height:26px;border-radius:50%;border:none;background:#ef4444;color:#fff;cursor:pointer}
+.settings-stack{display:flex;flex-direction:column;gap:12px;max-width:520px}
+.s-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px}
+.s-card h3{font-size:.95rem;display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.s-card .hint{font-size:.8rem;color:var(--muted);line-height:1.4;margin-bottom:12px}
+.pills{display:flex;flex-wrap:wrap;gap:8px}
+.pill{border:1px solid var(--border);background:var(--card2);color:var(--text);border-radius:999px;padding:8px 14px;font-size:.82rem;font-weight:600;cursor:pointer}
+.pill.active{border-color:var(--accent);color:var(--accent);background:var(--glow)}
+.meter{height:8px;border-radius:99px;background:var(--bg);overflow:hidden;margin-top:8px}
+.meter>i{display:block;height:100%;width:0;background:var(--accent);border-radius:99px;transition:width .3s}
+.overlay{position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s}
+.overlay.active{opacity:1;pointer-events:auto}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:20px;width:100%;max-width:440px;max-height:85vh;overflow:auto;padding:22px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+.modal h3{font-size:1.1rem;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.modal-actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.modal-actions .btn{flex:1;min-width:120px}
+.toast{position:fixed;left:50%;bottom:calc(var(--nav-h) + var(--safe-b) + 16px);transform:translateX(-50%) translateY(20px);background:#1e293b;color:#fff;padding:10px 16px;border-radius:12px;font-size:.88rem;z-index:3000;opacity:0;pointer-events:none;transition:.25s;max-width:90vw}
+body.light .toast{background:#0f172a}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(min-width:900px){.toast{bottom:24px}}
+.help-fab{position:fixed;right:16px;bottom:calc(var(--nav-h) + var(--safe-b) + 16px);width:44px;height:44px;border-radius:50%;border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer;z-index:90;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+@media(min-width:900px){.help-fab{bottom:24px}}
+.wg-root{position:fixed;left:16px;right:16px;bottom:calc(var(--nav-h) + var(--safe-b) + 12px);z-index:95;display:flex;justify-content:flex-end;pointer-events:none}
+@media(min-width:900px){.wg-root{left:auto;right:24px;bottom:24px;width:min(420px,calc(100vw - 48px))}}
+.wg-chip{pointer-events:auto;display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:999px;padding:8px 12px 8px 8px;cursor:pointer;box-shadow:0 10px 30px rgba(0,0,0,.3);max-width:100%}
+.wg-chip img,.wg-chip .fallback{width:36px;height:36px;border-radius:50%;object-fit:cover;background:var(--glow);display:flex;align-items:center;justify-content:center;color:var(--accent)}
+.wg-chip span.label{font-size:.88rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wg-panel{pointer-events:auto;width:100%;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:12px;box-shadow:0 16px 40px rgba(0,0,0,.35)}
+.wg-panel.hidden,.wg-chip.hidden{display:none}
+.wg-input-row{display:flex;gap:8px;align-items:flex-end}
+.wg-input-row textarea{flex:1;border:1px solid var(--border);border-radius:14px;background:var(--bg);padding:10px 12px;resize:none;min-height:44px;max-height:100px;outline:none}
+.preview-overlay{position:fixed;inset:0;z-index:2500;background:rgba(0,0,0,.72);display:flex;flex-direction:column;padding:12px;opacity:0;pointer-events:none;transition:opacity .2s}
+.preview-overlay.active{opacity:1;pointer-events:auto}
+.preview-bar{display:flex;align-items:center;gap:10px;margin-bottom:10px;color:#fff;flex-shrink:0}
+.preview-bar h2{flex:1;font-size:1rem;font-weight:600}
+.preview-frame{flex:1;border:none;border-radius:16px;background:#fff;width:100%;min-height:0}
+.aero-layer{position:fixed;inset:0;z-index:4000;pointer-events:none}
+.aero-win{pointer-events:auto;position:absolute;top:12%;left:12%;width:min(720px,92vw);height:min(480px,70vh);border-radius:8px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.35);background:linear-gradient(180deg,rgba(180,210,240,.92),rgba(150,180,220,.88));backdrop-filter:blur(12px);display:flex;flex-direction:column;font-family:"Segoe UI",Tahoma,sans-serif;color:#1a1a1a}
+.aero-title{height:32px;display:flex;align-items:center;gap:8px;padding:0 8px;background:linear-gradient(180deg,#dce9f8,#a8c5e2);cursor:move;user-select:none;font-size:13px;font-weight:600}
+.aero-controls{margin-left:auto;display:flex;gap:4px}
+.aero-controls button{width:28px;height:20px;border:1px solid #6a8eb0;border-radius:3px;background:linear-gradient(180deg,#fff,#c5d8ec);cursor:pointer;font-size:11px}
+.aero-body{flex:1;background:#fff;display:flex;min-height:0}
+.aero-tree{width:160px;background:#f0f4f8;border-right:1px solid #b0c4d8;padding:8px;font-size:12px;overflow:auto}
+.aero-tree div{padding:4px 6px;border-radius:4px;cursor:pointer}
+.aero-tree div:hover{background:#d6e6f5}
+.aero-files{flex:1;padding:8px;overflow:auto;font-size:12px}
+.aero-file{display:flex;gap:8px;padding:6px;border-radius:4px;cursor:pointer;align-items:center}
+.aero-file:hover{background:#e8f1fa}
+.aero-status{height:24px;background:#eef3f8;border-top:1px solid #b0c4d8;font-size:11px;display:flex;align-items:center;justify-content:space-between;padding:0 10px}
+.aero-note{flex:1;border:none;resize:none;padding:12px;font-family:"Lucida Console",monospace;font-size:13px;outline:none;background:#fff}
+.aero-deny{position:absolute;inset:40px 20px 20px;background:rgba(255,255,255,.96);border:1px solid #c00;border-radius:6px;padding:16px;display:none;font-size:13px;line-height:1.45}
+.aero-deny.show{display:block}
+body.ui-large .btn,body.ui-large .nav-btn,body.ui-large .chip{min-height:48px}
+body.ui-large .row{padding:16px}
 
-        /* Migration prep modal */
-        .mig-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-top: 18px;
-        }
-        .mig-btn-primary {
-            width: 100%;
-            background: var(--accent-color);
-            color: #fff;
-            border: none;
-            padding: 12px 16px;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 0.95rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        .mig-btn-primary:hover { filter: brightness(1.08); }
-        .mig-btn-primary:disabled { opacity: 0.55; cursor: not-allowed; filter: none; }
-        .mig-btn-secondary {
-            width: 100%;
-            background: transparent;
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-            padding: 11px 16px;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        .mig-btn-secondary:hover { border-color: var(--accent-color); color: var(--accent-color); }
-        .mig-btn-ghost {
-            width: 100%;
-            background: transparent;
-            border: none;
-            color: var(--text-muted);
-            padding: 8px;
-            font-size: 0.85rem;
-            cursor: pointer;
-        }
-        .mig-btn-ghost:hover { color: var(--text-color); }
-        .mig-status {
-            margin-top: 12px;
-            padding: 10px 12px;
-            border-radius: 10px;
-            font-size: 0.85rem;
-            line-height: 1.45;
-            display: none;
-        }
-        .mig-status.show { display: block; }
-        .mig-status.ok {
-            background: rgba(16, 185, 129, 0.12);
-            border: 1px solid rgba(16, 185, 129, 0.4);
-            color: #34d399;
-        }
-        body.light-theme .mig-status.ok { color: #059669; }
-        .mig-status.err {
-            background: rgba(239, 68, 68, 0.12);
-            border: 1px solid rgba(239, 68, 68, 0.4);
-            color: #f87171;
-        }
-        body.light-theme .mig-status.err { color: #dc2626; }
-        .mig-detail-section {
-            margin-bottom: 14px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid var(--border-color);
-        }
-        .mig-detail-section:last-child { border-bottom: none; margin-bottom: 0; }
-        .mig-detail-section h4 {
-            font-size: 0.95rem;
-            margin-bottom: 6px;
-            color: var(--accent-color);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .mig-detail-section p {
-            font-size: 0.88rem;
-            color: var(--text-muted);
-            line-height: 1.5;
-            margin: 0;
-        }
-        .mig-banner {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            background: rgba(245, 158, 11, 0.12);
-            border: 1px solid rgba(245, 158, 11, 0.45);
-            border-radius: 12px;
-            padding: 12px 16px;
-            margin-bottom: 16px;
-            text-align: left;
-            font-size: 0.88rem;
-            line-height: 1.45;
-        }
-        body.light-theme .mig-banner {
-            background: rgba(245, 158, 11, 0.1);
-            border-color: rgba(217, 119, 6, 0.4);
-        }
-        .mig-banner .material-symbols-rounded { color: #fbbf24; flex-shrink: 0; }
-        body.light-theme .mig-banner .material-symbols-rounded { color: #b45309; }
-        .mig-banner-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-        .mig-banner-actions button {
-            font-size: 0.8rem;
-            font-weight: 600;
-            padding: 6px 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            border: 1px solid var(--border-color);
-            background: var(--card-bg);
-            color: var(--text-color);
-        }
-        .mig-banner-actions button.primary {
-            background: var(--accent-color);
-            border-color: var(--accent-color);
-            color: #fff;
-        }
-
-        @media (max-width: 600px) {
-            .wg-fab-root { right: 12px; bottom: 12px; left: 12px; align-items: stretch; }
-            .wg-fab { justify-content: flex-start; max-width: none; }
-            .wg-fab-panel { width: 100%; }
-        }
-    </style>
+.ctx-menu{position:fixed;z-index:5000;display:none;min-width:220px;padding:6px;border-radius:14px;border:1px solid var(--border);background:var(--card);box-shadow:0 16px 40px rgba(0,0,0,.4)}
+.ctx-menu.show{display:block}
+.ctx-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:none;background:transparent;color:var(--text);padding:10px 12px;border-radius:10px;cursor:pointer;font-size:.9rem}
+.ctx-item:hover{background:var(--card2)}
+.ctx-item.danger{color:#f87171}
+.ctx-item .material-symbols-rounded{font-size:20px}
+.ctx-sep{height:1px;background:var(--border);margin:4px 6px}
+.row.folder-row .p-icon{background:rgba(245,158,11,.15);color:#f59e0b}
+.path-crumb{border:none;background:transparent;color:var(--accent);cursor:pointer;font-size:.8rem;font-weight:600;padding:0}
+.path-crumb:hover{text-decoration:underline}
+.path-sep{color:var(--muted);font-size:.8rem}
+</style>
 </head>
 <body>
-    <div class="container">
-        <div class="top-nav">
-            <button class="icon-btn" type="button" onclick="openModal('settings-modal')">
-                <span class="material-symbols-rounded">settings</span>
-            </button>
-        </div>
-        <div id="repo-notice" class="notice-banner hidden">
-            <div class="notice-content">
-                <span class="material-symbols-rounded">info</span>
-                <span>Мы сменили название репозитория с <strong>my-form</strong> на <strong>my-work</strong>, чтобы показать вам гораздо больше, чем кажется на первый взгляд!</span>
-            </div>
-            <button class="notice-close-btn" type="button" onclick="dismissNotice()" title="Закрыть">
-                <span class="material-symbols-rounded">close</span>
-            </button>
-        </div>
+<div class="app">
+<aside class="side">
+<div class="brand"><img src="My Work.png" alt=""><span>My Work</span></div>
+<button type="button" class="nav-btn active" data-tab="home" onclick="switchTab('home')"><span class="material-symbols-rounded">home</span>Главная</button>
+<button type="button" class="nav-btn" data-tab="create" onclick="switchTab('create')"><span class="material-symbols-rounded">add_circle</span>Создать</button>
+<button type="button" class="nav-btn" data-tab="open" onclick="switchTab('open')"><span class="material-symbols-rounded">folder_open</span>Открыть</button>
+<button type="button" class="nav-btn" data-tab="searcher" onclick="switchTab('searcher')"><span class="material-symbols-rounded">manage_search</span>Searcher</button>
+<button type="button" class="nav-btn" data-tab="trash" onclick="switchTab('trash')"><span class="material-symbols-rounded">delete</span>Корзина</button>
+<div class="spacer"></div>
+<button type="button" class="nav-btn" data-tab="settings" onclick="switchTab('settings')"><span class="material-symbols-rounded">settings</span>Настройки</button>
+</aside>
+<main class="main"><div class="main-inner">
 
-        <div id="migration-banner" class="mig-banner hidden">
-            <span class="material-symbols-rounded">cloud_sync</span>
-            <div style="flex:1;">
-                <strong>Подготовка к общему хранилищу</strong><br>
-                До конца недели скопируйте проекты в скрытый резервный ключ — данные останутся на месте, это только страховка.
-                <div class="mig-banner-actions">
-                    <button type="button" class="primary" onclick="openMigrationModal()">Перенести сейчас</button>
-                    <button type="button" onclick="openMigrationDetails()">Подробнее…</button>
-                    <button type="button" onclick="dismissMigrationBanner()">Скрыть</button>
-                </div>
-            </div>
-        </div>
-        <header class="header">
-            <div class="badge">
-                <span class="material-symbols-rounded" style="font-size: 16px;">dashboard</span>
-                Prestige HQ WorkSuite
-            </div>
-            <h1>Выберите сервис для работы</h1>
-            <p>Единый рабочий центр для ваших документов, презентаций и данных</p>
-        </header>
-        <div class="services-grid">
-            <a href="./document/" class="service-card card-doc" onclick="navigateWithAnimation(event, './document/', 'Документы', 'article', '#3b82f6')">
-                <div class="icon-wrapper">
-                    <img src="Document.png" alt="" class="custom-card-icon" onerror="this.style.display='none'">
-                    <span class="material-symbols-rounded">article</span>
-                </div>
-                <h2>Документы</h2>
-                <p>Текстовый редактор для отчетов, заметок и статей.</p>
-                <div class="card-action">
-                    Открыть <span class="material-symbols-rounded" style="font-size:16px;">arrow_forward</span>
-                </div>
-            </a>
-            <a href="./slides/" class="service-card card-slides" onclick="navigateWithAnimation(event, './slides/', 'Презентации', 'slideshow', '#f59e0b')">
-                <div class="icon-wrapper">
-                    <img src="Slides.png" alt="" class="custom-card-icon" onerror="this.style.display='none'">
-                    <span class="material-symbols-rounded">slideshow</span>
-                </div>
-                <h2>Презентации</h2>
-                <p>Интерактивные слайды, заметки и генерация с ИИ.</p>
-                <div class="card-action">
-                    Открыть <span class="material-symbols-rounded" style="font-size:16px;">arrow_forward</span>
-                </div>
-            </a>
-            <a href="./forms/" class="service-card card-forms" onclick="navigateWithAnimation(event, './forms/', 'Формы', 'assignment', '#a855f7')">
-                <div class="icon-wrapper">
-                    <img src="forms.png" alt="" class="custom-card-icon" onerror="this.style.display='none'">
-                    <span class="material-symbols-rounded">assignment</span>
-                </div>
-                <h2>Формы</h2>
-                <p>Полный конструктор: темы, превью, Share, FlashCards.</p>
-                <div class="card-action">
-                    Открыть <span class="material-symbols-rounded" style="font-size:16px;">arrow_forward</span>
-                </div>
-            </a>
-            <a href="./forms-lite/" class="service-card card-forms-lite" onclick="navigateWithAnimation(event, './forms-lite/', 'Формы Lite', 'speed', '#38bdf8')">
-                <span class="new-badge">НОВИНКА</span>
-                <div class="icon-wrapper">
-                    <img src="forms.png" alt="" class="custom-card-icon" onerror="this.style.display='none'">
-                    <span class="material-symbols-rounded">speed</span>
-                </div>
-                <h2>Формы Lite</h2>
-                <p>Лёгкая версия для слабых устройств. Без ИИ и тяжёлых эффектов.</p>
-                <div class="card-action">
-                    Открыть <span class="material-symbols-rounded" style="font-size:16px;">arrow_forward</span>
-                </div>
-            </a>
-            <a href="./spreadsheets/" class="service-card card-sheets" id="sheets-card"
-               onclick="navigateWithAnimation(event, './spreadsheets/', 'Таблицы', 'table_chart', '#10b981')">
-                <div class="icon-wrapper">
-                    <img src="spreadsheets.png" alt="" class="custom-card-icon" onerror="this.style.display='none'">
-                    <span class="material-symbols-rounded">table_chart</span>
-                </div>
-                <h2>Таблицы</h2>
-                <p>Работа с данными, расчетами и структурированием.</p>
-                <div class="card-action">
-                    Открыть <span class="material-symbols-rounded" style="font-size:16px;">arrow_forward</span>
-                </div>
-            </a>
-            <a href="./keeps/" class="service-card card-keeps" onclick="navigateWithAnimation(event, './keeps/', 'Keeps', 'keep', '#ec4899')">
-                <div class="icon-wrapper">
-                    <img src="keeps.png" alt="" class="custom-card-icon" onerror="this.style.display='none'">
-                    <span class="material-symbols-rounded">keep</span>
-                </div>
-                <h2>Keeps</h2>
-                <p>Быстрые заметки, списки задач и фрагменты.</p>
-                <div class="card-action">
-                    Открыть <span class="material-symbols-rounded" style="font-size:16px;">arrow_forward</span>
-                </div>
-            </a>
-            <a href="./mindmap/" class="service-card card-mindmap" onclick="navigateWithAnimation(event, './mindmap/', 'Ментальные карты', 'account_tree', '#818cf8')">
-                <span class="new-badge">НОВИНКА</span>
-                <div class="icon-wrapper">
-                    <span class="material-symbols-rounded">account_tree</span>
-                </div>
-                <h2>Ментальные карты</h2>
-                <p>Интерактивные схемы, ветви и визуализация идей.</p>
-                <div class="card-action">
-                    Открыть <span class="material-symbols-rounded" style="font-size:16px;">arrow_forward</span>
-                </div>
-            </a>
-        </div>
-        <footer class="footer">
-            &copy; Prestige HQ Hub. Все права защищены.
-        </footer>
-    </div>
-    
-    <div class="wg-fab-root" id="wg-fab-root">
-        <button type="button" class="wg-fab" id="wg-fab-btn" aria-label="WorkGens AI">
-            <img src="./WorkGens/icon.png" alt="" class="wg-fab-icon" onerror="this.src='';this.style.background='var(--iw-wg-bg)'">
-            <span class="wg-fab-label" id="wg-fab-label">Need help?</span>
-        </button>
-        <div class="wg-fab-panel" id="wg-fab-panel">
-            <div class="wg-fab-panel-row">
-                <img src="./WorkGens/icon.png" alt="" onerror="this.style.display='none'">
-                <input type="text" class="wg-fab-input" id="wg-fab-input" placeholder="Спросите WorkGens…" autocomplete="off">
-                <button type="button" class="wg-fab-send" id="wg-fab-send" title="Отправить в WorkGens">
-                    <span class="material-symbols-rounded">arrow_upward</span>
-                </button>
-            </div>
-        </div>
-    </div>
-    <div id="transition-overlay" class="transition-overlay">
-        <div id="loader-preview" class="loader-card-preview">
-            <span id="loader-icon" class="material-symbols-rounded">article</span>
-            <div class="loader-spinner"></div>
-        </div>
-        <div id="loader-text" class="loader-text">Открываем сервис...</div>
-    </div>
-
-    <!-- Migration prep warning -->
-    <div id="migration-modal" class="modal-overlay">
-        <div class="modal-card" style="max-width:520px;">
-            <div class="modal-header">
-                <h3>
-                    <span class="material-symbols-rounded" style="color:#fbbf24;">shield</span>
-                    Подготовьте проекты к переносу
-                </h3>
-                <button class="modal-close" type="button" onclick="closeModal('migration-modal')">
-                    <span class="material-symbols-rounded">close</span>
-                </button>
-            </div>
-            <p style="font-size:0.95rem; line-height:1.55; color:var(--text-color); margin-bottom:10px;">
-                В ближайшее время My Work перейдёт на <strong>один общий ключ хранения</strong> для всех сервисов
-                (Формы, Документы, Слайды, Таблицы, Keeps). Это нужно для единого списка проектов на главной —
-                как файлы в OneDrive.
-            </p>
-            <p style="font-size:0.9rem; line-height:1.5; color:var(--text-muted); margin-bottom:4px;">
-                Займите <strong>минуту до конца этой недели</strong>: нажмите кнопку ниже — мы <em>скопируем</em>
-                ваши проекты в скрытый резервный ключ. Старые данные <strong>не удаляются</strong>.
-                Новый интерфейс включим постепенно после 3 ноября, не резко.
-            </p>
-            <div class="mig-actions">
-                <button type="button" class="mig-btn-primary" id="mig-run-btn" onclick="runMigrationBackup()">
-                    <span class="material-symbols-rounded" style="font-size:20px;">cloud_upload</span>
-                    Перенести сейчас (резервная копия)
-                </button>
-                <button type="button" class="mig-btn-secondary" onclick="openMigrationDetails()">
-                    <span class="material-symbols-rounded" style="font-size:20px;">info</span>
-                    Подробнее…
-                </button>
-                <button type="button" class="mig-btn-ghost" onclick="dismissMigrationModal(false)">Позже</button>
-            </div>
-            <div id="mig-status" class="mig-status" role="status"></div>
-        </div>
-    </div>
-
-    <div id="migration-details-modal" class="modal-overlay">
-        <div class="modal-card" style="max-width:600px;">
-            <div class="modal-header">
-                <h3>
-                    <span class="material-symbols-rounded" style="color:var(--accent-color);">map</span>
-                    План переноса My Work
-                </h3>
-                <button class="modal-close" type="button" onclick="closeModal('migration-details-modal')">
-                    <span class="material-symbols-rounded">close</span>
-                </button>
-            </div>
-            <div class="mig-detail-section">
-                <h4><span class="material-symbols-rounded" style="font-size:18px;">flag</span> Зачем</h4>
-                <p>Сейчас каждый сервис хранит проекты отдельно. Мы собираем их в общий реестр, чтобы на главной были недавние файлы, корзина, папки и быстрый переход — без потери данных.</p>
-            </div>
-            <div class="mig-detail-section">
-                <h4><span class="material-symbols-rounded" style="font-size:18px;">schedule</span> Как переносим</h4>
-                <p><strong>«Медленный безопасный перенос»</strong>: по одному сервису, с подтверждением. Сначала резервная копия в скрытый ключ, потом постепенное подключение. Новый вид главной — <strong>после 3 ноября, постепенно</strong>, не одним рывком.</p>
-            </div>
-            <div class="mig-detail-section">
-                <h4><span class="material-symbols-rounded" style="font-size:18px;">folder_copy</span> Что делает «Перенести сейчас»</h4>
-                <p>Читает известные ключи браузера (формы, документы, слайды, таблицы, keeps…) и пишет снимок в <span class="code-inline">mywork_migration_backup_v1</span>. Исходные данные не трогаем. Это страховка на случай сбоя при будущей миграции.</p>
-            </div>
-            <div class="mig-detail-section">
-                <h4><span class="material-symbols-rounded" style="font-size:18px;">share</span> Поделиться</h4>
-                <p>Позже единый «Поделиться» для всех сервисов, не только для Форм.</p>
-            </div>
-            <div class="mig-detail-section">
-                <h4><span class="material-symbols-rounded" style="font-size:18px;">install_desktop</span> PWA</h4>
-                <p>В будущем достаточно одного PWA <strong>My Work</strong>. Предупреждение об этом появится только внутри My Form — не на главной, чтобы не было путаницы.</p>
-            </div>
-            <div class="mig-detail-section">
-                <h4><span class="material-symbols-rounded" style="font-size:18px;">cloud_off</span> Офлайн и облако</h4>
-                <p>Локальные проекты доступны без сети. Облако и внешние хранилища — только при интернете; без сети они не показываются или недоступны.</p>
-            </div>
-            <div class="mig-detail-section">
-                <h4><span class="material-symbols-rounded" style="font-size:18px;">inventory_2</span> Корзина</h4>
-                <p>Удаление проектов будет мягким: 30 дней в корзине, затем окончательно.</p>
-            </div>
-            <button type="button" class="mig-btn-primary" style="margin-top:8px;" onclick="closeModal('migration-details-modal'); openMigrationModal();">
-                Понятно, к резервной копии
-            </button>
-        </div>
-    </div>
-
-    <div id="settings-modal" class="modal-overlay">
-        <div class="modal-card">
-            <div class="modal-header">
-                <h3>
-                    <span class="material-symbols-rounded" style="color:var(--accent-color);">tune</span>
-                    Опции и Настройки
-                </h3>
-                <button class="modal-close" type="button" onclick="closeModal('settings-modal')">
-                    <span class="material-symbols-rounded">close</span>
-                </button>
-            </div>
-            <div class="setting-group">
-                <label class="setting-label">Тема оформления</label>
-                <div class="theme-buttons">
-                    <button class="theme-btn" id="theme-dark" type="button" onclick="setTheme('dark')">
-                        <span class="material-symbols-rounded">dark_mode</span> Тёмная
-                    </button>
-                    <button class="theme-btn" id="theme-light" type="button" onclick="setTheme('light')">
-                        <span class="material-symbols-rounded">light_mode</span> Светлая
-                    </button>
-                    <button class="theme-btn" id="theme-system" type="button" onclick="setTheme('system')">
-                        <span class="material-symbols-rounded">desktop_windows</span> Авто
-                    </button>
-                </div>
-            </div>
-            <div class="setting-group" style="margin-top: 24px;">
-                <label class="setting-label">Интеграции и ИИ</label>
-                <button class="info-link-btn" type="button" onclick="openApiInfo()">
-                    <span class="material-symbols-rounded">help_center</span>
-                    Что такое API для ИИ?
-                </button>
-            </div>
-        </div>
-    </div>
-    <div id="api-info-modal" class="modal-overlay">
-        <div class="modal-card" style="max-width: 600px;">
-            <div class="modal-header">
-                <h3>
-                    <span class="material-symbols-rounded" style="color:var(--accent-color);">auto_awesome</span>
-                    Что такое API для ИИ?
-                </h3>
-                <button class="modal-close" type="button" onclick="closeModal('api-info-modal')">
-                    <span class="material-symbols-rounded">close</span>
-                </button>
-            </div>
-            <div class="api-explain-box">
-                <p>
-                    <strong>API (Application Programming Interface)</strong> — это «цифровой мост».
-                    Наш сайт не содержит внутри себя гигантскую нейросеть, а отправляет ваш запрос к серверам ИИ и получает готовый ответ.
-                </p>
-                <div class="api-card-section">
-                    <h4>
-                        <span class="material-symbols-rounded" style="font-size:18px;">smart_toy</span>
-                        OpenAI API (ChatGPT)
-                    </h4>
-                    <p style="margin:0; font-size:0.88rem; color:var(--text-muted);">
-                        Ключи формата <span class="code-inline">sk-proj-...</span>. Связывают приложение с моделями GPT без сайта ChatGPT.
-                    </p>
-                </div>
-                <div class="api-card-section">
-                    <h4>
-                        <span class="material-symbols-rounded" style="font-size:18px;">cloud_sync</span>
-                        Google Gemini API
-                    </h4>
-                    <p style="margin:0; font-size:0.88rem; color:var(--text-muted);">
-                        Ключ из <strong>Google AI Studio</strong> подключает WorkGens к Gemini. Ключи хранятся только в вашем браузере.
-                    </p>
-                </div>
-                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom:0;">
-                    💡 <em>API-ключи не передаются на наши серверы.</em>
-                </p>
-            </div>
-        </div>
-    </div>
-    <script>
-
-        /* ===== Migration prep: safe backup to hidden key ===== */
-        const MIG_BACKUP_KEY = 'mywork_migration_backup_v1';
-        const MIG_DONE_KEY = 'mywork_migration_backup_done_v1';
-        const MIG_BANNER_DISMISS = 'mywork_migration_banner_dismissed_v1';
-        const MIG_MODAL_DISMISS = 'mywork_migration_modal_dismissed_v1';
-        const MIG_SOURCE_KEYS = [
-            'my_forms_data', 'forms', 'quiz_data_old',
-            'my_documents_data', 'documents_data', 'prestige_docs',
-            'my_slides_data', 'slides_data', 'prestige_slides',
-            'my_spreadsheets_data', 'spreadsheets_data', 'prestige_sheets',
-            'my_keeps_data', 'keeps_data', 'keeps_notes', 'prestige_keeps'
-        ];
-        function openMigrationModal() {
-            openModal('migration-modal');
-            var st = document.getElementById('mig-status');
-            if (st) { st.className = 'mig-status'; st.textContent = ''; }
-            if (localStorage.getItem(MIG_DONE_KEY)) {
-                var btn = document.getElementById('mig-run-btn');
-                if (btn) btn.innerHTML = '<span class="material-symbols-rounded" style="font-size:20px;">check_circle</span> Копия уже создана — обновить';
-            }
-        }
-        function openMigrationDetails() {
-            openModal('migration-details-modal');
-        }
-        function dismissMigrationModal(permanent) {
-            closeModal('migration-modal');
-            localStorage.setItem(MIG_MODAL_DISMISS, permanent ? '1' : String(Date.now()));
-        }
-        function dismissMigrationBanner() {
-            localStorage.setItem(MIG_BANNER_DISMISS, '1');
-            var b = document.getElementById('migration-banner');
-            if (b) b.classList.add('hidden');
-        }
-        function showMigStatus(ok, text) {
-            var st = document.getElementById('mig-status');
-            if (!st) return;
-            st.className = 'mig-status show ' + (ok ? 'ok' : 'err');
-            st.textContent = text;
-        }
-        function runMigrationBackup() {
-            var btn = document.getElementById('mig-run-btn');
-            if (btn) { btn.disabled = true; btn.textContent = 'Копируем…'; }
-            try {
-                var snapshot = {
-                    version: 1,
-                    createdAt: new Date().toISOString(),
-                    userAgent: navigator.userAgent,
-                    keys: {},
-                    summary: []
-                };
-                var found = 0;
-                MIG_SOURCE_KEYS.forEach(function(k) {
-                    try {
-                        var raw = localStorage.getItem(k);
-                        if (raw != null && raw !== '') {
-                            snapshot.keys[k] = raw;
-                            var approx = 0;
-                            try {
-                                var parsed = JSON.parse(raw);
-                                if (Array.isArray(parsed)) approx = parsed.length;
-                                else if (parsed && typeof parsed === 'object') approx = Object.keys(parsed).length;
-                            } catch (e2) { approx = 1; }
-                            snapshot.summary.push({ key: k, bytes: raw.length, itemsApprox: approx });
-                            found++;
-                        }
-                    } catch (e) {}
-                });
-                try {
-                    for (var i = 0; i < localStorage.length; i++) {
-                        var key = localStorage.key(i);
-                        if (!key || snapshot.keys[key]) continue;
-                        if (/^(my_|prestige_|mywork_|forms|keeps|slides|docs)/i.test(key) && key !== MIG_BACKUP_KEY && key.indexOf('migration') === -1) {
-                            var r = localStorage.getItem(key);
-                            if (r) {
-                                snapshot.keys[key] = r;
-                                snapshot.summary.push({ key: key, bytes: r.length, itemsApprox: 0 });
-                                found++;
-                            }
-                        }
-                    }
-                } catch (e3) {}
-                localStorage.setItem(MIG_BACKUP_KEY, JSON.stringify(snapshot));
-                localStorage.setItem(MIG_DONE_KEY, new Date().toISOString());
-                localStorage.setItem(MIG_BANNER_DISMISS, '1');
-                var b = document.getElementById('migration-banner');
-                if (b) b.classList.add('hidden');
-                var lines = snapshot.summary.slice(0, 8).map(function(s) {
-                    return s.key + ' (~' + Math.round(s.bytes / 1024) + ' КБ)';
-                }).join(', ');
-                showMigStatus(true,
-                    'Готово. Скопировано ключей: ' + found + '. ' +
-                    (lines ? ('В том числе: ' + lines + (snapshot.summary.length > 8 ? '…' : '')) : 'Явных проектов не найдено — пустой снимок сохранён.') +
-                    ' Старые данные не удалялись.'
-                );
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = '<span class="material-symbols-rounded" style="font-size:20px;">check_circle</span> Обновить копию';
-                }
-            } catch (err) {
-                showMigStatus(false, 'Не удалось сохранить копию: ' + (err && err.message ? err.message : String(err)) +
-                    '. Возможно, localStorage переполнен — экспортируйте JSON вручную из сервисов.');
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = '<span class="material-symbols-rounded" style="font-size:20px;">cloud_upload</span> Перенести сейчас (резервная копия)';
-                }
-            }
-        }
-        function initMigrationPrep() {
-            var done = localStorage.getItem(MIG_DONE_KEY);
-            var modalDismiss = localStorage.getItem(MIG_MODAL_DISMISS);
-            var bannerDismiss = localStorage.getItem(MIG_BANNER_DISMISS);
-            if (!done && !modalDismiss) {
-                setTimeout(function() { openMigrationModal(); }, 600);
-            }
-            if (!done && !bannerDismiss) {
-                var ban = document.getElementById('migration-banner');
-                if (ban) ban.classList.remove('hidden');
-            }
-        }
+<section id="tab-home" class="tab">
+<div class="page-h"><div><h1>Главная</h1><p>Недавние проекты My Work</p></div></div>
+<div id="mig-banner" class="banner hidden"><span class="material-symbols-rounded">info</span><div>
+<strong>Упс, проекты не импортировались</strong>, но не переживайте — они в полной безопасности! Нажмите «Импортировать», чтобы они появились здесь.
+<div class="banner-actions"><button type="button" class="btn" onclick="importLegacyProjects()">Импортировать</button>
+<button type="button" class="btn btn-ghost" onclick="dismissMigBanner()">Позже</button></div></div></div>
+<div class="chips">
+<button type="button" class="chip active" data-chip="recent" onclick="setChip('recent')">Последние</button>
+<button type="button" class="chip" data-chip="fav" onclick="setChip('fav')">Избранное</button>
+<button type="button" class="chip" data-chip="shared" onclick="setChip('shared')">Мне предоставлен доступ</button>
+</div>
+<div class="toolbar-row">
+<div class="search"><span class="material-symbols-rounded">search</span>
+<input id="home-search" type="search" placeholder="Найти файл" autocomplete="off"></div>
+<div class="cselect" id="type-filter">
+<button type="button" class="cselect-btn" onclick="toggleSelect('type-filter')"><span id="type-filter-label">Все</span>
+<span class="material-symbols-rounded" style="font-size:18px">expand_more</span></button>
+<div class="cselect-menu">
+<button type="button" class="cselect-opt active" data-val="all" onclick="setTypeFilter('all')">Все</button>
+<button type="button" class="cselect-opt" data-val="form" onclick="setTypeFilter('form')">Формы</button>
+<button type="button" class="cselect-opt" data-val="doc" onclick="setTypeFilter('doc')">Документы</button>
+<button type="button" class="cselect-opt" data-val="slides" onclick="setTypeFilter('slides')">Слайды</button>
+<button type="button" class="cselect-opt" data-val="mind" onclick="setTypeFilter('mind')">Ментальные карты</button>
+<button type="button" class="cselect-opt" data-val="keep" onclick="setTypeFilter('keep')">Заметки</button>
+<button type="button" class="cselect-opt" data-val="sheet" onclick="setTypeFilter('sheet')">Таблицы</button>
+<button type="button" class="cselect-opt" data-val="board" onclick="setTypeFilter('board')">Доски</button>
+</div></div></div>
+<div id="home-list" class="list"></div>
+</section>
 
 
-        const WG_HINTS = [
-            'Need help?',
-            'Спросить ИИ?',
-            'Создать форму?',
-            'Сгенерировать слайды?',
-            'Помочь с документом?',
-            'WorkGens рядом',
-            'Задайте вопрос…'
-        ];
-        document.addEventListener('DOMContentLoaded', () => {
-            const isNoticeDismissed = localStorage.getItem('repo_rename_notice_dismissed');
-            if (!isNoticeDismissed) {
-                const n = document.getElementById('repo-notice');
-                if (n) n.classList.remove('hidden');
-            }
-            initTheme();
-            initWorkGensFab();
-        });
-        function dismissNotice() {
-            localStorage.setItem('repo_rename_notice_dismissed', 'true');
-            const n = document.getElementById('repo-notice');
-            if (n) n.classList.add('hidden');
-        }
-        function openModal(id) {
-            document.getElementById(id).classList.add('active');
-        }
-        function closeModal(id) {
-            document.getElementById(id).classList.remove('active');
-        }
-        function openApiInfo() {
-            closeModal('settings-modal');
-            openModal('api-info-modal');
-        }
-        function navigateWithAnimation(event, url, title, iconName, color) {
-            event.preventDefault();
-            const overlay = document.getElementById('transition-overlay');
-            const iconEl = document.getElementById('loader-icon');
-            const textEl = document.getElementById('loader-text');
-            const previewCard = document.getElementById('loader-preview');
-            iconEl.innerText = iconName;
-            iconEl.style.color = color;
-            previewCard.style.borderColor = color;
-            textEl.innerText = 'Загрузка «' + title + '»...';
-            overlay.classList.add('active');
-            setTimeout(() => { window.location.href = url; }, 300);
-        }
-        document.querySelectorAll('.modal-overlay').forEach(overlay => {
-            overlay.addEventListener('click', (e) => {
-                if (e.target === overlay) overlay.classList.remove('active');
-            });
-        });
-        function setTheme(theme) {
-            localStorage.setItem('app_theme', theme);
-            applyTheme(theme);
-        }
-        function applyTheme(theme) {
-            const body = document.body;
-            document.querySelectorAll('.theme-btn').forEach(btn => btn.classList.remove('active'));
-            if (theme === 'light') {
-                body.classList.add('light-theme');
-                document.getElementById('theme-light').classList.add('active');
-            } else if (theme === 'dark') {
-                body.classList.remove('light-theme');
-                document.getElementById('theme-dark').classList.add('active');
-            } else {
-                document.getElementById('theme-system').classList.add('active');
-                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-                    body.classList.add('light-theme');
-                } else {
-                    body.classList.remove('light-theme');
-                }
-            }
-        }
-        function initTheme() {
-            const savedTheme = localStorage.getItem('app_theme') || 'system';
-            applyTheme(savedTheme);
-        }
-        if (window.matchMedia) {
-            window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
-                if ((localStorage.getItem('app_theme') || 'system') === 'system') {
-                    applyTheme('system');
-                }
-            });
-        }
-        function initWorkGensFab() {
-            const root = document.getElementById('wg-fab-root');
-            const btn = document.getElementById('wg-fab-btn');
-            const panel = document.getElementById('wg-fab-panel');
-            const input = document.getElementById('wg-fab-input');
-            const send = document.getElementById('wg-fab-send');
-            const label = document.getElementById('wg-fab-label');
-            if (!root || !btn) return;
-            label.textContent = WG_HINTS[Math.floor(Math.random() * WG_HINTS.length)];
-            function expand() {
-                root.classList.add('expanded');
-                setTimeout(() => input && input.focus(), 50);
-            }
-            function collapse() {
-                root.classList.remove('expanded');
-                if (input) input.value = '';
-                label.textContent = WG_HINTS[Math.floor(Math.random() * WG_HINTS.length)];
-            }
-            function goToWorkGens() {
-                const q = (input && input.value || '').trim();
-                if (!q) {
-                    input && input.focus();
-                    return;
-                }
-                const url = './WorkGens/index.html?q=' + encodeURIComponent(q) + '&autosend=1';
-                window.location.href = url;
-            }
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                expand();
-            });
-            send.addEventListener('click', (e) => {
-                e.stopPropagation();
-                goToWorkGens();
-            });
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    goToWorkGens();
-                } else if (e.key === 'Escape') {
-                    collapse();
-                }
-            });
-            input.addEventListener('click', (e) => e.stopPropagation());
-            panel.addEventListener('click', (e) => e.stopPropagation());
-            document.addEventListener('click', () => {
-                if (!root.classList.contains('expanded')) return;
-                if (input && input.value.trim()) return;
-                collapse();
-            });
-        }
-    </script>
+<section id="tab-create" class="tab hidden">
+<div class="page-h"><div><h1>Создать</h1><p>Выберите тип проекта</p></div></div>
+<div class="create-grid">
+<button type="button" class="create-card" onclick="createProject('form')"><div class="p-icon form"><span class="material-symbols-rounded">assignment</span></div><h3>Форма</h3><p>Тест, опрос, квиз</p></button>
+<button type="button" class="create-card" onclick="createProject('doc')"><div class="p-icon doc"><span class="material-symbols-rounded">article</span></div><h3>Документ</h3><p>Текст и отчёты</p></button>
+<button type="button" class="create-card" onclick="createProject('slides')"><div class="p-icon slides"><span class="material-symbols-rounded">slideshow</span></div><h3>Презентация</h3><p>Слайды</p></button>
+<button type="button" class="create-card" onclick="createProject('sheet')"><div class="p-icon sheet"><span class="material-symbols-rounded">table_chart</span></div><h3>Таблица</h3><p>Данные и расчёты</p></button>
+<button type="button" class="create-card" onclick="createProject('keep')"><div class="p-icon keep"><span class="material-symbols-rounded">keep</span></div><h3>Заметка</h3><p>Keeps</p></button>
+<button type="button" class="create-card" onclick="createProject('mind')"><div class="p-icon mind"><span class="material-symbols-rounded">account_tree</span></div><h3>Ментальная карта</h3><p>Связи и идеи</p></button>
+<button type="button" class="create-card" onclick="createProject('board')"><div class="p-icon board"><span class="material-symbols-rounded">draw</span></div><h3>Белая доска</h3><p>Jamboard Kiosk</p><span class="badge-beta">BETA</span></button>
+</div>
+<div class="templates"><div class="section-title">Шаблоны</div><div id="templates-grid" class="tpl-grid"></div></div>
+</section>
+
+
+<section id="tab-open" class="tab hidden">
+<div class="page-h"><div><h1>Открыть</h1><p>Хранилище My Work</p></div>
+<button type="button" class="btn btn-ghost" onclick="createFolder()" style="border-radius:12px">
+<span class="material-symbols-rounded" style="font-size:18px">create_new_folder</span> Создать папку
+</button></div>
+<div class="open-layout">
+<div class="storage-side">
+<button type="button" class="storage-item active" data-store="this-work" onclick="setStorage('this-work')"><span class="material-symbols-rounded">inventory_2</span> This Work</button>
+<div id="places-list"></div>
+<div class="storage-foot">
+<button type="button" class="storage-item" onclick="openThisComputer()"><span class="material-symbols-rounded">computer</span> Этот компьютер</button>
+<button type="button" class="storage-item" onclick="addPlace()"><span class="material-symbols-rounded">public</span> Добавление места</button>
+<button type="button" class="storage-item" onclick="document.getElementById('pc-file-input').click()"><span class="material-symbols-rounded">folder_open</span> Обзор</button>
+<input type="file" id="pc-file-input" class="hidden" accept=".json,.form,.docs,application/json" multiple onchange="importLocalFiles(this)">
+</div></div>
+<div class="files-pane">
+<div class="path-bar" id="open-path" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"></div>
+<div id="open-list" class="list"></div>
+</div>
+</div>
+</section>
+
+
+<section id="tab-searcher" class="tab hidden">
+<div class="page-h"><div><h1>WorkGens Searcher</h1><p>Поиск по содержимому · API из настроек</p></div></div>
+<div class="searcher-sticky">
+<div id="searcher-attach" class="attach-prev hidden"></div>
+<div class="composer">
+<button type="button" class="round plus" id="searcher-plus" title="Картинка"><span class="material-symbols-rounded">add</span></button>
+<input type="file" id="searcher-file" accept="image/*" class="hidden">
+<textarea id="searcher-query" rows="1" placeholder="Спросить… или только картинка"></textarea>
+<button type="button" class="round send" onclick="runSearcher()"><span class="material-symbols-rounded">send</span></button>
+</div></div>
+<div id="searcher-status" class="p-sub" style="margin-bottom:10px;color:var(--muted)"></div>
+<div id="searcher-results" class="list"></div>
+<div class="section-title" style="margin-top:20px">Библиотека · 30 дней</div>
+<div id="library-list" class="list"></div>
+</section>
+
+
+<section id="tab-trash" class="tab hidden">
+<div class="page-h"><div><h1>Корзина</h1><p>30 дней, затем удаление</p></div></div>
+<div id="trash-list" class="list"></div>
+</section>
+
+
+<section id="tab-settings" class="tab hidden">
+<div class="page-h"><div><h1>Настройки</h1><p>My Work</p></div></div>
+<div class="settings-stack">
+<div class="s-card"><h3><span class="material-symbols-rounded">bolt</span> Лимиты ИИ</h3>
+<p class="hint">0% — не использовали · 100% — лимит исчерпан</p>
+<div style="display:flex;justify-content:space-between;font-size:.85rem"><span style="color:var(--muted)">Использовано</span><strong id="limit-label">0%</strong></div>
+<div class="meter"><i id="limit-bar"></i></div>
+<button type="button" class="btn" style="width:100%;margin-top:12px;border-radius:999px" onclick="openApiModal()">API ИИ — Подключить / Изменить</button></div>
+<div class="s-card"><h3><span class="material-symbols-rounded">palette</span> Тема</h3>
+<div class="pills">
+<button type="button" class="pill" data-theme="system" onclick="setTheme('system')">Системная</button>
+<button type="button" class="pill" data-theme="light" onclick="setTheme('light')">Светлая</button>
+<button type="button" class="pill" data-theme="dark" onclick="setTheme('dark')">Тёмная</button>
+</div></div>
+<div class="s-card"><h3><span class="material-symbols-rounded">smartphone</span> Устройство</h3>
+<p class="hint">Слабое → My Form Lite</p>
+<div class="pills">
+<button type="button" class="pill" data-device="normal" onclick="setDevice('normal')">Обычное</button>
+<button type="button" class="pill" data-device="weak" onclick="setDevice('weak')">Слабое</button>
+</div></div>
+<div class="s-card"><h3><span class="material-symbols-rounded">zoom_out_map</span> Крупный интерфейс</h3>
+<p class="hint">Крупнее кнопки во всех сервисах</p>
+<div class="pills">
+<button type="button" class="pill" data-ui="off" onclick="setLargeUI(false)">Выкл</button>
+<button type="button" class="pill" data-ui="on" onclick="setLargeUI(true)">Вкл</button>
+</div></div>
+<div class="s-card"><h3><span class="material-symbols-rounded">cloud_sync</span> Хранилище</h3>
+<p class="hint">Перенос и обновление локальных проектов</p>
+<div style="display:flex;flex-direction:column;gap:8px">
+<button type="button" class="btn" style="border-radius:999px" onclick="exportAllJSON()">Перенести проекты (JSON)</button>
+<button type="button" class="btn btn-ghost" style="border-radius:999px" onclick="refreshStorage()">Обновить хранилище</button>
+<button type="button" class="btn btn-ghost" style="border-radius:999px" onclick="openModal('about-modal')">О проекте</button>
+</div></div>
+</div>
+</section>
+
+</div></main>
+</div>
+<nav class="bottom" aria-label="Меню">
+<button type="button" class="nav-btn active" data-tab="home" onclick="switchTab('home')"><span class="material-symbols-rounded">home</span>Главная</button>
+<button type="button" class="nav-btn" data-tab="create" onclick="switchTab('create')"><span class="material-symbols-rounded">add_circle</span>Создать</button>
+<button type="button" class="nav-btn" data-tab="open" onclick="switchTab('open')"><span class="material-symbols-rounded">folder_open</span>Открыть</button>
+<button type="button" class="nav-btn" data-tab="searcher" onclick="switchTab('searcher')"><span class="material-symbols-rounded">manage_search</span>Search</button>
+<button type="button" class="nav-btn" data-tab="settings" onclick="switchTab('settings')"><span class="material-symbols-rounded">settings</span>Ещё</button>
+</nav>
+<button type="button" class="help-fab" onclick="openModal('tutorial-modal')" title="Справка">?</button>
+<div class="wg-root" id="wg-root">
+<button type="button" class="wg-chip" id="wg-chip" onclick="expandWg()">
+<img src="./WorkGens/icon.png" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+<span class="fallback material-symbols-rounded" style="display:none">auto_awesome</span>
+<span class="label" id="wg-hint">Создать форму?</span>
+</button>
+<div class="wg-panel hidden" id="wg-panel">
+<div class="wg-input-row">
+<textarea id="wg-input" rows="1" placeholder="Спросить WorkGens…"></textarea>
+<button type="button" class="btn" id="wg-action" onclick="wgAction()">Open WorkGens</button>
+</div>
+</div>
+</div>
+<div id="toast" class="toast"></div>
+<div id="aero-layer" class="aero-layer"></div>
+<div id="create-modal" class="overlay"><div class="modal"><h3><span class="material-symbols-rounded" style="color:var(--accent)">note_add</span> Новый проект</h3>
+<input type="text" id="create-name" placeholder="Название" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--bg);margin-bottom:8px">
+<div class="modal-actions"><button type="button" class="btn" onclick="confirmCreate()">Создать</button><button type="button" class="btn btn-ghost" onclick="closeModal('create-modal')">Отмена</button></div></div></div>
+<div id="api-modal" class="overlay"><div class="modal"><h3>API ИИ</h3>
+<p style="font-size:.85rem;color:var(--muted);margin-bottom:10px;line-height:1.4">Ключ для WorkGens и Searcher. Только в этом браузере.</p>
+<input type="password" id="api-key" placeholder="API key" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--bg);margin-bottom:10px">
+<div class="modal-actions"><button type="button" class="btn" onclick="saveApi()">Сохранить</button><button type="button" class="btn btn-ghost" onclick="closeModal('api-modal')">Закрыть</button></div></div></div>
+<div id="about-modal" class="overlay"><div class="modal"><h3>О проекте</h3>
+<p style="font-size:.9rem;color:var(--muted);line-height:1.5">Prestige HQ · My Work — локальный хаб: формы, документы, слайды, таблицы, заметки, mindmap, whiteboard (beta) и WorkGens AI.</p>
+<div class="modal-actions"><button type="button" class="btn" onclick="closeModal('about-modal')">Закрыть</button></div></div></div>
+<div id="tutorial-modal" class="overlay"><div class="modal"><h3><span class="material-symbols-rounded" style="color:var(--accent)">school</span> Туториал My Work</h3>
+<p style="font-size:.9rem;line-height:1.55;color:var(--muted)"><strong style="color:var(--text)">Главная</strong> — недавние файлы.<br><strong style="color:var(--text)">Создать</strong> — проект или шаблон.<br><strong style="color:var(--text)">Открыть</strong> — This Work и файлы с ПК.<br><strong style="color:var(--text)">Searcher</strong> — поиск (нужен API).<br><strong style="color:var(--text)">Корзина</strong> — 30 дней.</p>
+<div class="modal-actions"><button type="button" class="btn" onclick="closeModal('tutorial-modal')">Понятно</button></div></div></div>
+<div id="preview-overlay" class="preview-overlay">
+<div class="preview-bar"><h2>Предварительный просмотр</h2>
+<button type="button" class="icon-btn" onclick="closePreview()" title="Закрыть"><span class="material-symbols-rounded">close</span></button></div>
+<iframe id="preview-frame" class="preview-frame" title="Preview"></iframe>
+</div>
+<script src="hub.js"></script>
+
+<div id="ctx-menu" class="ctx-menu" role="menu"></div>
+<div id="folder-modal" class="overlay">
+  <div class="modal">
+    <h3><span class="material-symbols-rounded" style="color:var(--accent)">create_new_folder</span> Новая папка</h3>
+    <input type="text" id="folder-name" placeholder="Название папки" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--bg);margin-bottom:8px">
+    <div class="modal-actions">
+      <button type="button" class="btn" onclick="confirmCreateFolder()">Создать</button>
+      <button type="button" class="btn btn-ghost" onclick="closeModal('folder-modal')">Отмена</button>
+    </div>
+  </div>
+</div>
+<div id="move-modal" class="overlay">
+  <div class="modal">
+    <h3><span class="material-symbols-rounded" style="color:var(--accent)">drive_file_move</span> Переместить в папку</h3>
+    <p style="font-size:.85rem;color:var(--muted);margin-bottom:10px;line-height:1.4">Сервисы пока не пишут в папки сами — расположение только в My Work.</p>
+    <div id="move-folder-list" class="list" style="max-height:40vh;overflow:auto"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" onclick="moveProjectTo(null)">В корень This Work</button>
+      <button type="button" class="btn btn-ghost" onclick="closeModal('move-modal')">Отмена</button>
+    </div>
+  </div>
+</div>
+<div id="place-modal" class="overlay">
+  <div class="modal">
+    <h3><span class="material-symbols-rounded" style="color:var(--accent)">public</span> Добавление хранилища</h3>
+    <p style="font-size:.9rem;color:var(--muted);line-height:1.5;margin-bottom:12px">Облачные места (Google Drive, OneDrive и др.) появятся после входа в аккаунт. Пока можно добавить <strong>ярлык-имя</strong> локально.</p>
+    <input type="text" id="place-name" placeholder="Например: Школа / Архив" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--bg);margin-bottom:8px">
+    <div class="modal-actions">
+      <button type="button" class="btn" onclick="confirmAddPlace()">Добавить ярлык</button>
+      <button type="button" class="btn btn-ghost" onclick="closeModal('place-modal')">Закрыть</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
