@@ -10,7 +10,7 @@
     <meta name="theme-color" content="#1a73e8">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-title" content="My Form">
+    <meta name="apple-mobile-web-app-title" content="My Form (→ My Work)">
     <!-- Иконки Material Symbols Rounded & FontAwesome -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
@@ -58,7 +58,6 @@
 </head>
 <body>
 
-    
     <!-- Бургер для тем (мобилка) -->
     <button id="theme-burger-btn" class="theme-burger-btn hidden" onclick="toggleThemeSidebar()" title="Темы">
         <span class="material-symbols-rounded">menu</span>
@@ -67,7 +66,7 @@
     <!-- Боковое меню тем (ученик + превью админа) -->
     <aside id="theme-sidebar" class="theme-sidebar hidden">
         <div class="theme-sidebar-header">
-            <h3>Темы <span class="novelty-badge">НОВИНКА</span></h3>
+            <h3>Темы</h3>
             <button class="tools-icon-btn" onclick="toggleThemeSidebar(false)" title="Закрыть">
                 <span class="material-symbols-rounded">close</span>
             </button>
@@ -77,6 +76,30 @@
     <div id="theme-sidebar-overlay" class="theme-sidebar-overlay hidden" onclick="toggleThemeSidebar(false)"></div>
 
     <div class="container">
+
+        <!-- Unified file chrome (hub mode) -->
+        <div class="app-topbar" id="app-topbar">
+            <a class="app-topbar-back" href="../index.html" title="На главную My Work">
+                <span class="material-symbols-rounded">arrow_back</span>
+            </a>
+            <div class="app-topbar-title-wrap">
+                <input type="text" class="app-topbar-title" id="app-file-title" readonly title="Нажмите, чтобы переименовать" onclick="startQuickRename()" onblur="finishQuickRename()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();} if(event.key==='Escape'){this.dataset.cancel='1';this.blur();}">
+            </div>
+            <div class="app-topbar-actions">
+                <button type="button" class="tools-btn" id="offline-status-btn-bar" onclick="onOfflineBadgeClick()" title="Сеть" style="display:none">
+                    <span class="material-symbols-rounded" style="font-size:20px;">cloud_off</span>
+                </button>
+                <button type="button" class="tools-btn" onclick="openWorkGensWithCurrentForm()" title="WorkGens AI">
+                    <span class="material-symbols-rounded" style="font-size:20px;">auto_awesome</span>
+                </button>
+                <div class="tools-dropdown">
+                    <button class="tools-btn" onclick="toggleToolsMenu()" title="Меню">
+                        <span class="material-symbols-rounded">more_vert</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- ВЕРХНЯЯ ПАНЕЛЬ С ВКЛАДКАМИ И МЕНЮ -->
         <div class="forms-toolbar-container">
             <!-- 1. Компактный выбор форм (Select) -->
@@ -92,15 +115,12 @@
             <button class="add-form-btn" onclick="createNewFormPrompt()" title="Создать новую форму">
                 <span class="material-symbols-rounded">add</span>
             </button>
-            <button type="button" class="add-form-btn" id="import-form-toolbar-btn" onclick="triggerImportForm()" title="Импортировать форму (.json)">
-                <span class="material-symbols-rounded">download</span>
-            </button>
             <input type="file" id="import-file-toolbar" style="display:none;" accept=".json,application/json" onchange="importFormFromJSON(this)">
 
             <button type="button" id="offline-status-btn" class="tools-btn offline-status-btn hidden" onclick="onOfflineBadgeClick()" title="Статус сети / офлайн-правки">
                 <span class="material-symbols-rounded" style="font-size:20px;">cloud_off</span>
             </button>
-            <button type="button" class="tools-btn" id="btn-mini-ai" onclick="toggleMiniAI()" title="Mini WorkGens — только формы">
+            <button type="button" class="tools-btn" id="btn-mini-ai" onclick="openWorkGensWithCurrentForm()" title="WorkGens AI — открыть с текущей формой">
                 <img src="ai.png" alt="AI" style="width:20px; height:20px; object-fit:contain;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline'">
                 <span class="material-symbols-rounded" style="display:none;font-size:20px;">auto_awesome</span>
             </button>
@@ -110,17 +130,17 @@
                     <span class="material-symbols-rounded">more_vert</span>
                 </button>
                 <div id="tools-menu" class="tools-menu hidden">
-                    <div class="tools-item" onclick="toggleMiniAI(); toggleToolsMenu();">
-                        <span class="material-symbols-rounded">auto_awesome</span> <span>Mini WorkGens (формы)</span>
+                    <div class="tools-item tools-online-only" data-online-only="1" onclick="openWorkGensWithCurrentForm(); toggleToolsMenu();">
+                        <span class="material-symbols-rounded">auto_awesome</span> <span>WorkGens AI</span>
+                        <span class="online-lock material-symbols-rounded">lock</span>
                     </div>
                     <div class="tools-item" onclick="triggerImportForm(); toggleToolsMenu();">
                         <span class="material-symbols-rounded">download</span> <span>Импорт формы / ответов</span>
                     </div>
                     <div class="tools-item" onclick="triggerStudentResultsImport(); toggleToolsMenu();">
                         <span class="material-symbols-rounded">grading</span> <span>Сверить ответы ученика</span>
-                        <span class="novelty-badge">NEW</span>
                     </div>
-                    <div class="tools-item tools-online-only" data-online-only="1" onclick="goOnlineFeature('../WorkGens/index.html')">
+                    <div class="tools-item tools-online-only" data-online-only="1" onclick="openWorkGensWithCurrentForm()">
                         <img src="../document/ai.png" alt="AI" style="width:18px; height:18px; object-fit:contain;" onerror="this.remove()"> <span>WorkGens AI (полный)</span>
                         <span class="online-lock material-symbols-rounded">lock</span>
                     </div>
@@ -135,7 +155,7 @@
                         <span class="material-symbols-rounded">admin_panel_settings</span> Панель админа
                     </div>
                     <hr style="border:none; border-top:1px solid var(--border-color); margin: 4px 0;">
-                    <div class="tools-item" onclick="window.location.href='index_old.html'; toggleToolsMenu();">
+                    <div class="tools-item" onclick="openLegacyNoticeModal(); toggleToolsMenu();">
                         <span class="material-symbols-rounded">history</span> Загрузить Legacy
                     </div>
                     <div style="padding: 6px 15px 2px 15px; font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
@@ -229,7 +249,6 @@
                 <div id="admin-themes-list" class="admin-themes-list"></div>
                 <button class="btn btn-ghost" onclick="openCreateThemeModal()" style="width:auto; padding:8px 12px; font-size:13px; position:relative;">
                     <span class="material-symbols-rounded" style="font-size:18px;">add</span> Тема
-                    <span class="novelty-badge" style="margin-left:4px;">НОВИНКА</span>
                 </button>
             </div>
 
@@ -240,7 +259,6 @@
                 <button onclick="document.getElementById('import-file').click()" class="btn" style="width:auto; background:transparent; color:var(--text-color); border:1px solid var(--border-color);" title="Импорт формы или ответов ученика"><span class="material-symbols-rounded" style="color:var(--accent-color); font-size:32px;">download</span></button>
                 <button type="button" onclick="triggerStudentResultsImport()" class="btn" style="width:auto; background:transparent; color:var(--text-color); border:1px solid var(--border-color); position:relative;" title="Сверить ответы ученика (.json)">
                     <span class="material-symbols-rounded" style="color:var(--accent-color); font-size:32px;">grading</span>
-                    <span class="novelty-badge novelty-badge-abs">NEW</span>
                 </button>
                 <input type="file" id="import-file" style="display:none;" onchange="importFormFromJSON(this)" accept=".json">
             </div>
@@ -279,6 +297,7 @@
                         <option value="puzzle-drag">Пазл (Drag & Drop)</option>
                         <option value="info-slide">Инфо-слайд (Картинка/Видео/Аудио)</option>
                         <option value="flashcard">Флешкарта (Карточка для запоминания)</option>
+                        <option value="table">Таблица ★ BETA</option>
                     </select>
                     <span class="material-symbols-rounded select-icon">expand_more</span>
                 </div>
@@ -413,6 +432,29 @@
                 </div>
 
                 <!-- Ответ для карточек -->
+                
+                <!-- TABLE BETA -->
+                <div id="admin-table-fields" class="admin-field hidden">
+                    <div class="beta-warn-banner">
+                        <span class="material-symbols-rounded">science</span>
+                        <div>
+                            <strong>Таблицы — BETA</strong>
+                            <p>Новый тип вопроса. Возможны баги. ПКМ по ячейке — только в редакторе: разрешить заполнение и правильный ответ.</p>
+                        </div>
+                    </div>
+                    <label style="font-size:13px;color:var(--text-muted);display:block;margin:10px 0 6px;">Размер (макс. 25×25)</label>
+                    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+                        <label style="font-size:12px;">Строк <input type="number" id="table-rows" class="admin-input" min="1" max="25" value="3" style="width:70px;" onchange="rebuildAdminTableGrid()"></label>
+                        <label style="font-size:12px;">Столбцов <input type="number" id="table-cols" class="admin-input" min="1" max="25" value="3" style="width:70px;" onchange="rebuildAdminTableGrid()"></label>
+                        <label class="toggle-label" style="display:flex;align-items:center;gap:6px;font-size:13px;">
+                            <input type="checkbox" id="table-allow-all-edit" onchange="onTableAllowAllChange()">
+                            Разрешить редактировать/заполнять все
+                        </label>
+                    </div>
+                    <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Клик — правка текста. <b>ПКМ</b> — разрешить заполнение ученику и эталон ответа (пусто = без проверки).</p>
+                    <div id="admin-table-grid-wrap" class="admin-table-grid-wrap"></div>
+                </div>
+
                 <div id="flashcard-answer-box" class="hidden" style="margin-top:10px;">
                     <label style="font-size:13px; color:var(--text-muted); display:block; margin-bottom:4px;">Перевод / Оборотная сторона:</label>
                     <input type="text" id="new-flashcard-answer" class="admin-input" placeholder="Перевод или пояснение...">
@@ -422,6 +464,15 @@
                 <div id="media-upload-box" class="hidden" style="margin-top:10px;">
                     <label style="font-size:13px; color:var(--text-muted); display:block; margin-bottom:4px;">Прикрепить медиафайл:</label>
                     <input type="file" id="new-media-file" class="admin-input" accept="image/*,video/*,audio/*" onchange="handleMediaUploadPreview(this)">
+                    <label style="font-size:13px; color:var(--text-muted); display:block; margin:8px 0 4px;">Или ссылка YouTube <span class="novelty-badge">NEW</span></label>
+                    <input type="url" id="new-youtube-url" class="admin-input" placeholder="https://www.youtube.com/watch?v=... или youtu.be/...">
+                    <label class="switch-label" style="margin-top:4px;">
+                        <span class="switch">
+                            <input type="checkbox" id="new-allow-draw">
+                            <span class="slider liquid-slider"></span>
+                        </span>
+                        <span class="switch-text">Рисование на картинке <span class="novelty-badge">NEW</span> <small style="color:var(--text-muted);font-weight:500;">(сброс после ответа)</small></span>
+                    </label>
                     <div id="media-preview-container"></div>
                 </div>
 
@@ -715,6 +766,16 @@
                 <span class="switch-text">Помечать новые вопросы обязательными</span>
             </label>
 
+            
+            <h4 style="margin: 18px 0 10px;">Быстрый вход <span class="novelty-badge">НОВИНКА</span></h4>
+            <p style="font-size:12.5px;color:var(--text-muted);margin:0 0 10px;line-height:1.4;">
+                Карта преподавателя: логин, пароль и QR для входа в админку этой формы. Не показывайте карту посторонним.
+            </p>
+            <button type="button" class="btn" style="width:100%;background:transparent;color:var(--text-color);border:1px solid var(--border-color);margin-bottom:8px;" onclick="openAccessCardWizard()">
+                <span class="material-symbols-rounded" style="font-size:18px;vertical-align:middle;">badge</span>
+                Создать карту входа
+            </button>
+
             <button class="btn" onclick="saveFormSettings()" style="width: 100%; margin-top: 20px;">Сохранить настройки</button>
         </div>
     </div>
@@ -801,6 +862,78 @@
     </div>
 
     <!-- 2. МОДАЛКА ВХОДА В АДМИНКУ -->
+        
+    <!-- МОДАЛКА: СОЗДАТЬ ФОРМУ -->
+    <div id="create-form-modal" class="custom-alert-overlay" onclick="if(event.target===this)closeCreateFormModal()">
+        <div class="custom-alert-card" style="max-width:420px;text-align:left;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+                <h3 style="margin:0;display:flex;align-items:center;gap:8px;">
+                    <span class="material-symbols-rounded" style="color:var(--accent-color);">add_circle</span>
+                    Создать форму
+                </h3>
+                <button type="button" onclick="closeCreateFormModal()" style="background:transparent;border:none;cursor:pointer;color:var(--text-color);display:flex;">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+            <label style="font-size:13px;color:var(--text-muted);">Название новой формы</label>
+            <input type="text" id="create-form-title" class="admin-input" placeholder="Например: Тест по алгебре" onkeydown="if(event.key==='Enter'){event.preventDefault();confirmCreateEmptyForm();}">
+            <button type="button" class="btn" style="width:100%;margin-bottom:10px;" onclick="confirmCreateEmptyForm()">
+                <span class="material-symbols-rounded" style="font-size:18px;vertical-align:middle;">note_add</span>
+                Создать пустую форму
+            </button>
+            <div style="text-align:center;font-size:12px;color:var(--text-muted);margin:8px 0;">или</div>
+            <button type="button" class="btn" style="width:100%;background:transparent;color:var(--text-color);border:1px solid var(--border-color);" onclick="triggerImportForm(); closeCreateFormModal();">
+                <span class="material-symbols-rounded" style="font-size:18px;vertical-align:middle;">download</span>
+                Импортировать форму (.json)
+            </button>
+        </div>
+    </div>
+
+
+    <!-- МОДАЛКА: ТИП КАРТЫ -->
+    <div id="access-card-wizard" class="custom-alert-overlay" onclick="if(event.target===this)closeAccessCardWizard()">
+        <div class="custom-alert-card" style="max-width:420px;text-align:left;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                <h3 style="margin:0;">Создать карту</h3>
+                <button type="button" onclick="closeAccessCardWizard()" style="background:transparent;border:none;cursor:pointer;color:var(--text-color);display:flex;">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+            <p style="font-size:13px;color:var(--text-muted);margin:0 0 12px;">Выберите тип карты</p>
+            <button type="button" class="btn" style="width:100%;margin-bottom:10px;" onclick="printTeacherAccessCard()">
+                <span class="material-symbols-rounded" style="font-size:18px;vertical-align:middle;">admin_panel_settings</span>
+                Вход в админ-панель (преподаватель)
+            </button>
+            <button type="button" class="btn" style="width:100%;background:transparent;color:var(--text-muted);border:1px solid var(--border-color);opacity:0.85;" disabled title="Скоро">
+                Карта ученика (быстрый переход) — скоро
+            </button>
+        </div>
+    </div>
+
+        
+    <!-- МОДАЛКА: СКАН QR ДЛЯ ВХОДА -->
+    <div id="qr-login-modal" class="custom-alert-overlay" onclick="if(event.target===this)closeQrLoginScanner()">
+        <div class="custom-alert-card" style="max-width:440px;text-align:left;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                <h3 style="margin:0;display:flex;align-items:center;gap:8px;">
+                    <span class="material-symbols-rounded" style="color:var(--accent-color);">qr_code_scanner</span>
+                    Войти по коду
+                </h3>
+                <button type="button" onclick="closeQrLoginScanner()" style="background:transparent;border:none;cursor:pointer;color:var(--text-color);display:flex;">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+            <p style="font-size:13px;color:var(--text-muted);margin:0 0 10px;">Наведите камеру на QR карты преподавателя. Нужен HTTPS или localhost.</p>
+            <div class="qr-video-wrap">
+                <video id="qr-login-video" playsinline muted></video>
+                <div id="qr-login-status" class="qr-login-status">Ожидание камеры…</div>
+            </div>
+            <label style="font-size:12px;color:var(--text-muted);margin-top:12px;display:block;">Или вставьте код вручную</label>
+            <input type="text" id="qr-login-manual" class="admin-input" placeholder="MFAD|v1|...">
+            <button type="button" class="btn" style="width:100%;" onclick="submitManualQrLogin()">Войти по тексту кода</button>
+        </div>
+    </div>
+
         <div id="login-screen" class="custom-alert-overlay hidden">
             <div class="custom-alert-card" style="max-width:400px; text-align:left;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
@@ -815,6 +948,11 @@
                 <input type="text" id="login-user" class="admin-input" placeholder="Логин (admin)" autocomplete="username">
                 <input type="password" id="login-pass" class="admin-input" placeholder="Пароль (1234)" autocomplete="current-password">
                 <button class="btn" onclick="tryLogin()" style="width:100%;">Войти</button>
+                <button class="btn" onclick="openQrLoginScanner()" style="margin-top:10px; width:100%; background:transparent; color:var(--text-color); border:1px solid var(--border-color); position:relative;">
+                    <span class="material-symbols-rounded" style="font-size:18px;vertical-align:middle;">qr_code_scanner</span>
+                    Войти по коду
+                    <span class="novelty-badge" style="margin-left:6px;">NEW</span>
+                </button>
                 <button class="btn" onclick="closeLoginModal()" style="margin-top:10px; width:100%; background:transparent; color:var(--text-color); border:1px solid var(--border-color);">Отмена</button>
             </div>
         </div>
@@ -914,45 +1052,125 @@
 
 
     <!-- Mini WorkGens AI — только формы (правая колонка) -->
-    <aside id="mini-ai-panel" class="mini-ai-panel" aria-hidden="true">
-        <div class="mini-ai-header">
-            <div style="display:flex;align-items:center;gap:8px;">
+        <!-- FormsGens AI — чат по текущей форме (онлайн) -->
+    <aside id="mini-ai-panel" class="mini-ai-panel formsgens-panel" aria-hidden="true">
+        <div class="mini-ai-header formsgens-header">
+            <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1;">
                 <span class="material-symbols-rounded" style="color:var(--accent-color);">auto_awesome</span>
-                <div>
-                    <strong>Mini WorkGens</strong>
-                    <div style="font-size:11px;color:var(--text-muted);">Только генерация форм</div>
+                <div style="min-width:0;">
+                    <strong>FormsGens AI</strong>
+                    <div id="formsgens-form-label" style="font-size:11px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Текущая форма</div>
                 </div>
             </div>
-            <button type="button" class="tools-icon-btn" onclick="toggleMiniAI(false)" title="Закрыть">
-                <span class="material-symbols-rounded">close</span>
-            </button>
-        </div>
-        <div class="mini-ai-body">
-            <p class="mini-ai-hint">Опишите форму: тема, типы вопросов, количество. Пример: «5 вопросов по CSS: 3 radio, 1 текст, 1 флешкарта»</p>
-            <textarea id="mini-ai-prompt" class="admin-input mini-ai-textarea" rows="5" placeholder="Например: Тест по столицам Европы, 4 вопроса с вариантами..."></textarea>
-            <label class="switch-label" style="margin:8px 0 12px;">
-                <span class="switch">
-                    <input type="checkbox" id="mini-ai-new-form" checked>
-                    <span class="slider liquid-slider"></span>
-                </span>
-                <span class="switch-text">Создать новую форму (иначе — в текущую)</span>
-            </label>
-            <button type="button" class="btn" style="width:100%;" onclick="runMiniAIGenerate()">
-                <span class="material-symbols-rounded" style="font-size:18px;vertical-align:middle;">bolt</span>
-                Создать форму
-            </button>
-            <button type="button" class="btn" style="width:100%; margin-top:8px; background:transparent; color:var(--text-color); border:1px solid var(--border-color);" onclick="triggerImportForm()">
-                <span class="material-symbols-rounded" style="font-size:18px;vertical-align:middle;">download</span>
-                Импортировать форму
-            </button>
-            <div id="mini-ai-status" class="mini-ai-status"></div>
-            <div class="mini-ai-footer-note">
-                Работает <b>локально</b> (без облака). Полный WorkGens — только онлайн.
+            <div style="display:flex;align-items:center;gap:2px;position:relative;">
+                <button type="button" class="tools-icon-btn" id="formsgens-menu-btn" onclick="toggleFormsGensMenu(event)" title="Ещё">
+                    <span class="material-symbols-rounded">more_vert</span>
+                </button>
+                <div id="formsgens-menu" class="formsgens-menu hidden">
+                    <div class="tools-item tools-online-only" onclick="goOnlineFeature('../WorkGens/index.html'); toggleFormsGensMenu();">
+                        <span class="material-symbols-rounded">open_in_new</span> Перейти в WorkGens
+                    </div>
+                    <div class="tools-item" onclick="showFormsGensLimits(); toggleFormsGensMenu();">
+                        <span class="material-symbols-rounded">speed</span> Лимиты
+                    </div>
+                    <div class="tools-item" onclick="showFormsGensAbout(); toggleFormsGensMenu();">
+                        <span class="material-symbols-rounded">info</span> О ИИ
+                    </div>
+                    <div class="tools-item" onclick="clearFormsGensChat(); toggleFormsGensMenu();">
+                        <span class="material-symbols-rounded">delete</span> Очистить чат
+                    </div>
+                </div>
+                <button type="button" class="tools-icon-btn" onclick="toggleMiniAI(false)" title="Закрыть">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
             </div>
+        </div>
+        <div id="formsgens-offline-banner" class="formsgens-offline-banner hidden">
+            <span class="material-symbols-rounded">cloud_off</span>
+            FormsGens работает только онлайн. Подключитесь к сети.
+        </div>
+        <div id="formsgens-messages" class="formsgens-messages"></div>
+        <div class="formsgens-composer">
+            <textarea id="mini-ai-prompt" class="formsgens-input" rows="2" placeholder="Спросите про форму или попросите добавить вопросы…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendFormsGensMessage();}"></textarea>
+            <button type="button" class="btn formsgens-send" onclick="sendFormsGensMessage()" title="Отправить">
+                <span class="material-symbols-rounded">send</span>
+            </button>
         </div>
     </aside>
     <div id="mini-ai-backdrop" class="mini-ai-backdrop hidden" onclick="toggleMiniAI(false)"></div>
 
+
+    <!-- Full-screen form picker when no ?form= -->
+    <div id="form-picker-screen" class="form-picker-screen hidden">
+        <div class="form-picker-header">
+            <a class="app-topbar-back" href="../index.html" title="На главную">
+                <span class="material-symbols-rounded">arrow_back</span>
+            </a>
+            <h1>Выберите форму</h1>
+            <button type="button" class="tools-btn" onclick="createNewFormPrompt()" title="Создать">
+                <span class="material-symbols-rounded">add</span>
+            </button>
+        </div>
+        <div id="form-picker-list" class="form-picker-list"></div>
+    </div>
+
+    <!-- PWA limiter: My Form standalone deprecated → install My Work -->
+    <div id="pwa-work-modal" class="custom-alert-overlay">
+        <div class="custom-alert-card pwa-limit-modal" style="max-width:420px;text-align:left;">
+            <h3 style="margin:0 0 12px;display:flex;align-items:center;gap:8px;">
+                <span class="material-symbols-rounded" style="color:var(--accent-color)">install_desktop</span>
+                Установка My Form больше не поддерживается
+            </h3>
+            <p class="pwa-limit-text">
+                Отдельное приложение <strong>My Form</strong> устарело.
+                Все сервисы (Формы, Документы, Слайды, Таблицы, Заметки…) теперь в одном PWA —
+                <strong>My Work</strong>.
+            </p>
+            <p class="pwa-limit-text">
+                Откройте главную страницу My Work и установите приложение оттуда.
+                Ваши формы в этом браузере сохранятся. Старый ярлык My Form можно удалить.
+            </p>
+            <p class="pwa-limit-text" style="margin-bottom:16px;font-size:12px;opacity:0.9;">
+                Напоминание появится снова при следующем запуске этого ярлыка.
+            </p>
+            <button type="button" class="btn" style="width:100%;margin-bottom:8px;" onclick="goToMyWorkHub()">Открыть My Work</button>
+            <button type="button" class="btn" style="width:100%;background:transparent;color:var(--text-color);border:1px solid var(--border-color);" onclick="dismissPwaWorkModal()">Остаться в форме (на эту сессию)</button>
+        </div>
+    </div>
+
 <script src="script.js"></script>
+
+    <div id="admin-table-ctx" class="admin-table-ctx hidden">
+        <label class="ctx-row"><input type="checkbox" id="atx-editable"> Разрешить заполнить/изменить эту ячейку</label>
+        <div class="ctx-row" style="flex-direction:column;align-items:stretch;gap:4px;">
+            <span style="font-size:11px;color:var(--text-muted);">Правильный ответ (пусто = без проверки)</span>
+            <input type="text" id="atx-correct" class="admin-input" placeholder="Эталон…">
+        </div>
+        <button type="button" class="btn btn-primary" style="width:100%;margin-top:6px;" onclick="applyAdminTableCtx()">Готово</button>
+    </div>
+
+
+    <!-- Legacy deprecation notice -->
+    <div id="legacy-notice-modal" class="modal-overlay hidden">
+        <div class="modal-card" style="max-width:460px;">
+            <div class="modal-header" style="display:flex;align-items:center;gap:8px;">
+                <span class="material-symbols-rounded" style="color:#ea4335;">history</span>
+                <h3 style="margin:0;flex:1;">Legacy Version</h3>
+                <button type="button" class="icon-btn" onclick="closeLegacyNoticeModal()" aria-label="Close">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+            <div class="modal-body" style="font-size:14px;line-height:1.55;color:var(--text-color);">
+                <p style="margin:0 0 10px;"><strong>С 14.11.2026</strong> кнопка «Загрузить Legacy» перестанет быть доступной для перехода на Legacy Version.</p>
+                <p style="margin:0 0 10px;color:var(--text-muted);">Недавно произошло глобальное обновление, и обновили все версии на новые, а данную обновить невозможно, поэтому с 14.11 вы сможете перейти на Legacy Version только через URL. Можете сохранить его в Закладки Браузера, если вам Legacy Version важнее, чем Новая.</p>
+                <p style="margin:0;font-size:12px;color:var(--text-muted);word-break:break-all;">https://oracle-ai-pro.github.io/my-work/forms/index_old.html</p>
+            </div>
+            <div class="modal-footer" style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;">
+                <button type="button" class="btn btn-ghost" onclick="closeLegacyNoticeModal()">Close this Window</button>
+                <button type="button" class="btn btn-primary" onclick="goToLegacyVersion()">Go to Legacy Version</button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
