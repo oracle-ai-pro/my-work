@@ -131,8 +131,307 @@ function renderColorPalette(containerId, onSelectCallback, activeId) {
     });
 }
 
+
+
+/* ===== Hub integration Keeps ===== */
+function getNoteQueryId() {
+    try {
+        var q = new URLSearchParams(window.location.search);
+        if (q.has('note')) {
+            var n = parseInt(q.get('note'), 10);
+            if (!isNaN(n)) return n;
+        }
+    } catch (e) {}
+    return null;
+}
+function isStandalonePwa() {
+    return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+        || window.navigator.standalone === true;
+}
+function dismissPwaWorkModal() {
+    localStorage.setItem('keeps_pwa_work_notice_v1', '1');
+    var m = document.getElementById('pwa-work-modal');
+    if (m) m.classList.remove('active');
+}
+function maybeShowPwaWorkModal() {
+    if (!isStandalonePwa()) return;
+    if (localStorage.getItem('keeps_pwa_work_notice_v1')) return;
+    var m = document.getElementById('pwa-work-modal');
+    if (m) m.classList.add('active');
+}
+
+function enterHubNoteMode(noteId) {
+    document.body.classList.add('hub-note-mode');
+    state.activeNoteId = noteId;
+    hideNotePicker();
+    loadHubNoteEditor(noteId);
+    updateHubTopbar(noteId);
+    try {
+        var menu = document.getElementById('tools-menu');
+        var slot = document.getElementById('hub-tools-slot');
+        if (menu && slot && !slot.contains(menu)) slot.appendChild(menu);
+    } catch (e) {}
+}
+
+function exitHubNoteMode() {
+    document.body.classList.remove('hub-note-mode');
+    state.activeNoteId = null;
+}
+
+function updateHubTopbar(noteId) {
+    var note = state.notes.find(function(n) { return n.id === noteId; });
+    var input = document.getElementById('app-file-title');
+    if (input) {
+        input.value = (note && note.title) ? note.title : 'Без названия';
+        input.readOnly = true;
+        delete input.dataset.cancel;
+    }
+    var pinBtn = document.getElementById('hub-pin-btn');
+    if (pinBtn) {
+        pinBtn.classList.toggle('pinned', !!(note && note.pinned));
+        pinBtn.title = note && note.pinned ? 'Открепить' : 'Закрепить';
+    }
+    // apply card color
+    var card = document.getElementById('single-note-card');
+    if (card && note) {
+        var hex = getHexByColorId(note.bgColor);
+        card.style.backgroundColor = hex || 'var(--card-bg)';
+    }
+}
+
+function loadHubNoteEditor(noteId) {
+    var note = state.notes.find(function(n) { return n.id === noteId; });
+    var ed = document.getElementById('hub-note-content');
+    if (!ed || !note) return;
+    ed.innerHTML = note.content || '';
+    state.editBgColor = note.bgColor || null;
+    if (typeof renderColorPalette === 'function') {
+        renderColorPalette('hub-color-palette', function(colorId) {
+            state.editBgColor = colorId;
+            var card = document.getElementById('single-note-card');
+            var hex = getHexByColorId(colorId);
+            if (card) card.style.backgroundColor = hex || 'var(--card-bg)';
+            // soft autosave color
+            note.bgColor = colorId;
+            saveNotes();
+            syncRegistryNote(note);
+        }, state.editBgColor);
+    }
+    // autosave content
+    if (ed._hubBound) return;
+    ed._hubBound = true;
+    var t;
+    ed.addEventListener('input', function() {
+        clearTimeout(t);
+        t = setTimeout(function() { saveActiveNoteFromHub(true); }, 700);
+    });
+}
+
+function startQuickRenameNote() {
+    var input = document.getElementById('app-file-title');
+    if (!input) return;
+    input.readOnly = false;
+    input.focus();
+    input.select();
+}
+
+function finishQuickRenameNote() {
+    var input = document.getElementById('app-file-title');
+    if (!input || input.readOnly) return;
+    if (input.dataset.cancel === '1') {
+        delete input.dataset.cancel;
+        input.readOnly = true;
+        updateHubTopbar(state.activeNoteId);
+        return;
+    }
+    var name = (input.value || '').trim();
+    input.readOnly = true;
+    var note = state.notes.find(function(n) { return n.id === state.activeNoteId; });
+    if (!note) return;
+    if (!name) name = 'Без названия';
+    note.title = name;
+    saveNotes();
+    syncRegistryNote(note);
+    updateHubTopbar(state.activeNoteId);
+    flashSaveStatus('Название обновлено');
+}
+
+function saveActiveNoteFromHub(silent) {
+    if (!state.activeNoteId) return;
+    var note = state.notes.find(function(n) { return n.id === state.activeNoteId; });
+    if (!note) return;
+    var titleInput = document.getElementById('app-file-title');
+    var ed = document.getElementById('hub-note-content');
+    if (titleInput && !titleInput.readOnly) {
+        /* still editing title */
+    } else if (titleInput) {
+        note.title = (titleInput.value || '').trim() || note.title;
+    }
+    if (ed) note.content = ed.innerHTML.trim();
+    note.bgColor = state.editBgColor;
+    saveNotes();
+    syncRegistryNote(note);
+    if (!silent) flashSaveStatus('Сохранено');
+}
+
+function togglePinFromHub() {
+    if (!state.activeNoteId) return;
+    var note = state.notes.find(function(n) { return n.id === state.activeNoteId; });
+    if (!note) return;
+    note.pinned = !note.pinned;
+    saveNotes();
+    syncRegistryNote(note);
+    updateHubTopbar(state.activeNoteId);
+}
+
+function syncRegistryNote(note) {
+    if (!note) return;
+    try {
+        var reg = JSON.parse(localStorage.getItem('mywork_registry_v1') || '[]');
+        if (!Array.isArray(reg)) return;
+        var found = false;
+        reg.forEach(function(p) {
+            if (p && p.type === 'keep' && (p.legacyId === note.id || p.id === 'keep-' + note.id)) {
+                p.title = note.title || 'Заметка';
+                p.updatedAt = Date.now();
+                found = true;
+            }
+        });
+        if (!found) {
+            reg.push({
+                id: 'keep-' + note.id,
+                type: 'keep',
+                title: note.title || 'Заметка',
+                updatedAt: Date.now(),
+                legacyId: note.id,
+                legacyKey: 'keeps_notes'
+            });
+        }
+        localStorage.setItem('mywork_registry_v1', JSON.stringify(reg));
+    } catch (e) {}
+}
+
+function showNotePicker() {
+    exitHubNoteMode();
+    var screen = document.getElementById('note-picker-screen');
+    if (!screen) return;
+    screen.classList.remove('hidden');
+    renderNotePickerList();
+}
+
+function hideNotePicker() {
+    var screen = document.getElementById('note-picker-screen');
+    if (screen) screen.classList.add('hidden');
+}
+
+function renderNotePickerList() {
+    var list = document.getElementById('note-picker-list');
+    if (!list) return;
+    list.innerHTML = '';
+    var notes = state.notes.filter(function(n) { return !n.archived; });
+    if (!notes.length) {
+        list.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:32px;">Нет заметок. Нажмите +</p>';
+        return;
+    }
+    notes.sort(function(a, b) { return (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0); });
+    notes.forEach(function(n) {
+        var row = document.createElement('div');
+        row.className = 'note-picker-item';
+        var plain = '';
+        try {
+            var d = document.createElement('div');
+            d.innerHTML = n.content || '';
+            plain = (d.innerText || '').slice(0, 80);
+        } catch (e) {}
+        row.innerHTML =
+            '<div class="np-icon"><span class="material-symbols-rounded">sticky_note_2</span></div>' +
+            '<div class="np-meta"><div class="np-title"></div><div class="np-sub"></div></div>' +
+            '<div class="np-actions">' +
+            '<button type="button" class="np-ren" title="Переименовать"><span class="material-symbols-rounded">edit</span></button>' +
+            '<button type="button" class="np-del danger" title="Удалить"><span class="material-symbols-rounded">delete</span></button>' +
+            '</div>';
+        row.querySelector('.np-title').textContent = n.title || 'Без названия';
+        row.querySelector('.np-sub').textContent = plain || (n.pinned ? 'Закреплена' : 'Заметка');
+        if (n.bgColor) {
+            var hex = getHexByColorId(n.bgColor);
+            if (hex) row.style.borderLeft = '4px solid ' + hex;
+        }
+        row.addEventListener('click', function(e) {
+            if (e.target.closest('.np-actions')) return;
+            openNoteById(n.id);
+        });
+        row.querySelector('.np-ren').onclick = function(e) {
+            e.stopPropagation();
+            var title = prompt('Название заметки', n.title || '');
+            if (title === null) return;
+            title = String(title).trim();
+            if (!title) return;
+            n.title = title;
+            saveNotes();
+            syncRegistryNote(n);
+            renderNotePickerList();
+        };
+        row.querySelector('.np-del').onclick = function(e) {
+            e.stopPropagation();
+            if (!confirm('Удалить «' + (n.title || 'заметку') + '»?')) return;
+            state.notes = state.notes.filter(function(x) { return x.id !== n.id; });
+            saveNotes();
+            renderNotePickerList();
+        };
+        list.appendChild(row);
+    });
+}
+
+function openNoteById(id) {
+    try {
+        var u = new URL(window.location.href);
+        u.searchParams.set('note', String(id));
+        history.replaceState(null, '', u.toString());
+    } catch (e) {}
+    enterHubNoteMode(id);
+}
+
+function createNoteFromPicker() {
+    var newNote = {
+        id: Date.now(),
+        title: 'Новая заметка',
+        content: '',
+        bgColor: null,
+        pinned: false,
+        archived: false,
+        reminder: null
+    };
+    state.notes.unshift(newNote);
+    saveNotes();
+    syncRegistryNote(newNote);
+    openNoteById(newNote.id);
+}
+
+function initHubNoteRouting() {
+    maybeShowPwaWorkModal();
+    var nid = getNoteQueryId();
+    if (nid != null) {
+        var exists = state.notes.some(function(n) { return n.id === nid; });
+        if (exists) {
+            enterHubNoteMode(nid);
+            return { picker: false, id: nid };
+        }
+    }
+    // no valid note → picker
+    showNotePicker();
+    return { picker: true, id: null };
+}
+
+
 document.addEventListener('DOMContentLoaded', () => {
     applySettings();
+    var hubRoute = { picker: false };
+    try { hubRoute = initHubNoteRouting(); } catch (e) { console.warn(e); }
+    if (!hubRoute.picker) {
+        /* single note mode — grid hidden via CSS */
+    } else {
+        /* picker shown; still allow classic UI if user dismisses — but picker is primary */
+    }
     renderNotes();
     renderColorPalette('create-color-palette', changeCreateCardColor);
     if (typeof enhanceAllSelects === 'function') enhanceAllSelects();
@@ -140,14 +439,12 @@ document.addEventListener('DOMContentLoaded', () => {
         navigator.serviceWorker.register('./sw.js').catch(function() {});
     }
     applyViewMode();
-    // auto persist every 2 minutes
     setInterval(function() {
         try {
             localStorage.setItem('keeps_notes', JSON.stringify(state.notes));
-            flashSaveStatus('Автосохранение');
+            if (document.body.classList.contains('hub-note-mode')) flashSaveStatus('Автосохранение');
         } catch (err) {}
     }, 120000);
-    // autosave edit modal
     var editContent = document.getElementById('edit-note-content');
     var editTitle = document.getElementById('edit-note-title');
     function scheduleEditAutosave() {
@@ -156,14 +453,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (editContent) editContent.addEventListener('input', scheduleEditAutosave);
     if (editTitle) editTitle.addEventListener('input', scheduleEditAutosave);
-    try {
-        const params = new URLSearchParams(window.location.search);
-        const noteId = params.get('note');
-        if (noteId) {
-            const nid = parseInt(noteId, 10);
-            if (state.notes.some(n => n.id === nid)) setTimeout(() => openNoteModal(nid), 200);
-        }
-    } catch (err) {}
 
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.tools-dropdown')) {
