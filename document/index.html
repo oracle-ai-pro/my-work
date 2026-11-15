@@ -12,6 +12,30 @@
 <body>
 
     <div class="container">
+
+        <div class="app-topbar" id="app-topbar">
+            <a class="app-topbar-back" href="../index.html" title="На главную My Work">
+                <span class="material-symbols-rounded">arrow_back</span>
+            </a>
+            <div class="app-topbar-title-wrap">
+                <input type="text" class="app-topbar-title" id="app-file-title" readonly
+                    title="Нажмите, чтобы переименовать"
+                    onclick="startQuickRenameDoc()"
+                    onblur="finishQuickRenameDoc()"
+                    onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();} if(event.key==='Escape'){this.dataset.cancel='1';this.blur();}">
+            </div>
+            <div class="app-topbar-actions">
+                <button type="button" class="tools-btn" onclick="window.location.href='../WorkGens/index.html'" title="WorkGens">
+                    <span class="material-symbols-rounded">auto_awesome</span>
+                </button>
+                <div class="tools-dropdown" id="app-topbar-tools-slot">
+                    <button class="tools-btn" onclick="toggleToolsMenu()" title="Меню">
+                        <span class="material-symbols-rounded">more_vert</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- ВЕРХНЯЯ ПАНЕЛЬ -->
         <div class="forms-toolbar-container">
             <div class="forms-select-wrap hidden" id="forms-select-wrap">
@@ -448,6 +472,30 @@
                 </button>
                 <button class="btn btn-secondary" onclick="closeShareModal()" style="flex:0.6;">Закрыть</button>
             </div>
+        </div>
+    </div>
+
+
+    <div id="doc-picker-screen" class="doc-picker-screen hidden">
+        <div class="doc-picker-header">
+            <a class="app-topbar-back" href="../index.html"><span class="material-symbols-rounded">arrow_back</span></a>
+            <h1>Выберите документ</h1>
+            <button type="button" class="tools-btn" onclick="createNewDocPrompt()" title="Создать">
+                <span class="material-symbols-rounded">add</span>
+            </button>
+        </div>
+        <div id="doc-picker-list" class="doc-picker-list"></div>
+    </div>
+
+    <div id="pwa-work-modal" class="custom-alert-overlay hidden">
+        <div class="custom-alert-card" style="max-width:400px;text-align:left;">
+            <h3 style="margin:0 0 10px;display:flex;align-items:center;gap:8px;">
+                <span class="material-symbols-rounded" style="color:var(--accent-color)">install_desktop</span>
+                My Work
+            </h3>
+            <p class="pwa-limit-text">Удобнее установить <strong>My Work</strong> с главной — там все проекты. Отдельный ярлык Документов можно не ставить.</p>
+            <button type="button" class="btn" style="width:100%;margin-bottom:8px;" onclick="location.href='../index.html'">Открыть My Work</button>
+            <button type="button" class="btn btn-secondary" style="width:100%;" onclick="dismissPwaWorkModal()">Понятно</button>
         </div>
     </div>
 
