@@ -45,6 +45,12 @@
   function uid() { return 'p_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8); }
   function loadJSON(k, fb) { try { const v = JSON.parse(localStorage.getItem(k) || 'null'); return v == null ? fb : v; } catch (e) { return fb; } }
   function saveJSON(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
+  // Этот хаб = единый My Work PWA. Сервисы не должны показывать «установите My Work».
+  try {
+    localStorage.setItem('mywork_unified_pwa', '1');
+    sessionStorage.setItem('mywork_unified_pwa', '1');
+  } catch (e) {}
+
   function toast(msg) {
     const el = document.getElementById('toast');
     if (!el) return;
@@ -117,17 +123,94 @@
     return (m.path || './') + (m.param ? q(m.param) : '');
   }
   function openProject(p) { var url = openUrlFor(p); if (url) location.href = url; }
+
+  function isInIframe() {
+    try { return window.self !== window.top; } catch (e) { return true; }
+  }
+
+  /** Не открывать превью внутри превью — иначе бесконечные iframe с хабом. */
   function previewProject(p) {
     var url = openUrlFor(p);
+    if (!url) return;
     var sep = url.indexOf('?') >= 0 ? '&' : '?';
-    document.getElementById('preview-frame').src = url + sep + 'preview=1';
-    document.getElementById('preview-overlay').classList.add('active');
+    var finalUrl = url + sep + 'preview=1';
+
+    // Уже внутри iframe (вложенный хаб) — просим родителя открыть/закрыть, сами не плодим оверлей
+    if (isInIframe()) {
+      try {
+        window.parent.postMessage({ type: 'mywork-preview-open', url: finalUrl }, '*');
+      } catch (e) {}
+      return;
+    }
+
+    var frame = document.getElementById('preview-frame');
+    var overlay = document.getElementById('preview-overlay');
+    if (!frame || !overlay) return;
+    frame.src = finalUrl;
+    overlay.classList.add('active');
   }
+
   function closePreview() {
-    document.getElementById('preview-overlay').classList.remove('active');
-    document.getElementById('preview-frame').src = 'about:blank';
+    var overlay = document.getElementById('preview-overlay');
+    var frame = document.getElementById('preview-frame');
+    if (overlay) overlay.classList.remove('active');
+    if (frame) frame.src = 'about:blank';
   }
   window.closePreview = closePreview;
+  window.previewProject = previewProject;
+
+  /** Закрыть превью + опционально toast (когда ← увёл iframe на хаб). */
+  function closePreviewWithError() {
+    closePreview();
+    toast('Произошла ошибка');
+  }
+
+  // ← в iframe / postMessage: закрыть превью
+  window.addEventListener('message', function (e) {
+    var d = e && e.data;
+    if (!d || typeof d !== 'object') return;
+    if (d.type === 'mywork-close-preview' || d.type === 'myform-preview-close') {
+      // reason: 'hub-nav' = нажали ← и попали на index.html
+      if (d.reason === 'hub-nav' || d.error) closePreviewWithError();
+      else closePreview();
+      return;
+    }
+    if (d.type === 'mywork-preview-open' && d.url && !isInIframe()) {
+      var frame = document.getElementById('preview-frame');
+      var overlay = document.getElementById('preview-overlay');
+      if (frame && overlay) {
+        frame.src = d.url;
+        overlay.classList.add('active');
+      }
+    }
+  });
+
+  // Простой путь: index.html открылся ВНУТРИ iframe превью → просим родителя закрыть + toast
+  (function guardNestedHubInPreview() {
+    if (!isInIframe()) return;
+    try {
+      var path = location.pathname || '';
+      var isHub = /\/(index\.html)?$/i.test(path) || /\/my-work\/?$/i.test(path);
+      if (isHub && !/\/(forms|forms-lite|slides|document|keeps|spreadsheets|mindmap|whiteboard|WorkGens)\b/i.test(path)) {
+        window.parent.postMessage({ type: 'mywork-close-preview', reason: 'hub-nav', error: true }, '*');
+      }
+    } catch (e) {}
+  })();
+
+  // Родитель: iframe загрузил хаб вместо файла → выключить превью + toast
+  document.addEventListener('DOMContentLoaded', function () {
+    var frame = document.getElementById('preview-frame');
+    if (!frame) return;
+    frame.addEventListener('load', function () {
+      try {
+        var href = frame.contentWindow && frame.contentWindow.location && frame.contentWindow.location.href;
+        if (!href || href === 'about:blank') return;
+        if (/index\.html(?:\?|$)/i.test(href) && !/\/(forms|forms-lite|slides|document|keeps|spreadsheets|mindmap|whiteboard)\//i.test(href)) {
+          closePreviewWithError();
+        }
+      } catch (err) {}
+    });
+  });
 
   function matchesFilters(p) {
     if (!p || p.trashed) return false;
@@ -666,7 +749,7 @@
       '<div data-folder="1" style="padding-left:24px">📁 Windows</div></div>' +
       '<div class="aero-files" id="aero-files"></div>' +
       '<div class="aero-deny" id="aero-deny"><strong>Доступ запрещён</strong><br>Администратор запретил все папки, кроме explorer.exe и notepad.exe для старта.</div></div>' +
-      '<div class="aero-status"><span>Aero · My Work</span></div>';
+      '<div class="aero-status"><span>Aero · My Work</span><span>C:\\Windows\\explorer.exe</span></div>';
     layer.appendChild(win);
     fillAeroFiles(win);
     bindDrag(win);
