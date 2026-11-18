@@ -1,8 +1,7 @@
 {
-  "id": "./",
   "name": "My Work | Prestige HQ",
   "short_name": "My Work",
-  "description": "Офисный хаб Prestige HQ: формы, документы, слайды, таблицы, заметки, доска, Learning Web",
+  "description": "Офисный хаб Prestige HQ: формы, документы, слайды, таблицы, заметки, доска",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
@@ -10,26 +9,18 @@
   "background_color": "#000000",
   "theme_color": "#1a73e8",
   "lang": "ru",
-  "dir": "ltr",
-  "categories": ["productivity", "education", "utilities"],
   "icons": [
     {
       "src": "MY Work.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
       "src": "MY Work.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "MY Work.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     }
   ]
 }
