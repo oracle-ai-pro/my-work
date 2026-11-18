@@ -15,7 +15,7 @@ self.addEventListener('fetch', (e) => {
   e.respondWith(
     caches.match(req).then(cached => {
       const net = fetch(req).then(res => {
-        if (res && res.ok && /\.(html|css|js|png|svg|json)$/i.test(url.pathname)) {
+        if (res && res.ok && /\.(html|css|js|webmanifest|png|svg|json)$/i.test(url.pathname)) {
           const clone = res.clone();
           caches.open(CACHE).then(c => c.put(req, clone)).catch(()=>{});
         }
