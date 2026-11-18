@@ -3,250 +3,358 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>My Whiteboard · BETA | Prestige HQ</title>
-<link rel="icon" type="image/png" href="../My Work.png">
+<title>My Whiteboard | Prestige HQ</title>
+<link rel="icon" type="image/png" href="whiteboard.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
 <style>
 :root {
-  --ui-bg: #f4f6f8;
-  --ui-card: #ffffff;
-  --ui-text: #1f2937;
-  --ui-muted: #6b7280;
-  --ui-border: #e5e7eb;
-  --accent: #1a73e8;
-  --board-bg: #ffffff;
-  --grid: #e8eaed;
+  --ui-bg: #f4f6f8; --ui-card: #fff; --ui-text: #1f2937; --ui-muted: #6b7280;
+  --ui-border: #e5e7eb; --accent: #1a73e8; --danger: #e53935; --radius: 12px;
 }
-/* UI follows system/My Work only for chrome — board stays white by default */
 body.ui-dark {
-  --ui-bg: #0f1115;
-  --ui-card: #171a21;
-  --ui-text: #e5e7eb;
-  --ui-muted: #9ca3af;
-  --ui-border: #2a2f3a;
-}
-body.ui-dark.board-dark {
-  --board-bg: #1a1d24;
-  --grid: #2c3140;
+  --ui-bg: #0f1115; --ui-card: #171a21; --ui-text: #e5e7eb; --ui-muted: #9ca3af; --ui-border: #2a2f3a;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
-  font-family: Inter, system-ui, sans-serif;
-  background: var(--ui-bg);
-  color: var(--ui-text);
-  height: 100dvh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  font-family: Inter, system-ui, sans-serif; background: var(--ui-bg); color: var(--ui-text);
+  height: 100dvh; display: flex; flex-direction: column; overflow: hidden;
 }
+.hidden { display: none !important; }
 .topbar {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 12px;
-  background: var(--ui-card);
-  border-bottom: 1px solid var(--ui-border);
-  flex-shrink: 0;
-  z-index: 20;
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+  background: var(--ui-card); border-bottom: 1px solid var(--ui-border); flex-shrink: 0; z-index: 30;
 }
 .topbar a, .icon-btn {
-  width: 40px; height: 40px;
-  display: flex; align-items: center; justify-content: center;
-  border-radius: 12px; border: 1px solid var(--ui-border);
-  background: var(--ui-bg); color: var(--ui-text); text-decoration: none; cursor: pointer;
+  width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;
+  border-radius: 12px; border: 1px solid var(--ui-border); background: var(--ui-bg);
+  color: var(--ui-text); text-decoration: none; cursor: pointer;
 }
 .topbar a:hover, .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
 .title-wrap { flex: 1; min-width: 0; }
 .title-wrap input {
-  width: 100%; border: none; background: transparent; font-size: 1rem; font-weight: 600;
+  width: 100%; border: none; background: transparent; font-size: .95rem; font-weight: 650;
   color: var(--ui-text); outline: none; padding: 6px 4px; border-radius: 8px;
 }
 .title-wrap input:focus { background: var(--ui-bg); }
 .badge {
-  font-size: 10px; font-weight: 800; letter-spacing: .04em;
-  color: #b45309; background: #fef3c7; border: 1px solid #fcd34d;
-  padding: 3px 8px; border-radius: 6px; flex-shrink: 0;
+  font-size: 10px; font-weight: 800; color: #b45309; background: #fef3c7;
+  border: 1px solid #fcd34d; padding: 3px 7px; border-radius: 6px;
 }
 body.ui-dark .badge { color: #fbbf24; background: rgba(245,158,11,.15); border-color: rgba(245,158,11,.4); }
-.save-dot {
-  width: 8px; height: 8px; border-radius: 50%; background: #22c55e; flex-shrink: 0;
-  opacity: 0; transition: opacity .2s;
-}
+.save-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; opacity: 0; transition: opacity .2s; }
 .save-dot.on { opacity: 1; }
 
-.workspace {
-  flex: 1; min-height: 0; position: relative;
-  display: flex; flex-direction: column;
+/* Page tabs */
+.pages-bar {
+  display: flex; align-items: center; gap: 6px; padding: 6px 10px;
+  background: var(--ui-card); border-bottom: 1px solid var(--ui-border); flex-shrink: 0;
+  overflow-x: auto; scrollbar-width: none; z-index: 25;
 }
+.pages-bar::-webkit-scrollbar { display: none; }
+.page-tab {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 999px; border: 1px solid var(--ui-border);
+  background: var(--ui-bg); color: var(--ui-text); font-size: 12px; font-weight: 600;
+  cursor: pointer; white-space: nowrap; flex-shrink: 0;
+}
+.page-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.page-tab .pt-x {
+  width: 18px; height: 18px; border: none; border-radius: 50%; background: transparent;
+  color: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px;
+  opacity: .7;
+}
+.page-tab .pt-x:hover { opacity: 1; background: rgba(0,0,0,.12); }
+.page-add {
+  width: 32px; height: 32px; border-radius: 50%; border: 1px dashed var(--ui-border);
+  background: transparent; color: var(--ui-muted); cursor: pointer; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.page-add:hover { border-color: var(--accent); color: var(--accent); }
+
+.workspace { flex: 1; min-height: 0; position: relative; display: flex; flex-direction: column; }
 .board-stage {
-  flex: 1; min-height: 0; position: relative;
-  overflow: hidden;
-  background: var(--board-bg);
-  /* board ALWAYS light by default — pattern drawn on canvas */
+  flex: 1; min-height: 0; position: relative; overflow: hidden; background: #fff;
 }
-#board {
-  position: absolute; inset: 0;
-  width: 100%; height: 100%;
-  touch-action: none;
-  cursor: crosshair;
-  display: block;
-}
-.texts-layer {
-  position: absolute; inset: 0; pointer-events: none; z-index: 5;
-}
+#board { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; display: block; }
+.texts-layer { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
 .board-text {
-  position: absolute; pointer-events: auto;
-  min-width: 80px; min-height: 28px;
-  padding: 6px 10px;
-  border: 1px dashed transparent;
-  border-radius: 8px;
-  font-size: 16px; line-height: 1.35;
-  color: #111; background: transparent;
-  outline: none; resize: both; overflow: auto;
-  max-width: 60%;
+  position: absolute; pointer-events: auto; min-width: 80px; min-height: 28px;
+  padding: 6px 10px; border: 1px dashed transparent; border-radius: 8px;
+  font-size: 16px; line-height: 1.35; color: #111; background: transparent;
+  outline: none; max-width: 60%;
 }
 .board-text:focus, .board-text:hover {
-  border-color: var(--accent);
-  background: rgba(255,255,255,.9);
-  box-shadow: 0 4px 16px rgba(0,0,0,.08);
+  border-color: var(--accent); background: rgba(255,255,255,.92); box-shadow: 0 4px 16px rgba(0,0,0,.08);
 }
-body.board-dark .board-text { color: #f1f5f9; }
-body.board-dark .board-text:focus { background: rgba(0,0,0,.4); }
+.sticker {
+  position: absolute; pointer-events: auto; z-index: 6;
+  min-width: 100px; min-height: 72px; max-width: 200px;
+  padding: 10px; border-radius: 4px; font-size: 14px; line-height: 1.35;
+  box-shadow: 1px 2px 6px rgba(0,0,0,.15); outline: none; cursor: move;
+  border: 1px solid transparent;
+}
+.sticker:focus { border-color: var(--accent); }
+.sel-box {
+  position: absolute; border: 2px dashed var(--accent); pointer-events: none; z-index: 8;
+  display: none;
+}
 
 .toolbar {
-  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
-  background: var(--ui-card);
-  border-top: 1px solid var(--ui-border);
-  flex-shrink: 0;
-  z-index: 20;
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+  background: var(--ui-card); border-top: 1px solid var(--ui-border); flex-shrink: 0; z-index: 20;
 }
 .tool-group {
-  display: flex; align-items: center; gap: 4px;
-  padding: 4px; border-radius: 14px;
-  background: var(--ui-bg); border: 1px solid var(--ui-border);
+  display: flex; align-items: center; gap: 2px; padding: 3px;
+  border-radius: 14px; background: var(--ui-bg); border: 1px solid var(--ui-border);
 }
 .tool-btn {
-  width: 40px; height: 40px; border: none; border-radius: 12px;
+  width: 36px; height: 36px; border: none; border-radius: 10px;
   background: transparent; color: var(--ui-muted); cursor: pointer;
   display: flex; align-items: center; justify-content: center;
 }
 .tool-btn:hover { color: var(--ui-text); background: var(--ui-card); }
 .tool-btn.active { background: var(--accent); color: #fff; }
-.tool-btn .material-symbols-rounded { font-size: 22px; }
-
-.sep { width: 1px; height: 28px; background: var(--ui-border); margin: 0 4px; }
-
-.colors { display: flex; gap: 6px; align-items: center; padding: 0 4px; }
+.tool-btn .material-symbols-rounded { font-size: 20px; }
+.sep { width: 1px; height: 24px; background: var(--ui-border); margin: 0 2px; }
+.colors { display: flex; gap: 5px; align-items: center; padding: 0 4px; }
 .swatch {
-  width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent;
-  cursor: pointer; padding: 0;
-  box-shadow: inset 0 0 0 1px rgba(0,0,0,.12);
+  width: 24px; height: 24px; border-radius: 50%; border: 2px solid transparent; cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); padding: 0;
 }
 .swatch.active { border-color: var(--accent); box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--accent); }
-
-.size-wrap { display: flex; align-items: center; gap: 8px; padding: 0 8px; min-width: 120px; }
+.size-wrap { display: flex; align-items: center; gap: 6px; padding: 0 6px; min-width: 100px; font-size: 12px; color: var(--ui-muted); }
 .size-wrap input[type=range] { flex: 1; accent-color: var(--accent); }
-.size-label { font-size: 12px; color: var(--ui-muted); min-width: 28px; }
-
-.pattern-select, .board-theme-select {
+.pattern-select, .board-theme-select, .fill-select {
   border: 1px solid var(--ui-border); background: var(--ui-bg); color: var(--ui-text);
-  border-radius: 12px; padding: 8px 10px; font-size: 13px; font-weight: 500; cursor: pointer;
+  border-radius: 10px; padding: 6px 8px; font-size: 12px; font-weight: 600; outline: none; cursor: pointer;
 }
-
 .hint {
-  font-size: 11px; color: var(--ui-muted); margin-left: auto; white-space: nowrap;
+  position: absolute; left: 12px; bottom: 12px; z-index: 10;
+  background: rgba(255,255,255,.92); border: 1px solid var(--ui-border); border-radius: 10px;
+  padding: 6px 10px; font-size: 11px; color: var(--ui-muted); max-width: 280px; pointer-events: none;
 }
-@media (max-width: 720px) {
-  .hint { display: none; }
-  .title-wrap input { font-size: 0.92rem; }
+body.ui-dark .hint { background: rgba(23,26,33,.92); }
+
+.zoom-hud {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  z-index: 15; pointer-events: none;
+  background: rgba(15, 17, 21, 0.78); color: #fff;
+  font-size: 22px; font-weight: 700; letter-spacing: 0.02em;
+  padding: 12px 22px; border-radius: 16px;
+  backdrop-filter: blur(8px);
+  opacity: 0; transition: opacity 0.18s ease;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.25);
 }
+.zoom-hud.show { opacity: 1; }
+
+.laser-dot {
+  position: absolute; width: 18px; height: 18px; border-radius: 50%;
+  pointer-events: none; z-index: 12;
+  background: radial-gradient(circle at 35% 35%, #fff 0%, #ff1744 45%, rgba(255,23,68,0) 72%);
+  box-shadow: 0 0 12px 4px rgba(255,23,68,.55);
+  transform: translate(-50%, -50%);
+  display: none;
+}
+.laser-trail {
+  position: absolute; inset: 0; pointer-events: none; z-index: 11;
+}
+body.present-mode .topbar,
+body.present-mode .pages-bar,
+body.present-mode .toolbar,
+body.present-mode .hint {
+  display: none !important;
+}
+body.present-mode .workspace { height: 100dvh; }
+body.present-mode .board-stage { border-radius: 0; }
+.present-exit-hint {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  z-index: 20; background: rgba(0,0,0,.55); color: #fff;
+  font-size: 12px; font-weight: 600; padding: 8px 14px; border-radius: 999px;
+  opacity: 0; pointer-events: none; transition: opacity .25s;
+}
+body.present-mode .present-exit-hint.show { opacity: 1; }
+
+
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,.5);
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+}
+.modal-card {
+  background: var(--ui-card); border: 1px solid var(--ui-border); border-radius: 16px;
+  width: min(360px, 100%); padding: 18px; box-shadow: 0 12px 40px rgba(0,0,0,.25);
+}
+.modal-card h3 { margin-bottom: 8px; }
+.modal-card p { font-size: 13px; color: var(--ui-muted); line-height: 1.45; margin-bottom: 14px; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.btn {
+  border: none; border-radius: 10px; padding: 9px 14px; font-size: 13px; font-weight: 650; cursor: pointer;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-ghost { background: transparent; color: var(--ui-text); border: 1px solid var(--ui-border); }
+.btn-danger { background: var(--danger); color: #fff; }
 </style>
 </head>
 <body>
 <div class="topbar">
-  <a href="../index.html" title="На главную My Work"><span class="material-symbols-rounded">arrow_back</span></a>
+  <a href="../index.html" id="btn-back-hub" title="My Work"><span class="material-symbols-rounded">arrow_back</span></a>
   <div class="title-wrap">
-    <input id="board-title" type="text" value="Белая доска" maxlength="80" aria-label="Название">
+    <input id="board-title" type="text" value="Белая доска" title="Название проекта">
   </div>
+  <span class="badge">BETA 2</span>
   <span class="save-dot" id="save-dot" title="Сохранено"></span>
-  <span class="badge">BETA</span>
-  <button type="button" class="icon-btn" id="btn-clear" title="Очистить доску"><span class="material-symbols-rounded">delete</span></button>
+  <button type="button" class="icon-btn" id="btn-undo" title="Отменить (Ctrl+Z)"><span class="material-symbols-rounded">undo</span></button>
+  <button type="button" class="icon-btn" id="btn-redo" title="Повтор (Ctrl+Y)"><span class="material-symbols-rounded">redo</span></button>
+  <button type="button" class="icon-btn" id="btn-export" title="Экспорт PNG"><span class="material-symbols-rounded">image</span></button>
+  <button type="button" class="icon-btn" id="btn-present" title="Режим показа (только доска)"><span class="material-symbols-rounded">present_to_all</span></button>
+  <button type="button" class="icon-btn" id="btn-clear" title="Очистить страницу"><span class="material-symbols-rounded">delete</span></button>
 </div>
+
+<div class="pages-bar" id="pages-bar"></div>
 
 <div class="workspace">
   <div class="board-stage" id="stage">
     <canvas id="board"></canvas>
     <div class="texts-layer" id="texts"></div>
+    <div class="sel-box" id="sel-box"></div>
+    <div class="hint">Рука — двигать · Лазер — указка · 2 пальца / Ctrl+колесо — зум · Показ — только доска</div>
+    <div class="zoom-hud" id="zoom-hud">100%</div>
+    <div class="laser-dot" id="laser-dot"></div>
+    <canvas class="laser-trail" id="laser-trail"></canvas>
+    <div class="present-exit-hint" id="present-exit-hint">Esc или кнопка «Показ» — выйти из режима</div>
+  </div>
+  <div class="toolbar">
+    <div class="tool-group">
+      <button type="button" class="tool-btn active" data-tool="pen" title="Карандаш"><span class="material-symbols-rounded">edit</span></button>
+      <button type="button" class="tool-btn" data-tool="marker" title="Маркер"><span class="material-symbols-rounded">ink_highlighter</span></button>
+      <button type="button" class="tool-btn" data-tool="erase" title="Ластик"><span class="material-symbols-rounded">ink_eraser</span></button>
+      <button type="button" class="tool-btn" data-tool="select" title="Выделение"><span class="material-symbols-rounded">near_me</span></button>
+      <button type="button" class="tool-btn" data-tool="hand" title="Рука — двигать доску"><span class="material-symbols-rounded">pan_tool</span></button>
+      <button type="button" class="tool-btn" data-tool="laser" title="Лазерный указатель"><span class="material-symbols-rounded">radio_button_checked</span></button>
+    </div>
+    <div class="tool-group">
+      <button type="button" class="tool-btn" data-tool="line" title="Линия"><span class="material-symbols-rounded">timeline</span></button>
+      <button type="button" class="tool-btn" data-tool="arrow" title="Стрелка"><span class="material-symbols-rounded">north_east</span></button>
+      <button type="button" class="tool-btn" data-tool="rect" title="Прямоугольник"><span class="material-symbols-rounded">rectangle</span></button>
+      <button type="button" class="tool-btn" data-tool="ellipse" title="Круг"><span class="material-symbols-rounded">circle</span></button>
+    </div>
+    <div class="tool-group">
+      <button type="button" class="tool-btn" data-tool="text" title="Текст"><span class="material-symbols-rounded">title</span></button>
+      <button type="button" class="tool-btn" data-tool="sticker" title="Стикер"><span class="material-symbols-rounded">sticky_note_2</span></button>
+    </div>
+    <div class="sep"></div>
+    <div class="colors">
+      <button type="button" class="swatch active" data-color="#111111" style="background:#111"></button>
+      <button type="button" class="swatch" data-color="#1a73e8" style="background:#1a73e8"></button>
+      <button type="button" class="swatch" data-color="#ea4335" style="background:#ea4335"></button>
+      <button type="button" class="swatch" data-color="#34a853" style="background:#34a853"></button>
+      <button type="button" class="swatch" data-color="#fbbc04" style="background:#fbbc04"></button>
+      <button type="button" class="swatch" data-color="#9c27b0" style="background:#9c27b0"></button>
+      <button type="button" class="swatch" data-color="#ffffff" style="background:#fff;box-shadow:inset 0 0 0 1px #ccc"></button>
+    </div>
+    <div class="size-wrap">
+      <span id="size-val">3</span>
+      <input type="range" id="pen-size" min="1" max="32" value="3">
+    </div>
+    <select id="fill-mode" class="fill-select" title="Заливка фигур">
+      <option value="stroke">Обводка</option>
+      <option value="fill">Заливка</option>
+      <option value="both">Обводка+заливка</option>
+    </select>
+    <select id="pattern" class="pattern-select" title="Тип доски">
+      <option value="blank">Чистая</option>
+      <option value="grid">Клетки</option>
+      <option value="lines">Линии</option>
+      <option value="dots">Точечная</option>
+    </select>
+    <select id="board-theme" class="board-theme-select" title="Цвет доски">
+      <option value="white">Белая</option>
+      <option value="gray">Серая</option>
+      <option value="dark">Тёмная</option>
+    </select>
   </div>
 </div>
 
-<div class="toolbar">
-  <div class="tool-group">
-    <button type="button" class="tool-btn active" data-tool="pen" title="Карандаш"><span class="material-symbols-rounded">edit</span></button>
-    <button type="button" class="tool-btn" data-tool="marker" title="Маркер"><span class="material-symbols-rounded">ink_highlighter</span></button>
-    <button type="button" class="tool-btn" data-tool="erase" title="Ластик"><span class="material-symbols-rounded">ink_eraser</span></button>
-    <button type="button" class="tool-btn" data-tool="text" title="Текстовое поле"><span class="material-symbols-rounded">text_fields</span></button>
+<div id="confirm-modal" class="modal-overlay hidden">
+  <div class="modal-card">
+    <h3 id="confirm-title">Подтвердите</h3>
+    <p id="confirm-text"></p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" id="confirm-cancel">Отмена</button>
+      <button type="button" class="btn btn-danger" id="confirm-ok">Удалить</button>
+    </div>
   </div>
-
-  <div class="colors" id="colors">
-    <button type="button" class="swatch active" data-color="#111111" style="background:#111" title="Чёрный"></button>
-    <button type="button" class="swatch" data-color="#1a73e8" style="background:#1a73e8" title="Синий"></button>
-    <button type="button" class="swatch" data-color="#ea4335" style="background:#ea4335" title="Красный"></button>
-    <button type="button" class="swatch" data-color="#34a853" style="background:#34a853" title="Зелёный"></button>
-    <button type="button" class="swatch" data-color="#fbbc04" style="background:#fbbc04" title="Жёлтый"></button>
-    <button type="button" class="swatch" data-color="#9c27b0" style="background:#9c27b0" title="Фиолетовый"></button>
-    <button type="button" class="swatch" data-color="#ffffff" style="background:#fff;box-shadow:inset 0 0 0 1px #ccc" title="Белый"></button>
-  </div>
-
-  <div class="size-wrap" title="Размер">
-    <span class="material-symbols-rounded" style="font-size:18px;color:var(--ui-muted)">line_weight</span>
-    <input type="range" id="pen-size" min="1" max="48" value="3">
-    <span class="size-label" id="size-val">3</span>
-  </div>
-
-  <select id="pattern" class="pattern-select" title="Тип доски">
-    <option value="blank">Чистая</option>
-    <option value="grid">Клетки</option>
-    <option value="lines">Линии</option>
-    <option value="dots">Точечная</option>
-  </select>
-
-  <select id="board-theme" class="board-theme-select" title="Цвет доски">
-    <option value="white">Белая доска</option>
-    <option value="dark">Тёмная доска</option>
-  </select>
-
-  <span class="hint">Автосохранение · BETA</span>
 </div>
 
 <script>
 (function () {
-  const STORAGE_KEY = 'mywork_whiteboard_state_v1';
+  const STORAGE_KEY = 'mywork_whiteboard_v2';
   const canvas = document.getElementById('board');
   const ctx = canvas.getContext('2d');
   const stage = document.getElementById('stage');
   const textsEl = document.getElementById('texts');
+  const selBox = document.getElementById('sel-box');
   const titleInput = document.getElementById('board-title');
   const sizeInput = document.getElementById('pen-size');
   const sizeVal = document.getElementById('size-val');
   const patternSel = document.getElementById('pattern');
   const boardThemeSel = document.getElementById('board-theme');
+  const fillModeSel = document.getElementById('fill-mode');
   const saveDot = document.getElementById('save-dot');
+  const pagesBar = document.getElementById('pages-bar');
 
-  let tool = 'pen';
-  let color = '#111111';
-  let size = 3;
-  let pattern = 'blank';
-  let boardTheme = 'white';
-  let drawing = false;
-  let last = null;
-  let strokes = []; // {tool,color,size,points:[{x,y}]}
-  let currentStroke = null;
-  let texts = []; // {id,x,y,w,h,text}
-  let dpr = 1;
-  let saveTimer = null;
+  let tool = 'pen', color = '#111111', size = 3, pattern = 'blank', boardTheme = 'white';
+  let fillMode = 'stroke';
+  let drawing = false, shapeStart = null, currentStroke = null;
+  let dpr = 1, saveTimer = null;
+  let inkCanvas = document.createElement('canvas');
+  let inkCtx = inkCanvas.getContext('2d');
 
-  // UI chrome theme from My Work — does NOT force board dark
+  // View: zoom 50% … 350%, default 100%. Two-finger pinch or Ctrl+wheel on board.
+  let viewZoom = 1;
+  let viewX = 0, viewY = 0;
+  const ZOOM_MIN = 0.5, ZOOM_MAX = 3.5;
+  let activePointers = new Map(); // pointerId -> {x,y} screen coords relative to canvas
+  let pinch = null; // {dist0, zoom0, midX, midY, viewX0, viewY0}
+  let zoomHudTimer = null;
+  const zoomHud = document.getElementById('zoom-hud');
+  let panningBoard = null; // {x,y,viewX0,viewY0}
+  let laserOn = false;
+  let presentMode = false;
+  const laserDot = document.getElementById('laser-dot');
+  const laserTrail = document.getElementById('laser-trail');
+  let laserTrailCtx = laserTrail ? laserTrail.getContext('2d') : null;
+  let laserLast = null;
+
+
+  // Multi-page project
+  let project = {
+    title: 'Белая доска',
+    boardTheme: 'white',
+    pattern: 'blank',
+    pages: [{ id: 'p1', name: 'Страница 1', strokes: [], texts: [], stickers: [] }],
+    pageIndex: 0,
+    updatedAt: Date.now()
+  };
+
+  let history = [];
+  let historyIndex = -1;
+  const HISTORY_MAX = 40;
+
+  function page() { return project.pages[project.pageIndex]; }
+  function strokes() { return page().strokes; }
+  function texts() { return page().texts; }
+  function stickers() { return page().stickers; }
+
+  function projectId() {
+    try {
+      var q = new URLSearchParams(location.search);
+      return q.get('board') || 'default';
+    } catch (e) { return 'default'; }
+  }
+  function storageKey() { return STORAGE_KEY + ':' + projectId(); }
+
   function applyUiChrome() {
     try {
       var t = 'system';
@@ -260,146 +368,516 @@ body.board-dark .board-text:focus { background: rgba(0,0,0,.4); }
     } catch (e) {}
   }
 
-  function boardId() {
-    try {
-      var q = new URLSearchParams(location.search);
-      return q.get('board') || 'default';
-    } catch (e) { return 'default'; }
+  function boardBgColor() {
+    if (boardTheme === 'dark') return '#1a1d24';
+    if (boardTheme === 'gray') return '#f0f1f3';
+    return '#ffffff';
+  }
+  function patternColor() {
+    if (boardTheme === 'dark') return '#2c3140';
+    if (boardTheme === 'gray') return '#d5d8de';
+    return '#e8eaed';
+  }
+  function textColor() {
+    return boardTheme === 'dark' ? '#f1f5f9' : '#111111';
   }
 
-  function storageKey() { return STORAGE_KEY + ':' + boardId(); }
-
-  function cssSize() {
-    return { w: stage.clientWidth, h: stage.clientHeight };
-  }
+  function cssSize() { return { w: stage.clientWidth, h: stage.clientHeight }; }
 
   function resize() {
     var s = cssSize();
     dpr = window.devicePixelRatio || 1;
-    canvas.width = Math.max(1, Math.floor(s.w * dpr));
-    canvas.height = Math.max(1, Math.floor(s.h * dpr));
-    canvas.style.width = s.w + 'px';
-    canvas.style.height = s.h + 'px';
+    var pw = Math.max(1, Math.floor(s.w * dpr));
+    var ph = Math.max(1, Math.floor(s.h * dpr));
+    canvas.width = pw; canvas.height = ph;
+    canvas.style.width = s.w + 'px'; canvas.style.height = s.h + 'px';
+    inkCanvas.width = pw; inkCanvas.height = ph;
+    if (laserTrail) {
+      laserTrail.width = pw; laserTrail.height = ph;
+      laserTrail.style.width = s.w + 'px'; laserTrail.style.height = s.h + 'px';
+      laserTrailCtx = laserTrail.getContext('2d');
+    }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    inkCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
     redraw();
+  }
+
+  function drawPattern(c, w, h) {
+    var g = patternColor();
+    c.save();
+    c.globalCompositeOperation = 'source-over';
+    c.globalAlpha = 1;
+    c.strokeStyle = g; c.fillStyle = g; c.lineWidth = 1;
+    if (pattern === 'grid') {
+      var step = 24;
+      c.beginPath();
+      for (var x = step; x < w; x += step) { c.moveTo(x + 0.5, 0); c.lineTo(x + 0.5, h); }
+      for (var y = step; y < h; y += step) { c.moveTo(0, y + 0.5); c.lineTo(w, y + 0.5); }
+      c.stroke();
+    } else if (pattern === 'lines') {
+      var stepL = 28;
+      c.beginPath();
+      for (var y2 = stepL; y2 < h; y2 += stepL) { c.moveTo(0, y2 + 0.5); c.lineTo(w, y2 + 0.5); }
+      c.stroke();
+    } else if (pattern === 'dots') {
+      var stepD = 22;
+      for (var yd = stepD; yd < h; yd += stepD) {
+        for (var xd = stepD; xd < w; xd += stepD) {
+          c.beginPath(); c.arc(xd, yd, 1.1, 0, Math.PI * 2); c.fill();
+        }
+      }
+    }
+    c.restore();
+  }
+
+  function applyViewTransform(c) {
+    // screen = world * zoom + pan  (then * dpr for device pixels)
+    c.setTransform(dpr * viewZoom, 0, 0, dpr * viewZoom, dpr * viewX, dpr * viewY);
   }
 
   function fillBoardBg() {
     var s = cssSize();
+    // clear full device buffer
     ctx.save();
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.fillStyle = boardTheme === 'dark' ? '#1a1d24' : '#ffffff';
-    ctx.fillRect(0, 0, s.w, s.h);
-    drawPattern(s.w, s.h);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.restore();
+    applyViewTransform(ctx);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+    // paint a large enough world rect so edges stay filled while panning/zooming
+    var pad = 4000;
+    ctx.fillStyle = boardBgColor();
+    ctx.fillRect(-pad, -pad, s.w + pad * 2, s.h + pad * 2);
+    // pattern only in nominal board area (0..s) looks odd when zoomed; tile over visible world
+    var worldL = (-viewX) / viewZoom;
+    var worldT = (-viewY) / viewZoom;
+    var worldR = (s.w - viewX) / viewZoom;
+    var worldB = (s.h - viewY) / viewZoom;
+    drawPatternInView(ctx, worldL, worldT, worldR, worldB);
   }
 
-  function drawPattern(w, h) {
-    var g = boardTheme === 'dark' ? '#2c3140' : '#e8eaed';
-    ctx.strokeStyle = g;
-    ctx.fillStyle = g;
-    ctx.lineWidth = 1;
+  function drawPatternInView(c, l, t, r, b) {
+    if (pattern === 'blank') return;
+    var g = patternColor();
+    c.save();
+    c.strokeStyle = g; c.fillStyle = g; c.lineWidth = 1 / viewZoom;
+    var step = pattern === 'lines' ? 28 : (pattern === 'dots' ? 22 : 24);
+    var x0 = Math.floor(l / step) * step;
+    var y0 = Math.floor(t / step) * step;
     if (pattern === 'grid') {
-      var step = 24;
-      ctx.beginPath();
-      for (var x = step; x < w; x += step) { ctx.moveTo(x + 0.5, 0); ctx.lineTo(x + 0.5, h); }
-      for (var y = step; y < h; y += step) { ctx.moveTo(0, y + 0.5); ctx.lineTo(w, y + 0.5); }
-      ctx.stroke();
+      c.beginPath();
+      for (var x = x0; x <= r; x += step) { c.moveTo(x + 0.5, t); c.lineTo(x + 0.5, b); }
+      for (var y = y0; y <= b; y += step) { c.moveTo(l, y + 0.5); c.lineTo(r, y + 0.5); }
+      c.stroke();
     } else if (pattern === 'lines') {
-      var step = 28;
-      ctx.beginPath();
-      for (var y = step; y < h; y += step) { ctx.moveTo(0, y + 0.5); ctx.lineTo(w, y + 0.5); }
-      ctx.stroke();
+      c.beginPath();
+      for (var y2 = y0; y2 <= b; y2 += step) { c.moveTo(l, y2 + 0.5); c.lineTo(r, y2 + 0.5); }
+      c.stroke();
     } else if (pattern === 'dots') {
-      var step = 22;
-      for (var y = step; y < h; y += step) {
-        for (var x = step; x < w; x += step) {
-          ctx.beginPath();
-          ctx.arc(x, y, 1.1, 0, Math.PI * 2);
-          ctx.fill();
+      for (var yd = y0; yd <= b; yd += step) {
+        for (var xd = x0; xd <= r; xd += step) {
+          c.beginPath(); c.arc(xd, yd, 1.1, 0, Math.PI * 2); c.fill();
         }
       }
     }
+    c.restore();
   }
 
-  function drawStroke(st) {
-    if (!st.points || st.points.length < 1) return;
-    ctx.save();
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
+  function drawStrokeOn(c, st) {
+    if (!st) return;
+    c.save();
+    c.lineCap = 'round'; c.lineJoin = 'round';
+
+    if (st.kind === 'shape') {
+      c.globalCompositeOperation = 'source-over';
+      c.globalAlpha = 1;
+      c.strokeStyle = st.color;
+      c.fillStyle = st.color;
+      c.lineWidth = st.size || 2;
+      var x = Math.min(st.x1, st.x2), y = Math.min(st.y1, st.y2);
+      var w = Math.abs(st.x2 - st.x1), h = Math.abs(st.y2 - st.y1);
+      var fm = st.fillMode || 'stroke';
+      if (st.shape === 'rect') {
+        if (fm === 'fill' || fm === 'both') { c.globalAlpha = 0.25; c.fillRect(x, y, w, h); c.globalAlpha = 1; }
+        if (fm !== 'fill') c.strokeRect(x, y, w, h);
+      } else if (st.shape === 'ellipse') {
+        c.beginPath();
+        c.ellipse(x + w / 2, y + h / 2, Math.max(1, w / 2), Math.max(1, h / 2), 0, 0, Math.PI * 2);
+        if (fm === 'fill' || fm === 'both') { c.globalAlpha = 0.25; c.fill(); c.globalAlpha = 1; }
+        if (fm !== 'fill') c.stroke();
+      } else if (st.shape === 'line' || st.shape === 'arrow') {
+        c.beginPath();
+        c.moveTo(st.x1, st.y1); c.lineTo(st.x2, st.y2); c.stroke();
+        if (st.shape === 'arrow') {
+          var ang = Math.atan2(st.y2 - st.y1, st.x2 - st.x1);
+          var len = 12 + (st.size || 2);
+          c.beginPath();
+          c.moveTo(st.x2, st.y2);
+          c.lineTo(st.x2 - len * Math.cos(ang - 0.4), st.y2 - len * Math.sin(ang - 0.4));
+          c.moveTo(st.x2, st.y2);
+          c.lineTo(st.x2 - len * Math.cos(ang + 0.4), st.y2 - len * Math.sin(ang + 0.4));
+          c.stroke();
+        }
+      }
+      c.restore();
+      return;
+    }
+
+    if (!st.points || st.points.length < 1) { c.restore(); return; }
     if (st.tool === 'erase') {
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.strokeStyle = 'rgba(0,0,0,1)';
-      ctx.lineWidth = st.size * 3;
+      c.globalCompositeOperation = 'destination-out';
+      c.strokeStyle = 'rgba(0,0,0,1)';
+      c.globalAlpha = 1;
+      c.lineWidth = (st.size || 3) * 3;
     } else if (st.tool === 'marker') {
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.strokeStyle = st.color;
-      ctx.globalAlpha = 0.35;
-      ctx.lineWidth = st.size * 2.2;
+      c.globalCompositeOperation = 'source-over';
+      c.strokeStyle = st.color;
+      c.globalAlpha = 0.35;
+      c.lineWidth = (st.size || 3) * 2.2;
     } else {
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.strokeStyle = st.color;
-      ctx.globalAlpha = 1;
-      ctx.lineWidth = st.size;
+      c.globalCompositeOperation = 'source-over';
+      c.strokeStyle = st.color;
+      c.globalAlpha = 1;
+      c.lineWidth = st.size || 3;
     }
-    ctx.beginPath();
-    ctx.moveTo(st.points[0].x, st.points[0].y);
-    for (var i = 1; i < st.points.length; i++) ctx.lineTo(st.points[i].x, st.points[i].y);
-    if (st.points.length === 1) {
-      ctx.lineTo(st.points[0].x + 0.01, st.points[0].y);
-    }
-    ctx.stroke();
-    ctx.restore();
+    c.beginPath();
+    c.moveTo(st.points[0].x, st.points[0].y);
+    for (var i = 1; i < st.points.length; i++) c.lineTo(st.points[i].x, st.points[i].y);
+    if (st.points.length === 1) c.lineTo(st.points[0].x + 0.01, st.points[0].y);
+    c.stroke();
+    c.restore();
+  }
+
+  function rebuildInk() {
+    inkCtx.save();
+    inkCtx.setTransform(1, 0, 0, 1, 0, 0);
+    inkCtx.clearRect(0, 0, inkCanvas.width, inkCanvas.height);
+    inkCtx.restore();
+    applyViewTransform(inkCtx);
+    var list = strokes();
+    for (var i = 0; i < list.length; i++) drawStrokeOn(inkCtx, list[i]);
+    if (currentStroke) drawStrokeOn(inkCtx, currentStroke);
   }
 
   function redraw() {
     fillBoardBg();
-    // strokes need to be on top of pattern: redraw pattern then strokes with source-over
-    // erase uses destination-out so must composite on white layer
-    // Approach: draw pattern, then strokes
-    for (var i = 0; i < strokes.length; i++) drawStroke(strokes[i]);
-    if (currentStroke) drawStroke(currentStroke);
+    rebuildInk();
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+    ctx.drawImage(inkCanvas, 0, 0);
+    ctx.restore();
+    applyViewTransform(ctx);
+    syncOverlayTransform();
+  }
+
+  function syncOverlayTransform() {
+    textsEl.style.transformOrigin = '0 0';
+    textsEl.style.transform = 'translate(' + viewX + 'px,' + viewY + 'px) scale(' + viewZoom + ')';
+  }
+
+  function screenToWorld(sx, sy) {
+    return { x: (sx - viewX) / viewZoom, y: (sy - viewY) / viewZoom };
   }
 
   function pos(e) {
     var r = canvas.getBoundingClientRect();
     var t = e.touches ? e.touches[0] : e;
+    return screenToWorld(t.clientX - r.left, t.clientY - r.top);
+  }
+
+  function screenPosFromEvent(e) {
+    var r = canvas.getBoundingClientRect();
+    var t = e.touches ? e.touches[0] : e;
     return { x: t.clientX - r.left, y: t.clientY - r.top };
   }
 
+  function clampZoom(z) {
+    return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z));
+  }
+
+  function showZoomHud() {
+    if (!zoomHud) return;
+    zoomHud.textContent = Math.round(viewZoom * 100) + '%';
+    zoomHud.classList.add('show');
+    clearTimeout(zoomHudTimer);
+    zoomHudTimer = setTimeout(function () { zoomHud.classList.remove('show'); }, 900);
+  }
+
+  function setZoomAt(newZoom, screenCx, screenCy) {
+    newZoom = clampZoom(newZoom);
+    var wx = (screenCx - viewX) / viewZoom;
+    var wy = (screenCy - viewY) / viewZoom;
+    viewZoom = newZoom;
+    viewX = screenCx - wx * viewZoom;
+    viewY = screenCy - wy * viewZoom;
+    redraw();
+    showZoomHud();
+  }
+
+  function snapshot() {
+    return JSON.stringify({
+      strokes: page().strokes,
+      texts: page().texts,
+      stickers: page().stickers
+    });
+  }
+  function pushHistory() {
+    var snap = snapshot();
+    if (historyIndex >= 0 && history[historyIndex] === snap) return;
+    history = history.slice(0, historyIndex + 1);
+    history.push(snap);
+    if (history.length > HISTORY_MAX) history.shift();
+    historyIndex = history.length - 1;
+  }
+  function applySnapshot(snap) {
+    try {
+      var d = JSON.parse(snap);
+      page().strokes = d.strokes || [];
+      page().texts = d.texts || [];
+      page().stickers = d.stickers || [];
+      remountOverlays();
+      redraw();
+    } catch (e) {}
+  }
+  function undo() {
+    if (historyIndex <= 0) return;
+    historyIndex--;
+    applySnapshot(history[historyIndex]);
+    scheduleSave();
+  }
+  function redo() {
+    if (historyIndex >= history.length - 1) return;
+    historyIndex++;
+    applySnapshot(history[historyIndex]);
+    scheduleSave();
+  }
+
+  function cancelDrawing() {
+    drawing = false;
+    currentStroke = null;
+    shapeStart = null;
+    panningBoard = null;
+    if (typeof laserOn !== 'undefined' && laserOn) hideLaser();
+  }
+
+  function startPinch() {
+    if (activePointers.size < 2) return;
+    cancelDrawing();
+    var pts = Array.from(activePointers.values());
+    var dx = pts[0].x - pts[1].x, dy = pts[0].y - pts[1].y;
+    pinch = {
+      dist0: Math.max(1, Math.hypot(dx, dy)),
+      zoom0: viewZoom,
+      midX: (pts[0].x + pts[1].x) / 2,
+      midY: (pts[0].y + pts[1].y) / 2,
+      viewX0: viewX,
+      viewY0: viewY
+    };
+  }
+
+  function movePinch() {
+    if (!pinch || activePointers.size < 2) return;
+    var pts = Array.from(activePointers.values());
+    var dx = pts[0].x - pts[1].x, dy = pts[0].y - pts[1].y;
+    var dist = Math.max(1, Math.hypot(dx, dy));
+    var midX = (pts[0].x + pts[1].x) / 2;
+    var midY = (pts[0].y + pts[1].y) / 2;
+    var newZoom = clampZoom(pinch.zoom0 * (dist / pinch.dist0));
+    // zoom around original pinch midpoint, then pan by mid delta
+    var wx = (pinch.midX - pinch.viewX0) / pinch.zoom0;
+    var wy = (pinch.midY - pinch.viewY0) / pinch.zoom0;
+    viewZoom = newZoom;
+    viewX = midX - wx * viewZoom;
+    viewY = midY - wy * viewZoom;
+    redraw();
+    showZoomHud();
+  }
+
+  function clearLaserTrail() {
+    if (!laserTrailCtx || !laserTrail) return;
+    laserTrailCtx.setTransform(1,0,0,1,0,0);
+    laserTrailCtx.clearRect(0, 0, laserTrail.width, laserTrail.height);
+  }
+  function paintLaser(sp) {
+    if (!laserDot) return;
+    laserDot.style.display = 'block';
+    laserDot.style.left = sp.x + 'px';
+    laserDot.style.top = sp.y + 'px';
+    if (laserTrailCtx && laserLast) {
+      laserTrailCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      laserTrailCtx.strokeStyle = 'rgba(255,23,68,0.35)';
+      laserTrailCtx.lineWidth = 3;
+      laserTrailCtx.lineCap = 'round';
+      laserTrailCtx.beginPath();
+      laserTrailCtx.moveTo(laserLast.x, laserLast.y);
+      laserTrailCtx.lineTo(sp.x, sp.y);
+      laserTrailCtx.stroke();
+    }
+    laserLast = { x: sp.x, y: sp.y };
+  }
+  function hideLaser() {
+    laserOn = false;
+    laserLast = null;
+    if (laserDot) laserDot.style.display = 'none';
+    setTimeout(clearLaserTrail, 200);
+  }
+
   function startDraw(e) {
-    if (tool === 'text') {
-      addTextAt(pos(e));
+    if (activePointers.size >= 2 || pinch) return;
+    if (tool === 'hand') {
+      var sp = screenPosFromEvent(e);
+      panningBoard = { x: sp.x, y: sp.y, viewX0: viewX, viewY0: viewY };
+      e.preventDefault();
       return;
     }
+    if (tool === 'laser') {
+      laserOn = true;
+      paintLaser(screenPosFromEvent(e));
+      e.preventDefault();
+      return;
+    }
+    if (tool === 'text') { addTextAt(pos(e)); return; }
+    if (tool === 'sticker') { addStickerAt(pos(e)); return; }
+    if (tool === 'select') return;
     drawing = true;
-    last = pos(e);
-    currentStroke = { tool: tool, color: color, size: size, points: [last] };
+    var p = pos(e);
+    if (tool === 'line' || tool === 'arrow' || tool === 'rect' || tool === 'ellipse') {
+      shapeStart = p;
+      currentStroke = {
+        kind: 'shape', shape: tool, color: color, size: size, fillMode: fillMode,
+        x1: p.x, y1: p.y, x2: p.x, y2: p.y
+      };
+    } else {
+      currentStroke = { tool: tool, color: color, size: size, points: [p] };
+    }
     e.preventDefault();
   }
   function moveDraw(e) {
+    if (pinch || activePointers.size >= 2) return;
+    if (panningBoard) {
+      var sp = screenPosFromEvent(e);
+      viewX = panningBoard.viewX0 + (sp.x - panningBoard.x);
+      viewY = panningBoard.viewY0 + (sp.y - panningBoard.y);
+      redraw();
+      e.preventDefault();
+      return;
+    }
+    if (laserOn && tool === 'laser') {
+      paintLaser(screenPosFromEvent(e));
+      e.preventDefault();
+      return;
+    }
     if (!drawing || !currentStroke) return;
     var p = pos(e);
-    currentStroke.points.push(p);
-    // incremental draw
+    if (currentStroke.kind === 'shape') {
+      currentStroke.x2 = p.x; currentStroke.y2 = p.y;
+    } else {
+      currentStroke.points.push(p);
+    }
     redraw();
     e.preventDefault();
   }
   function endDraw() {
+    if (pinch) return;
+    if (panningBoard) { panningBoard = null; return; }
+    if (laserOn) { hideLaser(); return; }
     if (!drawing) return;
     drawing = false;
-    if (currentStroke && currentStroke.points.length) {
-      strokes.push(currentStroke);
+    if (currentStroke) {
+      strokes().push(currentStroke);
+      currentStroke = null;
+      pushHistory();
+      scheduleSave();
+      saveState();
     }
-    currentStroke = null;
-    scheduleSave();
+    shapeStart = null;
   }
 
+  function onPointerDown(e) {
+    try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+    var sp = screenPosFromEvent(e);
+    activePointers.set(e.pointerId, sp);
+    if (activePointers.size >= 2) {
+      cancelDrawing();
+      panningBoard = null;
+      hideLaser();
+      redraw();
+      startPinch();
+      e.preventDefault();
+      return;
+    }
+    startDraw(e);
+  }
+  function onPointerMove(e) {
+    if (activePointers.has(e.pointerId)) {
+      activePointers.set(e.pointerId, screenPosFromEvent(e));
+    }
+    if (activePointers.size >= 2) {
+      if (!pinch) startPinch();
+      movePinch();
+      e.preventDefault();
+      return;
+    }
+    moveDraw(e);
+  }
+  function onPointerUp(e) {
+    activePointers.delete(e.pointerId);
+    if (activePointers.size < 2) {
+      pinch = null;
+    }
+    if (activePointers.size === 0) {
+      endDraw();
+    } else if (activePointers.size === 1) {
+      cancelDrawing();
+      panningBoard = null;
+      hideLaser();
+    }
+  }
+
+  function isPreviewEmbed() {
+    try { if (window.self !== window.top) return true; } catch (e) { return true; }
+    try { return new URLSearchParams(location.search).get('preview') === '1'; } catch (e2) { return false; }
+  }
+  function setPresentMode(on) {
+    if (on && isPreviewEmbed()) return; // недоступно в превью
+    presentMode = !!on;
+    document.body.classList.toggle('present-mode', presentMode);
+    var hint = document.getElementById('present-exit-hint');
+    if (hint) {
+      if (presentMode) {
+        hint.classList.add('show');
+        setTimeout(function () { hint.classList.remove('show'); }, 2500);
+      } else hint.classList.remove('show');
+    }
+    var btn = document.getElementById('btn-present');
+    if (btn) btn.classList.toggle('active', presentMode);
+    try {
+      if (presentMode && stage.requestFullscreen) stage.requestFullscreen().catch(function () {});
+      else if (!presentMode && document.fullscreenElement) document.exitFullscreen().catch(function () {});
+    } catch (e) {}
+    resize();
+  }
+
+
   function addTextAt(p) {
-    var id = 't_' + Date.now();
-    var item = { id: id, x: p.x, y: p.y, text: '' };
-    texts.push(item);
+    var item = { id: 't_' + Date.now(), x: p.x, y: p.y, text: '' };
+    texts().push(item);
     mountText(item, true);
+    pushHistory();
+    scheduleSave();
+  }
+  function addStickerAt(p) {
+    var colors = ['#fef08a', '#bbf7d0', '#bfdbfe', '#fbcfe8', '#fed7aa'];
+    var item = {
+      id: 's_' + Date.now(), x: p.x, y: p.y,
+      text: '', bg: colors[Math.floor(Math.random() * colors.length)]
+    };
+    stickers().push(item);
+    mountSticker(item, true);
+    pushHistory();
     scheduleSave();
   }
 
@@ -410,6 +888,7 @@ body.board-dark .board-text:focus { background: rgba(0,0,0,.4); }
     el.dataset.id = item.id;
     el.style.left = item.x + 'px';
     el.style.top = item.y + 'px';
+    el.style.color = textColor();
     el.textContent = item.text || '';
     el.addEventListener('input', function () {
       item.text = el.textContent || '';
@@ -418,70 +897,298 @@ body.board-dark .board-text:focus { background: rgba(0,0,0,.4); }
     el.addEventListener('blur', function () {
       item.text = el.textContent || '';
       if (!item.text.trim()) {
-        texts = texts.filter(function (t) { return t.id !== item.id; });
+        page().texts = texts().filter(function (t) { return t.id !== item.id; });
         el.remove();
+        pushHistory();
       }
       scheduleSave();
     });
-    // simple drag by holding Alt+pointer - skip for beta, position fixed at create
     textsEl.appendChild(el);
     if (focus) setTimeout(function () { el.focus(); }, 10);
   }
 
-  function remountTexts() {
+  function mountSticker(item, focus) {
+    var el = document.createElement('div');
+    el.className = 'sticker';
+    el.contentEditable = 'true';
+    el.dataset.id = item.id;
+    el.style.left = item.x + 'px';
+    el.style.top = item.y + 'px';
+    el.style.background = item.bg || '#fef08a';
+    el.textContent = item.text || '';
+    var dragging = false, ox = 0, oy = 0;
+    el.addEventListener('pointerdown', function (e) {
+      if (tool !== 'select' && e.target === el) {
+        // allow drag always for stickers
+      }
+      dragging = true;
+      ox = e.clientX - item.x;
+      oy = e.clientY - item.y;
+      el.setPointerCapture(e.pointerId);
+    });
+    el.addEventListener('pointermove', function (e) {
+      if (!dragging) return;
+      item.x = e.clientX - ox;
+      item.y = e.clientY - oy;
+      el.style.left = item.x + 'px';
+      el.style.top = item.y + 'px';
+    });
+    el.addEventListener('pointerup', function () {
+      if (dragging) { dragging = false; pushHistory(); scheduleSave(); }
+    });
+    el.addEventListener('input', function () {
+      item.text = el.textContent || '';
+      scheduleSave();
+    });
+    el.addEventListener('blur', function () {
+      item.text = el.textContent || '';
+      scheduleSave();
+    });
+    textsEl.appendChild(el);
+    if (focus) setTimeout(function () { el.focus(); }, 10);
+  }
+
+  function remountOverlays() {
     textsEl.innerHTML = '';
-    texts.forEach(function (t) { mountText(t, false); });
+    texts().forEach(function (t) { mountText(t, false); });
+    stickers().forEach(function (s) { mountSticker(s, false); });
+  }
+
+  function renderPagesBar() {
+    pagesBar.innerHTML = '';
+    project.pages.forEach(function (pg, idx) {
+      var tab = document.createElement('button');
+      tab.type = 'button';
+      tab.className = 'page-tab' + (idx === project.pageIndex ? ' active' : '');
+      tab.innerHTML = '<span class="pt-name"></span>';
+      tab.querySelector('.pt-name').textContent = pg.name || ('Страница ' + (idx + 1));
+      tab.addEventListener('click', function () { switchPage(idx); });
+      tab.addEventListener('dblclick', function (e) {
+        e.stopPropagation();
+        var n = prompt('Название страницы', pg.name || '');
+        if (n && n.trim()) { pg.name = n.trim(); renderPagesBar(); scheduleSave(); }
+      });
+      if (project.pages.length > 1) {
+        var x = document.createElement('button');
+        x.type = 'button'; x.className = 'pt-x'; x.textContent = '×';
+        x.title = 'Удалить страницу';
+        x.addEventListener('click', function (e) {
+          e.stopPropagation();
+          confirmModal('Удалить страницу?', '«' + (pg.name || '') + '» будет удалена.', function () {
+            deletePage(idx);
+          });
+        });
+        tab.appendChild(x);
+      }
+      pagesBar.appendChild(tab);
+    });
+    var add = document.createElement('button');
+    add.type = 'button'; add.className = 'page-add'; add.title = 'Новая страница';
+    add.innerHTML = '<span class="material-symbols-rounded" style="font-size:18px">add</span>';
+    add.addEventListener('click', addPage);
+    pagesBar.appendChild(add);
+  }
+
+  function switchPage(idx) {
+    if (idx < 0 || idx >= project.pages.length) return;
+    project.pageIndex = idx;
+    history = []; historyIndex = -1;
+    pushHistory();
+    remountOverlays();
+    redraw();
+    renderPagesBar();
+    scheduleSave();
+  }
+  function addPage() {
+    var n = project.pages.length + 1;
+    project.pages.push({
+      id: 'p_' + Date.now(),
+      name: 'Страница ' + n,
+      strokes: [], texts: [], stickers: []
+    });
+    switchPage(project.pages.length - 1);
+  }
+  function deletePage(idx) {
+    if (project.pages.length <= 1) return;
+    project.pages.splice(idx, 1);
+    if (project.pageIndex >= project.pages.length) project.pageIndex = project.pages.length - 1;
+    switchPage(project.pageIndex);
   }
 
   function scheduleSave() {
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(saveState, 400);
+    saveTimer = setTimeout(saveState, 200);
   }
-
   function saveState() {
-    var data = {
-      title: titleInput.value || 'Белая доска',
-      boardTheme: boardTheme,
-      pattern: pattern,
-      strokes: strokes,
-      texts: texts,
-      updatedAt: Date.now()
-    };
+    project.title = titleInput.value || 'Белая доска';
+    project.boardTheme = boardTheme;
+    project.pattern = pattern;
+    project.pageIndex = project.pageIndex || 0;
+    project.updatedAt = Date.now();
+    var key = storageKey();
+    var payload = JSON.stringify(project);
     try {
-      localStorage.setItem(storageKey(), JSON.stringify(data));
-      saveDot.classList.add('on');
-      setTimeout(function () { saveDot.classList.remove('on'); }, 800);
+      localStorage.setItem(key, payload);
+      // dual-write legacy key so старые открытия не теряют данные
+      try {
+        localStorage.setItem('mywork_whiteboard_state_v1:' + projectId(), JSON.stringify({
+          title: project.title,
+          boardTheme: project.boardTheme,
+          pattern: project.pattern,
+          strokes: (page().strokes || []),
+          texts: (page().texts || []),
+          pages: project.pages,
+          pageIndex: project.pageIndex,
+          updatedAt: project.updatedAt
+        }));
+      } catch (e2) {}
+      if (saveDot) {
+        saveDot.classList.add('on');
+        setTimeout(function () { saveDot.classList.remove('on'); }, 900);
+      }
+      syncRegistry();
+      return true;
+    } catch (e) {
+      console.warn('whiteboard save failed', e);
+      try {
+        if (saveDot) {
+          saveDot.style.background = '#e53935';
+          saveDot.classList.add('on');
+          setTimeout(function () {
+            saveDot.classList.remove('on');
+            saveDot.style.background = '';
+          }, 1500);
+        }
+      } catch (e3) {}
+      return false;
+    }
+  }
+  function syncRegistry() {
+    try {
+      var reg = JSON.parse(localStorage.getItem('mywork_registry_v1') || '[]');
+      if (!Array.isArray(reg)) reg = [];
+      var id = 'board-' + projectId();
+      var found = reg.find(function (p) { return p && p.id === id; });
+      if (found) {
+        found.title = project.title;
+        found.updatedAt = project.updatedAt;
+      } else {
+        reg.push({ id: id, type: 'whiteboard', title: project.title, updatedAt: project.updatedAt, legacyId: projectId() });
+      }
+      localStorage.setItem('mywork_registry_v1', JSON.stringify(reg));
     } catch (e) {}
   }
-
   function loadState() {
     try {
-      var raw = localStorage.getItem(storageKey());
-      if (!raw) return;
-      var data = JSON.parse(raw);
-      if (data.title) titleInput.value = data.title;
-      if (data.boardTheme) {
-        boardTheme = data.boardTheme;
-        boardThemeSel.value = boardTheme;
+      var key = storageKey();
+      var raw = localStorage.getItem(key);
+      if (!raw) {
+        // try without board suffix confusion
+        raw = localStorage.getItem(STORAGE_KEY + ':default');
       }
-      if (data.pattern) {
-        pattern = data.pattern;
-        patternSel.value = pattern;
+      if (!raw) {
+        var old = localStorage.getItem('mywork_whiteboard_state_v1:' + projectId())
+          || localStorage.getItem('mywork_whiteboard_state_v1:default');
+        if (old) {
+          var o = JSON.parse(old);
+          project.title = o.title || project.title;
+          project.boardTheme = o.boardTheme || 'white';
+          project.pattern = o.pattern || 'blank';
+          if (Array.isArray(o.pages) && o.pages.length) {
+            project.pages = o.pages;
+            project.pageIndex = o.pageIndex || 0;
+          } else {
+            project.pages = [{
+              id: 'p1', name: 'Страница 1',
+              strokes: o.strokes || [], texts: o.texts || [], stickers: o.stickers || []
+            }];
+          }
+        }
+      } else {
+        var data = JSON.parse(raw);
+        if (data && Array.isArray(data.pages) && data.pages.length) {
+          project = data;
+          if (project.pageIndex == null || project.pageIndex >= project.pages.length) project.pageIndex = 0;
+          project.pages.forEach(function (pg) {
+            if (!pg.strokes) pg.strokes = [];
+            if (!pg.texts) pg.texts = [];
+            if (!pg.stickers) pg.stickers = [];
+          });
+        } else if (data && data.strokes) {
+          project.title = data.title || project.title;
+          project.boardTheme = data.boardTheme || 'white';
+          project.pattern = data.pattern || 'blank';
+          project.pages = [{
+            id: 'p1', name: 'Страница 1',
+            strokes: data.strokes || [], texts: data.texts || [], stickers: data.stickers || []
+          }];
+        }
       }
-      strokes = Array.isArray(data.strokes) ? data.strokes : [];
-      texts = Array.isArray(data.texts) ? data.texts : [];
+      titleInput.value = project.title || 'Белая доска';
+      boardTheme = project.boardTheme || 'white';
+      pattern = project.pattern || 'blank';
+      boardThemeSel.value = boardTheme;
+      patternSel.value = pattern;
       document.body.classList.toggle('board-dark', boardTheme === 'dark');
-    } catch (e) {}
+    } catch (e) {
+      console.warn('whiteboard load failed', e);
+    }
+  }
+
+  function exportPng() {
+    redraw();
+    var a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = ((project.title || 'board') + '_' + (page().name || 'page') + '.png').replace(/[^\wа-яА-ЯёЁ\- .]+/g, '_');
+    a.click();
+  }
+
+  function confirmModal(title, text, onOk) {
+    document.getElementById('confirm-title').textContent = title;
+    document.getElementById('confirm-text').textContent = text;
+    document.getElementById('confirm-modal').classList.remove('hidden');
+    document.getElementById('confirm-ok').onclick = function () {
+      document.getElementById('confirm-modal').classList.add('hidden');
+      if (onOk) onOk();
+    };
+    document.getElementById('confirm-cancel').onclick = function () {
+      document.getElementById('confirm-modal').classList.add('hidden');
+    };
   }
 
   // tools
+  var lastEraseTap = 0;
+  function requestClearPage() {
+    confirmModal('Очистить страницу?', 'Все штрихи, текст и стикеры на этой странице будут удалены. Это действие можно отменить через Ctrl+Z только до перезагрузки, если история ещё есть.', function () {
+      page().strokes = [];
+      page().texts = [];
+      page().stickers = [];
+      remountOverlays();
+      redraw();
+      pushHistory();
+      saveState();
+    });
+  }
   document.querySelectorAll('[data-tool]').forEach(function (btn) {
     btn.addEventListener('click', function () {
-      tool = btn.getAttribute('data-tool');
+      var next = btn.getAttribute('data-tool');
+      // Двойное нажатие на ластик = то же, что корзина (очистить страницу)
+      if (next === 'erase' && tool === 'erase') {
+        var now = Date.now();
+        if (now - lastEraseTap < 500) {
+          lastEraseTap = 0;
+          requestClearPage();
+          return;
+        }
+        lastEraseTap = now;
+      } else {
+        lastEraseTap = 0;
+      }
+      tool = next;
       document.querySelectorAll('[data-tool]').forEach(function (b) {
         b.classList.toggle('active', b === btn);
       });
-      canvas.style.cursor = tool === 'text' ? 'text' : (tool === 'erase' ? 'cell' : 'crosshair');
+      canvas.style.cursor = tool === 'hand' ? 'grab' : (tool === 'laser' ? 'none' : (tool === 'text' || tool === 'sticker' ? 'cell' : (tool === 'erase' ? 'cell' : (tool === 'select' ? 'default' : 'crosshair'))));
     });
   });
   document.querySelectorAll('.swatch').forEach(function (s) {
@@ -494,59 +1201,108 @@ body.board-dark .board-text:focus { background: rgba(0,0,0,.4); }
     size = parseInt(sizeInput.value, 10) || 3;
     sizeVal.textContent = String(size);
   });
+  fillModeSel.addEventListener('change', function () { fillMode = fillModeSel.value; });
   patternSel.addEventListener('change', function () {
-    pattern = patternSel.value;
-    redraw();
-    scheduleSave();
+    pattern = patternSel.value; project.pattern = pattern; redraw(); scheduleSave();
   });
   boardThemeSel.addEventListener('change', function () {
     boardTheme = boardThemeSel.value;
+    project.boardTheme = boardTheme;
     document.body.classList.toggle('board-dark', boardTheme === 'dark');
-    // default pen color contrast
-    if (boardTheme === 'dark' && color === '#111111') {
-      color = '#ffffff';
-      document.querySelectorAll('.swatch').forEach(function (x) {
-        x.classList.toggle('active', x.getAttribute('data-color') === '#ffffff');
-      });
-    }
-    if (boardTheme === 'white' && color === '#ffffff') {
-      color = '#111111';
-      document.querySelectorAll('.swatch').forEach(function (x) {
-        x.classList.toggle('active', x.getAttribute('data-color') === '#111111');
-      });
-    }
+    if (boardTheme === 'dark' && color === '#111111') color = '#ffffff';
+    if (boardTheme === 'white' && color === '#ffffff') color = '#111111';
+    remountOverlays();
     redraw();
     scheduleSave();
   });
   titleInput.addEventListener('input', scheduleSave);
   document.getElementById('btn-clear').addEventListener('click', function () {
-    if (!confirm('Очистить доску?')) return;
-    strokes = [];
-    texts = [];
-    textsEl.innerHTML = '';
-    redraw();
-    scheduleSave();
+    requestClearPage();
   });
+  document.getElementById('btn-undo').onclick = undo;
+  document.getElementById('btn-redo').onclick = redo;
+  document.getElementById('btn-export').onclick = exportPng;
+  (function () {
+    var bp = document.getElementById('btn-present');
+    if (isPreviewEmbed()) {
+      if (bp) bp.style.display = 'none';
+    } else if (bp) {
+      bp.addEventListener('click', function () { setPresentMode(!presentMode); });
+    }
+  })();
 
-  canvas.addEventListener('pointerdown', startDraw);
-  canvas.addEventListener('pointermove', moveDraw);
-  canvas.addEventListener('pointerup', endDraw);
-  canvas.addEventListener('pointercancel', endDraw);
-  canvas.addEventListener('pointerleave', endDraw);
+  canvas.addEventListener('pointerdown', onPointerDown);
+  canvas.addEventListener('pointermove', onPointerMove);
+  canvas.addEventListener('pointerup', onPointerUp);
+  canvas.addEventListener('pointercancel', onPointerUp);
+  canvas.addEventListener('lostpointercapture', onPointerUp);
 
-  window.addEventListener('resize', function () {
-    resize();
-    remountTexts();
+  // Ctrl + wheel zoom only over the board (not page scroll zoom)
+  stage.addEventListener('wheel', function (e) {
+    if (!(e.ctrlKey || e.metaKey)) return;
+    e.preventDefault();
+    var r = canvas.getBoundingClientRect();
+    var sx = e.clientX - r.left;
+    var sy = e.clientY - r.top;
+    var factor = e.deltaY > 0 ? 1 / 1.1 : 1.1;
+    setZoomAt(viewZoom * factor, sx, sy);
+  }, { passive: false });
+
+  // Block browser pinch-zoom on the board
+  stage.addEventListener('touchstart', function (e) {
+    if (e.touches && e.touches.length > 1) e.preventDefault();
+  }, { passive: false });
+  stage.addEventListener('touchmove', function (e) {
+    if (e.touches && e.touches.length > 1) e.preventDefault();
+  }, { passive: false });
+
+  window.addEventListener('keydown', function (e) {
+    if (e.target.matches && e.target.matches('input, [contenteditable]')) return;
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undo(); }
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) { e.preventDefault(); redo(); }
+    if ((e.ctrlKey || e.metaKey) && (e.key === '0')) {
+      e.preventDefault();
+      viewZoom = 1; viewX = 0; viewY = 0;
+      redraw(); showZoomHud();
+    }
+    if (e.key === 'Escape' && presentMode) {
+      e.preventDefault();
+      setPresentMode(false);
+    }
   });
+  document.addEventListener('fullscreenchange', function () {
+    if (!document.fullscreenElement && presentMode) setPresentMode(false);
+  });
+  window.addEventListener('resize', function () { resize(); remountOverlays(); });
+
+  // Preview embed: ← closes parent overlay instead of loading hub inside iframe
+  (function () {
+    var inIframe = false;
+    try { inIframe = window.self !== window.top; } catch (e) { inIframe = true; }
+    var isPreview = false;
+    try { isPreview = new URLSearchParams(location.search).get('preview') === '1'; } catch (e2) {}
+    var back = document.getElementById('btn-back-hub');
+    if (back && (inIframe || isPreview)) {
+      back.addEventListener('click', function (e) {
+        e.preventDefault();
+        try { window.parent.postMessage({ type: 'mywork-close-preview' }, '*'); } catch (err) {}
+      });
+    }
+  })();
 
   applyUiChrome();
   loadState();
+  renderPagesBar();
   resize();
-  remountTexts();
-  // autosave heartbeat
-  setInterval(function () {
-    if (strokes.length || texts.length || titleInput.value) saveState();
-  }, 15000);
+  remountOverlays();
+  pushHistory();
+  saveState(); // immediate baseline
+  setInterval(function () { if (document.visibilityState === 'visible') saveState(); }, 10000);
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden') saveState();
+  });
+  window.addEventListener('pagehide', function () { saveState(); });
+  window.addEventListener('beforeunload', function () { saveState(); });
 })();
 </script>
 </body>
