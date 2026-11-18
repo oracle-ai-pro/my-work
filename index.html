@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>My Work | Prestige HQ</title>
-<link rel="icon" type="image/png" href="MY Work.png">
-<link rel="apple-touch-icon" href="MY Work.png">
+<link rel="icon" type="image/png" href="My Work.png">
+<link rel="apple-touch-icon" href="My Work.png">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1a73e8">
 <meta name="mobile-web-app-capable" content="yes">
@@ -400,5 +400,12 @@ body.ui-large .row{padding:16px}
     </div>
   </div>
 </div>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('./sw.js').catch(function () {});
+  });
+}
+</script>
 </body>
 </html>
